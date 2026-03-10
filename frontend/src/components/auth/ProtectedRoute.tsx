@@ -9,12 +9,14 @@ interface ProtectedRouteProps {
   redirectTo?: string;
   allowedRoles?: UserRole[];
   requireEmailVerified?: boolean;
+  requireSuperAdmin?: boolean;
 }
 
 export default function ProtectedRoute({
   redirectTo = '/login',
   allowedRoles,
   requireEmailVerified = false,
+  requireSuperAdmin = false,
 }: ProtectedRouteProps) {
   const location = useLocation();
   const { isAuthenticated, user, isLoading } = useAuthStore();
@@ -43,6 +45,10 @@ export default function ProtectedRoute({
 
   if (!isAuthenticated || !user) {
     return <Navigate to={redirectTo} state={{ from: location }} replace />;
+  }
+
+  if (requireSuperAdmin && !user.isSuperuser) {
+    return <Navigate to="/unauthorized" replace />;
   }
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {

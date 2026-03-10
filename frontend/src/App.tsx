@@ -7,6 +7,7 @@ import NotFound from './pages/NotFound';
 import UnauthorizedPage from './pages/UnauthorizedPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
 import Dashboard from './pages/Dashboard';
+import SuperAdminDashboard from './pages/SuperAdminDashboard';
 
 import {
   LoginPage,
@@ -78,6 +79,12 @@ function App() {
           >
             <Route path="/student" element={<AdminLayout />}>
               <Route index element={<Dashboard />} />
+            </Route>
+          </Route>
+
+          <Route element={<ProtectedRoute requireSuperAdmin={true} />}>
+            <Route path="/super-admin" element={<AdminLayout />}>
+              <Route index element={<SuperAdminDashboard />} />
             </Route>
           </Route>
 

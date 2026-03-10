@@ -31,7 +31,8 @@ from src.api.v1 import (
     question_blueprints,
     study_planner,
     weakness_detection,
-    analytics
+    analytics,
+    super_admin
 )
 from src.api import ml
 
@@ -70,3 +71,4 @@ api_router.include_router(question_blueprints.router, prefix="", tags=["question
 api_router.include_router(study_planner.router, prefix="", tags=["study-planner"])
 api_router.include_router(weakness_detection.router, prefix="", tags=["weakness-detection"])
 api_router.include_router(analytics.router, prefix="", tags=["analytics"])
+api_router.include_router(super_admin.router, prefix="", tags=["super-admin"])
