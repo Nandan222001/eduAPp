@@ -220,3 +220,169 @@ class StudyProgress(Base):
         Index('idx_study_progress_study_plan', 'study_plan_id'),
         Index('idx_study_progress_date', 'progress_date'),
     )
+
+
+class ChapterPerformance(Base):
+    __tablename__ = "chapter_performance"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    institution_id = Column(Integer, ForeignKey('institutions.id', ondelete='CASCADE'), nullable=False, index=True)
+    student_id = Column(Integer, ForeignKey('students.id', ondelete='CASCADE'), nullable=False, index=True)
+    subject_id = Column(Integer, ForeignKey('subjects.id', ondelete='CASCADE'), nullable=False, index=True)
+    chapter_id = Column(Integer, ForeignKey('chapters.id', ondelete='CASCADE'), nullable=False, index=True)
+    average_score = Column(Numeric(5, 2), nullable=False)
+    total_attempts = Column(Integer, default=0, nullable=False)
+    successful_attempts = Column(Integer, default=0, nullable=False)
+    failed_attempts = Column(Integer, default=0, nullable=False)
+    success_rate = Column(Numeric(5, 2), nullable=False)
+    time_spent_minutes = Column(Integer, default=0, nullable=False)
+    last_practiced_at = Column(DateTime, nullable=True)
+    proficiency_level = Column(String(50), nullable=True)
+    trend = Column(String(50), nullable=True)
+    improvement_rate = Column(Numeric(5, 2), nullable=True)
+    difficulty_rating = Column(Numeric(5, 2), nullable=True)
+    mastery_score = Column(Numeric(5, 2), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    
+    institution = relationship("Institution")
+    student = relationship("Student")
+    subject = relationship("Subject")
+    chapter = relationship("Chapter")
+    
+    __table_args__ = (
+        UniqueConstraint('student_id', 'chapter_id', name='uq_student_chapter_performance'),
+        Index('idx_chapter_perf_institution', 'institution_id'),
+        Index('idx_chapter_perf_student', 'student_id'),
+        Index('idx_chapter_perf_subject', 'subject_id'),
+        Index('idx_chapter_perf_chapter', 'chapter_id'),
+        Index('idx_chapter_perf_mastery', 'mastery_score'),
+        Index('idx_chapter_perf_proficiency', 'proficiency_level'),
+    )
+
+
+class QuestionRecommendation(Base):
+    __tablename__ = "question_recommendations"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    institution_id = Column(Integer, ForeignKey('institutions.id', ondelete='CASCADE'), nullable=False, index=True)
+    student_id = Column(Integer, ForeignKey('students.id', ondelete='CASCADE'), nullable=False, index=True)
+    question_id = Column(Integer, ForeignKey('questions_bank.id', ondelete='CASCADE'), nullable=False, index=True)
+    recommendation_score = Column(Numeric(10, 4), nullable=False)
+    relevance_score = Column(Numeric(5, 2), nullable=False)
+    difficulty_match_score = Column(Numeric(5, 2), nullable=False)
+    weakness_alignment_score = Column(Numeric(5, 2), nullable=False)
+    spaced_repetition_score = Column(Numeric(5, 2), nullable=False)
+    priority_rank = Column(Integer, nullable=True)
+    next_review_date = Column(Date, nullable=True, index=True)
+    repetition_number = Column(Integer, default=0, nullable=False)
+    ease_factor = Column(Numeric(3, 2), default=2.5, nullable=False)
+    interval_days = Column(Integer, default=0, nullable=False)
+    last_reviewed_at = Column(DateTime, nullable=True)
+    last_performance = Column(Numeric(5, 2), nullable=True)
+    is_completed = Column(Boolean, default=False, nullable=False, index=True)
+    completed_at = Column(DateTime, nullable=True)
+    metadata = Column(JSON, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    
+    institution = relationship("Institution")
+    student = relationship("Student")
+    question = relationship("QuestionBank")
+    
+    __table_args__ = (
+        Index('idx_question_rec_institution', 'institution_id'),
+        Index('idx_question_rec_student', 'student_id'),
+        Index('idx_question_rec_question', 'question_id'),
+        Index('idx_question_rec_score', 'recommendation_score'),
+        Index('idx_question_rec_rank', 'priority_rank'),
+        Index('idx_question_rec_review_date', 'next_review_date'),
+        Index('idx_question_rec_completed', 'is_completed'),
+    )
+
+
+class FocusArea(Base):
+    __tablename__ = "focus_areas"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    institution_id = Column(Integer, ForeignKey('institutions.id', ondelete='CASCADE'), nullable=False, index=True)
+    student_id = Column(Integer, ForeignKey('students.id', ondelete='CASCADE'), nullable=False, index=True)
+    subject_id = Column(Integer, ForeignKey('subjects.id', ondelete='CASCADE'), nullable=False, index=True)
+    chapter_id = Column(Integer, ForeignKey('chapters.id', ondelete='SET NULL'), nullable=True, index=True)
+    topic_id = Column(Integer, ForeignKey('topics.id', ondelete='SET NULL'), nullable=True, index=True)
+    focus_type = Column(String(50), nullable=False, index=True)
+    urgency_score = Column(Numeric(5, 2), nullable=False)
+    importance_score = Column(Numeric(5, 2), nullable=False)
+    impact_score = Column(Numeric(5, 2), nullable=False)
+    combined_priority = Column(Numeric(10, 4), nullable=False)
+    current_performance = Column(Numeric(5, 2), nullable=True)
+    target_performance = Column(Numeric(5, 2), nullable=True)
+    performance_gap = Column(Numeric(5, 2), nullable=True)
+    recommended_hours = Column(Numeric(5, 2), nullable=False)
+    estimated_improvement = Column(Numeric(5, 2), nullable=True)
+    confidence_level = Column(String(50), nullable=True)
+    reasoning = Column(Text, nullable=True)
+    ai_insights = Column(JSON, nullable=True)
+    status = Column(String(50), default='active', nullable=False, index=True)
+    started_at = Column(DateTime, nullable=True)
+    completed_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    
+    institution = relationship("Institution")
+    student = relationship("Student")
+    subject = relationship("Subject")
+    chapter = relationship("Chapter")
+    topic = relationship("Topic")
+    
+    __table_args__ = (
+        Index('idx_focus_area_institution', 'institution_id'),
+        Index('idx_focus_area_student', 'student_id'),
+        Index('idx_focus_area_subject', 'subject_id'),
+        Index('idx_focus_area_chapter', 'chapter_id'),
+        Index('idx_focus_area_type', 'focus_type'),
+        Index('idx_focus_area_priority', 'combined_priority'),
+        Index('idx_focus_area_status', 'status'),
+    )
+
+
+class PersonalizedInsight(Base):
+    __tablename__ = "personalized_insights"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    institution_id = Column(Integer, ForeignKey('institutions.id', ondelete='CASCADE'), nullable=False, index=True)
+    student_id = Column(Integer, ForeignKey('students.id', ondelete='CASCADE'), nullable=False, index=True)
+    insight_type = Column(String(100), nullable=False, index=True)
+    category = Column(String(50), nullable=False, index=True)
+    title = Column(String(255), nullable=False)
+    description = Column(Text, nullable=False)
+    severity = Column(String(50), nullable=False, index=True)
+    priority = Column(Integer, nullable=False, index=True)
+    is_actionable = Column(Boolean, default=True, nullable=False)
+    actionable_items = Column(JSON, nullable=True)
+    recommendations = Column(JSON, nullable=True)
+    supporting_data = Column(JSON, nullable=True)
+    affected_subjects = Column(JSON, nullable=True)
+    affected_chapters = Column(JSON, nullable=True)
+    ai_generated = Column(Boolean, default=False, nullable=False)
+    confidence_score = Column(Numeric(5, 2), nullable=True)
+    is_acknowledged = Column(Boolean, default=False, nullable=False)
+    acknowledged_at = Column(DateTime, nullable=True)
+    is_resolved = Column(Boolean, default=False, nullable=False)
+    resolved_at = Column(DateTime, nullable=True)
+    expires_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    
+    institution = relationship("Institution")
+    student = relationship("Student")
+    
+    __table_args__ = (
+        Index('idx_insight_institution', 'institution_id'),
+        Index('idx_insight_student', 'student_id'),
+        Index('idx_insight_type', 'insight_type'),
+        Index('idx_insight_category', 'category'),
+        Index('idx_insight_severity', 'severity'),
+        Index('idx_insight_priority', 'priority'),
+        Index('idx_insight_resolved', 'is_resolved'),
+    )

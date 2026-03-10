@@ -20,6 +20,11 @@ from src.models.gamification import (
 )
 from src.models.goal import Goal, GoalMilestone, GoalProgressLog, GoalAnalytics, GoalTemplate, GoalType, GoalStatus, MilestoneStatus
 from src.models.ml_prediction import MLModel, MLModelVersion, PerformancePrediction, PredictionScenario, ModelType, ModelStatus, PredictionType
+from src.models.study_planner import (
+    StudyPlan, WeakArea, DailyStudyTask, TopicAssignment, StudyProgress,
+    ChapterPerformance, QuestionRecommendation, FocusArea, PersonalizedInsight,
+    StudyPlanStatus, TaskStatus, TaskPriority
+)
 
 __all__ = [
     "Institution",
@@ -105,4 +110,16 @@ __all__ = [
     "ModelType",
     "ModelStatus",
     "PredictionType",
+    "StudyPlan",
+    "WeakArea",
+    "DailyStudyTask",
+    "TopicAssignment",
+    "StudyProgress",
+    "ChapterPerformance",
+    "QuestionRecommendation",
+    "FocusArea",
+    "PersonalizedInsight",
+    "StudyPlanStatus",
+    "TaskStatus",
+    "TaskPriority",
 ]

@@ -29,7 +29,8 @@ from src.api.v1 import (
     board_exam_predictions,
     question_nlp,
     question_blueprints,
-    study_planner
+    study_planner,
+    weakness_detection
 )
 from src.api import ml
 
@@ -66,3 +67,4 @@ api_router.include_router(board_exam_predictions.router, prefix="", tags=["board
 api_router.include_router(question_nlp.router, prefix="", tags=["question-nlp"])
 api_router.include_router(question_blueprints.router, prefix="", tags=["question-blueprints"])
 api_router.include_router(study_planner.router, prefix="", tags=["study-planner"])
+api_router.include_router(weakness_detection.router, prefix="", tags=["weakness-detection"])
