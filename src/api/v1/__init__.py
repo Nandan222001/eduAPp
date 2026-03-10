@@ -22,7 +22,9 @@ from src.api.v1 import (
     announcements,
     messages,
     notification_templates,
-    websocket
+    websocket,
+    gamification,
+    goals
 )
 
 api_router = APIRouter()
@@ -50,3 +52,5 @@ api_router.include_router(announcements.router, prefix="/announcements", tags=["
 api_router.include_router(messages.router, prefix="/messages", tags=["messages"])
 api_router.include_router(notification_templates.router, prefix="/notification-templates", tags=["notification-templates"])
 api_router.include_router(websocket.router, prefix="/ws", tags=["websocket"])
+api_router.include_router(gamification.router, prefix="/gamification", tags=["gamification"])
+api_router.include_router(goals.router, prefix="/goals", tags=["goals"])

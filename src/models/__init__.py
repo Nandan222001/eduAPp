@@ -13,6 +13,8 @@ from src.models.assignment import Assignment, AssignmentFile, Submission, Submis
 from src.models.examination import Exam, ExamSubject, ExamSchedule, ExamMarks, ExamResult, GradeConfiguration, ExamPerformanceAnalytics, ExamType, ExamStatus
 from src.models.previous_year_papers import PreviousYearPaper, QuestionBank, QuestionType, DifficultyLevel, BloomTaxonomyLevel, Board
 from src.models.notification import Notification, NotificationPreference, Announcement, Message, NotificationTemplate, NotificationChannel, NotificationPriority, NotificationStatus, AudienceType
+from src.models.gamification import Badge, UserBadge, UserPoints, PointHistory, BadgeType, BadgeRarity, PointEventType
+from src.models.goal import Goal, GoalMilestone, GoalProgressLog, GoalAnalytics, GoalTemplate, GoalType, GoalStatus, MilestoneStatus
 
 __all__ = [
     "Institution",
@@ -67,4 +69,19 @@ __all__ = [
     "NotificationPriority",
     "NotificationStatus",
     "AudienceType",
+    "Badge",
+    "UserBadge",
+    "UserPoints",
+    "PointHistory",
+    "BadgeType",
+    "BadgeRarity",
+    "PointEventType",
+    "Goal",
+    "GoalMilestone",
+    "GoalProgressLog",
+    "GoalAnalytics",
+    "GoalTemplate",
+    "GoalType",
+    "GoalStatus",
+    "MilestoneStatus",
 ]
