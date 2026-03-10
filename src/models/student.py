@@ -32,6 +32,8 @@ class Student(Base):
     institution = relationship("Institution", back_populates="students")
     user = relationship("User", back_populates="student_profile")
     section = relationship("Section", back_populates="students")
+    attendances = relationship("Attendance", back_populates="student", cascade="all, delete-orphan")
+    attendance_summaries = relationship("AttendanceSummary", back_populates="student", cascade="all, delete-orphan")
     
     __table_args__ = (
         UniqueConstraint('institution_id', 'email', name='uq_institution_student_email'),

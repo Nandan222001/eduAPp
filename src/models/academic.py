@@ -72,6 +72,7 @@ class Section(Base):
     institution = relationship("Institution", back_populates="sections")
     grade = relationship("Grade", back_populates="sections")
     students = relationship("Student", back_populates="section")
+    attendances = relationship("Attendance", back_populates="section")
     
     __table_args__ = (
         UniqueConstraint('grade_id', 'name', name='uq_grade_section_name'),
@@ -97,6 +98,8 @@ class Subject(Base):
     grade_subjects = relationship("GradeSubject", back_populates="subject", cascade="all, delete-orphan")
     teacher_subjects = relationship("TeacherSubject", back_populates="subject", cascade="all, delete-orphan")
     chapters = relationship("Chapter", back_populates="subject", cascade="all, delete-orphan")
+    attendances = relationship("Attendance", back_populates="subject")
+    attendance_summaries = relationship("AttendanceSummary", back_populates="subject")
     
     __table_args__ = (
         UniqueConstraint('institution_id', 'name', name='uq_institution_subject_name'),

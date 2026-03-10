@@ -8,6 +8,7 @@ from src.models.password_reset_token import PasswordResetToken
 from src.models.academic import AcademicYear, Grade, Section, Subject, GradeSubject, Chapter, Topic
 from src.models.teacher import Teacher, TeacherSubject
 from src.models.student import Student
+from src.models.attendance import Attendance, AttendanceCorrection, AttendanceSummary, AttendanceStatus, CorrectionStatus
 
 __all__ = [
     "Institution",
@@ -27,4 +28,9 @@ __all__ = [
     "Teacher",
     "TeacherSubject",
     "Student",
+    "Attendance",
+    "AttendanceCorrection",
+    "AttendanceSummary",
+    "AttendanceStatus",
+    "CorrectionStatus",
 ]

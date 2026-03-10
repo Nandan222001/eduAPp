@@ -63,6 +63,21 @@ from src.schemas.student import (
     StudentResponse,
     BulkImportResult as StudentBulkImportResult,
 )
+from src.schemas.attendance import (
+    AttendanceCreate,
+    AttendanceUpdate,
+    AttendanceResponse,
+    BulkAttendanceCreate,
+    BulkAttendanceResult,
+    AttendanceCorrectionCreate,
+    AttendanceCorrectionReview,
+    AttendanceCorrectionResponse,
+    AttendanceSummaryResponse,
+    StudentAttendanceReport,
+    SubjectAttendanceReport,
+    AttendanceDefaulter,
+    StudentAttendanceDetail,
+)
 
 __all__ = [
     "InstitutionBase",
@@ -112,4 +127,17 @@ __all__ = [
     "StudentUpdate",
     "StudentResponse",
     "StudentBulkImportResult",
+    "AttendanceCreate",
+    "AttendanceUpdate",
+    "AttendanceResponse",
+    "BulkAttendanceCreate",
+    "BulkAttendanceResult",
+    "AttendanceCorrectionCreate",
+    "AttendanceCorrectionReview",
+    "AttendanceCorrectionResponse",
+    "AttendanceSummaryResponse",
+    "StudentAttendanceReport",
+    "SubjectAttendanceReport",
+    "AttendanceDefaulter",
+    "StudentAttendanceDetail",
 ]

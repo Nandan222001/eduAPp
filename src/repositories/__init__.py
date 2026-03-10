@@ -6,6 +6,11 @@ from src.repositories.academic_repository import (
     ChapterRepository,
     TopicRepository,
 )
+from src.repositories.attendance_repository import (
+    AttendanceRepository,
+    AttendanceCorrectionRepository,
+    AttendanceSummaryRepository,
+)
 
 __all__ = [
     "AcademicYearRepository",
@@ -14,4 +19,7 @@ __all__ = [
     "SubjectRepository",
     "ChapterRepository",
     "TopicRepository",
+    "AttendanceRepository",
+    "AttendanceCorrectionRepository",
+    "AttendanceSummaryRepository",
 ]
