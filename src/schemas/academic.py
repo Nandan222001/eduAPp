@@ -147,3 +147,75 @@ class GradeWithSubjectsResponse(GradeResponse):
 
 class AcademicYearWithGradesResponse(AcademicYearResponse):
     grades: List[GradeResponse] = []
+
+
+class ChapterBase(BaseModel):
+    name: str = Field(..., max_length=200)
+    code: Optional[str] = Field(None, max_length=50)
+    display_order: int = 0
+    description: Optional[str] = None
+    is_active: bool = True
+
+
+class ChapterCreate(ChapterBase):
+    institution_id: int
+    subject_id: int
+    grade_id: int
+
+
+class ChapterUpdate(BaseModel):
+    name: Optional[str] = Field(None, max_length=200)
+    code: Optional[str] = Field(None, max_length=50)
+    display_order: Optional[int] = None
+    description: Optional[str] = None
+    is_active: Optional[bool] = None
+
+
+class ChapterResponse(ChapterBase):
+    model_config = ConfigDict(from_attributes=True)
+    
+    id: int
+    institution_id: int
+    subject_id: int
+    grade_id: int
+    created_at: datetime
+    updated_at: datetime
+
+
+class TopicBase(BaseModel):
+    name: str = Field(..., max_length=200)
+    code: Optional[str] = Field(None, max_length=50)
+    display_order: int = 0
+    description: Optional[str] = None
+    is_active: bool = True
+
+
+class TopicCreate(TopicBase):
+    institution_id: int
+    chapter_id: int
+
+
+class TopicUpdate(BaseModel):
+    name: Optional[str] = Field(None, max_length=200)
+    code: Optional[str] = Field(None, max_length=50)
+    display_order: Optional[int] = None
+    description: Optional[str] = None
+    is_active: Optional[bool] = None
+
+
+class TopicResponse(TopicBase):
+    model_config = ConfigDict(from_attributes=True)
+    
+    id: int
+    institution_id: int
+    chapter_id: int
+    created_at: datetime
+    updated_at: datetime
+
+
+class ChapterWithTopicsResponse(ChapterResponse):
+    topics: List[TopicResponse] = []
+
+
+class SubjectWithChaptersResponse(SubjectResponse):
+    chapters: List[ChapterResponse] = []

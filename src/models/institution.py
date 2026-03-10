@@ -28,6 +28,8 @@ class Institution(Base):
     teachers = relationship("Teacher", back_populates="institution", cascade="all, delete-orphan")
     teacher_subjects = relationship("TeacherSubject", back_populates="institution", cascade="all, delete-orphan")
     students = relationship("Student", back_populates="institution", cascade="all, delete-orphan")
+    chapters = relationship("Chapter", back_populates="institution", cascade="all, delete-orphan")
+    topics = relationship("Topic", back_populates="institution", cascade="all, delete-orphan")
     
     __table_args__ = (
         Index('idx_institution_active', 'is_active'),

@@ -46,6 +46,7 @@ class Grade(Base):
     academic_year = relationship("AcademicYear", back_populates="grades")
     sections = relationship("Section", back_populates="grade", cascade="all, delete-orphan")
     grade_subjects = relationship("GradeSubject", back_populates="grade", cascade="all, delete-orphan")
+    chapters = relationship("Chapter", back_populates="grade", cascade="all, delete-orphan")
     
     __table_args__ = (
         UniqueConstraint('institution_id', 'academic_year_id', 'name', name='uq_institution_year_grade_name'),
@@ -95,6 +96,7 @@ class Subject(Base):
     institution = relationship("Institution", back_populates="subjects")
     grade_subjects = relationship("GradeSubject", back_populates="subject", cascade="all, delete-orphan")
     teacher_subjects = relationship("TeacherSubject", back_populates="subject", cascade="all, delete-orphan")
+    chapters = relationship("Chapter", back_populates="subject", cascade="all, delete-orphan")
     
     __table_args__ = (
         UniqueConstraint('institution_id', 'name', name='uq_institution_subject_name'),
@@ -123,4 +125,60 @@ class GradeSubject(Base):
         Index('idx_grade_subject_institution', 'institution_id'),
         Index('idx_grade_subject_grade', 'grade_id'),
         Index('idx_grade_subject_subject', 'subject_id'),
+    )
+
+
+class Chapter(Base):
+    __tablename__ = "chapters"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    institution_id = Column(Integer, ForeignKey('institutions.id', ondelete='CASCADE'), nullable=False, index=True)
+    subject_id = Column(Integer, ForeignKey('subjects.id', ondelete='CASCADE'), nullable=False, index=True)
+    grade_id = Column(Integer, ForeignKey('grades.id', ondelete='CASCADE'), nullable=False, index=True)
+    name = Column(String(200), nullable=False)
+    code = Column(String(50), nullable=True)
+    display_order = Column(Integer, nullable=False, default=0)
+    description = Column(Text, nullable=True)
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    
+    institution = relationship("Institution", back_populates="chapters")
+    subject = relationship("Subject", back_populates="chapters")
+    grade = relationship("Grade", back_populates="chapters")
+    topics = relationship("Topic", back_populates="chapter", cascade="all, delete-orphan")
+    
+    __table_args__ = (
+        UniqueConstraint('subject_id', 'grade_id', 'name', name='uq_subject_grade_chapter_name'),
+        UniqueConstraint('subject_id', 'grade_id', 'code', name='uq_subject_grade_chapter_code'),
+        Index('idx_chapter_institution', 'institution_id'),
+        Index('idx_chapter_subject', 'subject_id'),
+        Index('idx_chapter_grade', 'grade_id'),
+        Index('idx_chapter_active', 'is_active'),
+    )
+
+
+class Topic(Base):
+    __tablename__ = "topics"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    institution_id = Column(Integer, ForeignKey('institutions.id', ondelete='CASCADE'), nullable=False, index=True)
+    chapter_id = Column(Integer, ForeignKey('chapters.id', ondelete='CASCADE'), nullable=False, index=True)
+    name = Column(String(200), nullable=False)
+    code = Column(String(50), nullable=True)
+    display_order = Column(Integer, nullable=False, default=0)
+    description = Column(Text, nullable=True)
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    
+    institution = relationship("Institution", back_populates="topics")
+    chapter = relationship("Chapter", back_populates="topics")
+    
+    __table_args__ = (
+        UniqueConstraint('chapter_id', 'name', name='uq_chapter_topic_name'),
+        UniqueConstraint('chapter_id', 'code', name='uq_chapter_topic_code'),
+        Index('idx_topic_institution', 'institution_id'),
+        Index('idx_topic_chapter', 'chapter_id'),
+        Index('idx_topic_active', 'is_active'),
     )
