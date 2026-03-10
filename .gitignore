@@ -79,3 +79,20 @@ temp_uploads/
 celerybeat-schedule
 celerybeat.pid
 celery_worker.log
+
+# ML/AI models and artifacts
+models/
+*.pkl
+*.joblib
+*.h5
+*.pt
+*.pth
+*.onnx
+predictions/
+feature_importance/
+model_checkpoints/
+*.npy
+*.npz
+*.csv
+!requirements.csv
+!examples/*.csv
