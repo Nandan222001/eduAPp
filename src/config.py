@@ -46,6 +46,18 @@ class Settings(BaseSettings):
     s3_bucket_name: str = Field(default="", alias="S3_BUCKET_NAME")
     s3_upload_max_size: int = Field(default=10485760, alias="S3_UPLOAD_MAX_SIZE")
 
+    sendgrid_api_key: str = Field(default="", alias="SENDGRID_API_KEY")
+    sender_email: str = Field(default="noreply@example.com", alias="SENDER_EMAIL")
+    sender_name: str = Field(default="System", alias="SENDER_NAME")
+
+    msg91_auth_key: str = Field(default="", alias="MSG91_AUTH_KEY")
+    msg91_sender_id: str = Field(default="SENDER", alias="MSG91_SENDER_ID")
+
+    fcm_server_key: str = Field(default="", alias="FCM_SERVER_KEY")
+
+    celery_broker_url: str = Field(default="", alias="CELERY_BROKER_URL")
+    celery_result_backend: str = Field(default="", alias="CELERY_RESULT_BACKEND")
+
     @property
     def database_url(self) -> str:
         return f"postgresql://{self.database_user}:{self.database_password}@{self.database_host}:{self.database_port}/{self.database_name}"

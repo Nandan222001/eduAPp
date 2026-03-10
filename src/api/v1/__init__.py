@@ -17,7 +17,12 @@ from src.api.v1 import (
     submissions,
     exams,
     previous_year_papers,
-    question_bank
+    question_bank,
+    notifications,
+    announcements,
+    messages,
+    notification_templates,
+    websocket
 )
 
 api_router = APIRouter()
@@ -40,3 +45,8 @@ api_router.include_router(submissions.router, prefix="/submissions", tags=["subm
 api_router.include_router(exams.router, prefix="/exams", tags=["exams"])
 api_router.include_router(previous_year_papers.router, prefix="/previous-year-papers", tags=["previous-year-papers"])
 api_router.include_router(question_bank.router, prefix="/question-bank", tags=["question-bank"])
+api_router.include_router(notifications.router, prefix="/notifications", tags=["notifications"])
+api_router.include_router(announcements.router, prefix="/announcements", tags=["announcements"])
+api_router.include_router(messages.router, prefix="/messages", tags=["messages"])
+api_router.include_router(notification_templates.router, prefix="/notification-templates", tags=["notification-templates"])
+api_router.include_router(websocket.router, prefix="/ws", tags=["websocket"])

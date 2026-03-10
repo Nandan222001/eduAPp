@@ -47,6 +47,34 @@ services:
       timeout: 5s
       retries: 5
 
+  celery_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fastapi-celery-worker
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - .:/app
+    command: celery -A worker.celery_app worker --loglevel=info
+
+  celery_beat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fastapi-celery-beat
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - .:/app
+    command: celery -A beat.celery_app beat --loglevel=info
+
 volumes:
   postgres_data:
   redis_data:

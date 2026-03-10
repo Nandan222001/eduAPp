@@ -12,6 +12,7 @@ from src.models.attendance import Attendance, AttendanceCorrection, AttendanceSu
 from src.models.assignment import Assignment, AssignmentFile, Submission, SubmissionFile, AssignmentStatus, SubmissionStatus
 from src.models.examination import Exam, ExamSubject, ExamSchedule, ExamMarks, ExamResult, GradeConfiguration, ExamPerformanceAnalytics, ExamType, ExamStatus
 from src.models.previous_year_papers import PreviousYearPaper, QuestionBank, QuestionType, DifficultyLevel, BloomTaxonomyLevel, Board
+from src.models.notification import Notification, NotificationPreference, Announcement, Message, NotificationTemplate, NotificationChannel, NotificationPriority, NotificationStatus, AudienceType
 
 __all__ = [
     "Institution",
@@ -57,4 +58,13 @@ __all__ = [
     "DifficultyLevel",
     "BloomTaxonomyLevel",
     "Board",
+    "Notification",
+    "NotificationPreference",
+    "Announcement",
+    "Message",
+    "NotificationTemplate",
+    "NotificationChannel",
+    "NotificationPriority",
+    "NotificationStatus",
+    "AudienceType",
 ]

@@ -184,3 +184,20 @@ async def get_optional_current_user(
         set_request_context(context)
 
     return user
+
+
+async def get_current_user_ws(
+    token: str,
+    db: Session
+) -> Optional[User]:
+    payload = decode_token(token)
+
+    if payload is None or payload.get("type") != "access":
+        return None
+
+    user_id: int = payload.get("sub")
+    if user_id is None:
+        return None
+
+    user = db.query(User).filter(User.id == user_id, User.is_active == True).first()
+    return user

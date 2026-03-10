@@ -74,3 +74,8 @@ previous_year_papers/
 question_images/
 *.pdf
 temp_uploads/
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+celery_worker.log
