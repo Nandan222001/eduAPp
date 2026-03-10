@@ -20,6 +20,14 @@ class Institution(Base):
     
     users = relationship("User", back_populates="institution", cascade="all, delete-orphan")
     subscriptions = relationship("Subscription", back_populates="institution", cascade="all, delete-orphan")
+    academic_years = relationship("AcademicYear", back_populates="institution", cascade="all, delete-orphan")
+    grades = relationship("Grade", back_populates="institution", cascade="all, delete-orphan")
+    sections = relationship("Section", back_populates="institution", cascade="all, delete-orphan")
+    subjects = relationship("Subject", back_populates="institution", cascade="all, delete-orphan")
+    grade_subjects = relationship("GradeSubject", back_populates="institution", cascade="all, delete-orphan")
+    teachers = relationship("Teacher", back_populates="institution", cascade="all, delete-orphan")
+    teacher_subjects = relationship("TeacherSubject", back_populates="institution", cascade="all, delete-orphan")
+    students = relationship("Student", back_populates="institution", cascade="all, delete-orphan")
     
     __table_args__ = (
         Index('idx_institution_active', 'is_active'),

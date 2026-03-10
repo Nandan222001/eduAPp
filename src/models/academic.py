@@ -1,0 +1,126 @@
+from datetime import datetime, date
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Date, Text, Index, UniqueConstraint
+from sqlalchemy.orm import relationship
+from src.database import Base
+
+
+class AcademicYear(Base):
+    __tablename__ = "academic_years"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    institution_id = Column(Integer, ForeignKey('institutions.id', ondelete='CASCADE'), nullable=False, index=True)
+    name = Column(String(100), nullable=False)
+    start_date = Column(Date, nullable=False)
+    end_date = Column(Date, nullable=False)
+    is_active = Column(Boolean, default=False, nullable=False)
+    is_current = Column(Boolean, default=False, nullable=False)
+    description = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    
+    institution = relationship("Institution", back_populates="academic_years")
+    grades = relationship("Grade", back_populates="academic_year", cascade="all, delete-orphan")
+    
+    __table_args__ = (
+        UniqueConstraint('institution_id', 'name', name='uq_institution_academic_year_name'),
+        Index('idx_academic_year_institution', 'institution_id'),
+        Index('idx_academic_year_current', 'is_current'),
+        Index('idx_academic_year_active', 'is_active'),
+    )
+
+
+class Grade(Base):
+    __tablename__ = "grades"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    institution_id = Column(Integer, ForeignKey('institutions.id', ondelete='CASCADE'), nullable=False, index=True)
+    academic_year_id = Column(Integer, ForeignKey('academic_years.id', ondelete='CASCADE'), nullable=False, index=True)
+    name = Column(String(100), nullable=False)
+    display_order = Column(Integer, nullable=False, default=0)
+    description = Column(Text, nullable=True)
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    
+    institution = relationship("Institution", back_populates="grades")
+    academic_year = relationship("AcademicYear", back_populates="grades")
+    sections = relationship("Section", back_populates="grade", cascade="all, delete-orphan")
+    grade_subjects = relationship("GradeSubject", back_populates="grade", cascade="all, delete-orphan")
+    
+    __table_args__ = (
+        UniqueConstraint('institution_id', 'academic_year_id', 'name', name='uq_institution_year_grade_name'),
+        Index('idx_grade_institution', 'institution_id'),
+        Index('idx_grade_academic_year', 'academic_year_id'),
+        Index('idx_grade_active', 'is_active'),
+    )
+
+
+class Section(Base):
+    __tablename__ = "sections"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    institution_id = Column(Integer, ForeignKey('institutions.id', ondelete='CASCADE'), nullable=False, index=True)
+    grade_id = Column(Integer, ForeignKey('grades.id', ondelete='CASCADE'), nullable=False, index=True)
+    name = Column(String(100), nullable=False)
+    capacity = Column(Integer, nullable=True)
+    description = Column(Text, nullable=True)
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    
+    institution = relationship("Institution", back_populates="sections")
+    grade = relationship("Grade", back_populates="sections")
+    students = relationship("Student", back_populates="section")
+    
+    __table_args__ = (
+        UniqueConstraint('grade_id', 'name', name='uq_grade_section_name'),
+        Index('idx_section_institution', 'institution_id'),
+        Index('idx_section_grade', 'grade_id'),
+        Index('idx_section_active', 'is_active'),
+    )
+
+
+class Subject(Base):
+    __tablename__ = "subjects"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    institution_id = Column(Integer, ForeignKey('institutions.id', ondelete='CASCADE'), nullable=False, index=True)
+    name = Column(String(200), nullable=False)
+    code = Column(String(50), nullable=True)
+    description = Column(Text, nullable=True)
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    
+    institution = relationship("Institution", back_populates="subjects")
+    grade_subjects = relationship("GradeSubject", back_populates="subject", cascade="all, delete-orphan")
+    teacher_subjects = relationship("TeacherSubject", back_populates="subject", cascade="all, delete-orphan")
+    
+    __table_args__ = (
+        UniqueConstraint('institution_id', 'name', name='uq_institution_subject_name'),
+        UniqueConstraint('institution_id', 'code', name='uq_institution_subject_code'),
+        Index('idx_subject_institution', 'institution_id'),
+        Index('idx_subject_active', 'is_active'),
+    )
+
+
+class GradeSubject(Base):
+    __tablename__ = "grade_subjects"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    institution_id = Column(Integer, ForeignKey('institutions.id', ondelete='CASCADE'), nullable=False, index=True)
+    grade_id = Column(Integer, ForeignKey('grades.id', ondelete='CASCADE'), nullable=False, index=True)
+    subject_id = Column(Integer, ForeignKey('subjects.id', ondelete='CASCADE'), nullable=False, index=True)
+    is_compulsory = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    
+    institution = relationship("Institution", back_populates="grade_subjects")
+    grade = relationship("Grade", back_populates="grade_subjects")
+    subject = relationship("Subject", back_populates="grade_subjects")
+    
+    __table_args__ = (
+        UniqueConstraint('grade_id', 'subject_id', name='uq_grade_subject'),
+        Index('idx_grade_subject_institution', 'institution_id'),
+        Index('idx_grade_subject_grade', 'grade_id'),
+        Index('idx_grade_subject_subject', 'subject_id'),
+    )

@@ -25,6 +25,8 @@ class User(Base):
     
     institution = relationship("Institution", back_populates="users")
     role = relationship("Role", back_populates="users")
+    teacher_profile = relationship("Teacher", back_populates="user", uselist=False)
+    student_profile = relationship("Student", back_populates="user", uselist=False)
     
     __table_args__ = (
         Index('idx_user_institution_email', 'institution_id', 'email', unique=True),
