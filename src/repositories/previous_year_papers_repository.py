@@ -1,4 +1,4 @@
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, Dict, Any
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func, and_, or_, desc
 from datetime import datetime
@@ -8,7 +8,8 @@ from src.models.previous_year_papers import (
     QuestionType,
     DifficultyLevel,
     BloomTaxonomyLevel,
-    Board
+    Board,
+    TopicPrediction
 )
 from src.schemas.previous_year_papers import (
     PreviousYearPaperCreate,
@@ -456,3 +457,171 @@ class QuestionBankRepository:
         total = query.count()
         questions = query.offset(skip).limit(limit).all()
         return questions, total
+
+
+class TopicPredictionRepository:
+    def __init__(self, db: Session):
+        self.db = db
+
+    def create(self, prediction_data: Dict[str, Any]) -> TopicPrediction:
+        db_prediction = TopicPrediction(**prediction_data)
+        self.db.add(db_prediction)
+        self.db.commit()
+        self.db.refresh(db_prediction)
+        return db_prediction
+
+    def bulk_create(self, predictions_data: List[Dict[str, Any]]) -> List[TopicPrediction]:
+        db_predictions = [TopicPrediction(**data) for data in predictions_data]
+        self.db.bulk_save_objects(db_predictions)
+        self.db.commit()
+        return db_predictions
+
+    def get_by_id(self, prediction_id: int) -> Optional[TopicPrediction]:
+        return self.db.query(TopicPrediction).filter(
+            TopicPrediction.id == prediction_id
+        ).first()
+
+    def delete_existing_predictions(
+        self,
+        institution_id: int,
+        board: Board,
+        grade_id: int,
+        subject_id: int
+    ) -> int:
+        deleted = self.db.query(TopicPrediction).filter(
+            and_(
+                TopicPrediction.institution_id == institution_id,
+                TopicPrediction.board == board,
+                TopicPrediction.grade_id == grade_id,
+                TopicPrediction.subject_id == subject_id
+            )
+        ).delete()
+        self.db.commit()
+        return deleted
+
+    def get_predictions(
+        self,
+        institution_id: int,
+        board: Board,
+        grade_id: int,
+        subject_id: int,
+        skip: int = 0,
+        limit: int = 100,
+        order_by: str = 'probability_score'
+    ) -> Tuple[List[TopicPrediction], int]:
+        query = self.db.query(TopicPrediction).filter(
+            and_(
+                TopicPrediction.institution_id == institution_id,
+                TopicPrediction.board == board,
+                TopicPrediction.grade_id == grade_id,
+                TopicPrediction.subject_id == subject_id
+            )
+        )
+
+        total = query.count()
+
+        if order_by == 'probability_score':
+            query = query.order_by(desc(TopicPrediction.probability_score))
+        elif order_by == 'prediction_rank':
+            query = query.order_by(TopicPrediction.prediction_rank)
+        elif order_by == 'frequency_count':
+            query = query.order_by(desc(TopicPrediction.frequency_count))
+        elif order_by == 'total_marks':
+            query = query.order_by(desc(TopicPrediction.total_marks))
+        elif order_by == 'years_since_last_appearance':
+            query = query.order_by(desc(TopicPrediction.years_since_last_appearance))
+
+        predictions = query.offset(skip).limit(limit).all()
+        return predictions, total
+
+    def get_top_predictions(
+        self,
+        institution_id: int,
+        board: Board,
+        grade_id: int,
+        subject_id: int,
+        top_n: int = 20
+    ) -> List[TopicPrediction]:
+        return self.db.query(TopicPrediction).filter(
+            and_(
+                TopicPrediction.institution_id == institution_id,
+                TopicPrediction.board == board,
+                TopicPrediction.grade_id == grade_id,
+                TopicPrediction.subject_id == subject_id
+            )
+        ).order_by(desc(TopicPrediction.probability_score)).limit(top_n).all()
+
+    def get_due_topics(
+        self,
+        institution_id: int,
+        board: Board,
+        grade_id: int,
+        subject_id: int
+    ) -> List[TopicPrediction]:
+        return self.db.query(TopicPrediction).filter(
+            and_(
+                TopicPrediction.institution_id == institution_id,
+                TopicPrediction.board == board,
+                TopicPrediction.grade_id == grade_id,
+                TopicPrediction.subject_id == subject_id,
+                TopicPrediction.is_due == True
+            )
+        ).order_by(desc(TopicPrediction.probability_score)).all()
+
+    def get_by_chapter(
+        self,
+        institution_id: int,
+        board: Board,
+        grade_id: int,
+        subject_id: int,
+        chapter_id: int
+    ) -> List[TopicPrediction]:
+        return self.db.query(TopicPrediction).filter(
+            and_(
+                TopicPrediction.institution_id == institution_id,
+                TopicPrediction.board == board,
+                TopicPrediction.grade_id == grade_id,
+                TopicPrediction.subject_id == subject_id,
+                TopicPrediction.chapter_id == chapter_id
+            )
+        ).order_by(desc(TopicPrediction.probability_score)).all()
+
+    def get_analysis_summary(
+        self,
+        institution_id: int,
+        board: Board,
+        grade_id: int,
+        subject_id: int
+    ) -> Dict[str, Any]:
+        query = self.db.query(TopicPrediction).filter(
+            and_(
+                TopicPrediction.institution_id == institution_id,
+                TopicPrediction.board == board,
+                TopicPrediction.grade_id == grade_id,
+                TopicPrediction.subject_id == subject_id
+            )
+        )
+
+        total_topics = query.count()
+        due_topics_count = query.filter(TopicPrediction.is_due == True).count()
+        
+        avg_probability = self.db.query(
+            func.avg(TopicPrediction.probability_score)
+        ).filter(
+            and_(
+                TopicPrediction.institution_id == institution_id,
+                TopicPrediction.board == board,
+                TopicPrediction.grade_id == grade_id,
+                TopicPrediction.subject_id == subject_id
+            )
+        ).scalar() or 0.0
+
+        latest_analysis = query.order_by(desc(TopicPrediction.analyzed_at)).first()
+
+        return {
+            "total_topics": total_topics,
+            "due_topics_count": due_topics_count,
+            "avg_probability_score": float(avg_probability),
+            "latest_analysis_date": latest_analysis.analyzed_at if latest_analysis else None,
+            "year_range": f"{latest_analysis.analysis_year_start}-{latest_analysis.analysis_year_end}" if latest_analysis else None
+        }

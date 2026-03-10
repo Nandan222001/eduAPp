@@ -170,3 +170,66 @@ class QuestionBank(Base):
         Index('idx_qb_verified', 'is_verified'),
         Index('idx_qb_created', 'created_at'),
     )
+
+
+class TopicPrediction(Base):
+    __tablename__ = "topic_predictions"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    institution_id = Column(Integer, ForeignKey('institutions.id', ondelete='CASCADE'), nullable=False, index=True)
+    
+    board = Column(Enum(Board), nullable=False, index=True)
+    grade_id = Column(Integer, ForeignKey('grades.id', ondelete='CASCADE'), nullable=False, index=True)
+    subject_id = Column(Integer, ForeignKey('subjects.id', ondelete='CASCADE'), nullable=False, index=True)
+    chapter_id = Column(Integer, ForeignKey('chapters.id', ondelete='SET NULL'), nullable=True, index=True)
+    topic_id = Column(Integer, ForeignKey('topics.id', ondelete='SET NULL'), nullable=True, index=True)
+    
+    topic_name = Column(String(200), nullable=False)
+    
+    frequency_count = Column(Integer, default=0, nullable=False)
+    appearance_years = Column(Text, nullable=True)
+    
+    total_marks = Column(Float, default=0.0, nullable=False)
+    avg_marks_per_appearance = Column(Float, default=0.0, nullable=False)
+    
+    years_since_last_appearance = Column(Integer, default=0, nullable=False)
+    last_appeared_year = Column(Integer, nullable=True)
+    
+    cyclical_pattern_score = Column(Float, default=0.0, nullable=False)
+    trend_score = Column(Float, default=0.0, nullable=False)
+    weightage_score = Column(Float, default=0.0, nullable=False)
+    
+    probability_score = Column(Float, default=0.0, nullable=False, index=True)
+    prediction_rank = Column(Integer, nullable=True, index=True)
+    
+    is_due = Column(Boolean, default=False, nullable=False, index=True)
+    confidence_level = Column(String(50), nullable=True)
+    
+    analysis_metadata = Column(Text, nullable=True)
+    
+    analysis_year_start = Column(Integer, nullable=True)
+    analysis_year_end = Column(Integer, nullable=True)
+    analyzed_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    
+    institution = relationship("Institution")
+    grade = relationship("Grade")
+    subject = relationship("Subject")
+    chapter = relationship("Chapter")
+    topic = relationship("Topic")
+    
+    __table_args__ = (
+        Index('idx_tp_institution', 'institution_id'),
+        Index('idx_tp_board', 'board'),
+        Index('idx_tp_grade', 'grade_id'),
+        Index('idx_tp_subject', 'subject_id'),
+        Index('idx_tp_chapter', 'chapter_id'),
+        Index('idx_tp_topic', 'topic_id'),
+        Index('idx_tp_board_grade_subject', 'board', 'grade_id', 'subject_id'),
+        Index('idx_tp_probability_score', 'probability_score'),
+        Index('idx_tp_prediction_rank', 'prediction_rank'),
+        Index('idx_tp_is_due', 'is_due'),
+        Index('idx_tp_analyzed_at', 'analyzed_at'),
+    )

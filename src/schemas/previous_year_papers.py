@@ -191,3 +191,71 @@ class SearchFilters(BaseModel):
 class OCRProcessRequest(BaseModel):
     paper_id: int
     ocr_text: str
+
+
+class TopicPredictionBase(BaseModel):
+    board: Board
+    grade_id: int
+    subject_id: int
+    chapter_id: Optional[int] = None
+    topic_id: Optional[int] = None
+    topic_name: str = Field(..., max_length=200)
+
+
+class TopicPredictionResponse(TopicPredictionBase):
+    model_config = ConfigDict(from_attributes=True)
+    
+    id: int
+    institution_id: int
+    frequency_count: int
+    appearance_years: Optional[str] = None
+    total_marks: float
+    avg_marks_per_appearance: float
+    years_since_last_appearance: int
+    last_appeared_year: Optional[int] = None
+    cyclical_pattern_score: float
+    trend_score: float
+    weightage_score: float
+    probability_score: float
+    prediction_rank: Optional[int] = None
+    is_due: bool
+    confidence_level: Optional[str] = None
+    analysis_metadata: Optional[str] = None
+    analysis_year_start: Optional[int] = None
+    analysis_year_end: Optional[int] = None
+    analyzed_at: datetime
+    created_at: datetime
+    updated_at: datetime
+
+
+class TopicPredictionRankingResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    
+    id: int
+    topic_name: str
+    chapter_id: Optional[int] = None
+    topic_id: Optional[int] = None
+    frequency_count: int
+    total_marks: float
+    years_since_last_appearance: int
+    last_appeared_year: Optional[int] = None
+    probability_score: float
+    prediction_rank: Optional[int] = None
+    is_due: bool
+    confidence_level: Optional[str] = None
+
+
+class AnalysisRequest(BaseModel):
+    board: Board
+    grade_id: int
+    subject_id: int
+    year_start: Optional[int] = Field(None, description="Start year for analysis (defaults to 10 years ago)")
+    year_end: Optional[int] = Field(None, description="End year for analysis (defaults to current year)")
+
+
+class AnalysisResponse(BaseModel):
+    total_topics_analyzed: int
+    year_range: str
+    predictions_generated: int
+    cache_key: Optional[str] = None
+    analyzed_at: datetime
