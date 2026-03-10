@@ -14,7 +14,8 @@ from src.api.v1 import (
     profile,
     attendance,
     assignments,
-    submissions
+    submissions,
+    exams
 )
 
 api_router = APIRouter()
@@ -34,3 +35,4 @@ api_router.include_router(profile.router, prefix="/profile", tags=["profile"])
 api_router.include_router(attendance.router, prefix="/attendance", tags=["attendance"])
 api_router.include_router(assignments.router, prefix="/assignments", tags=["assignments"])
 api_router.include_router(submissions.router, prefix="/submissions", tags=["submissions"])
+api_router.include_router(exams.router, prefix="/exams", tags=["exams"])
