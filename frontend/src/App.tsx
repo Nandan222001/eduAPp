@@ -8,6 +8,11 @@ import UnauthorizedPage from './pages/UnauthorizedPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
 import Dashboard from './pages/Dashboard';
 import SuperAdminDashboard from './pages/SuperAdminDashboard';
+import InstitutionsList from './pages/InstitutionsList';
+import InstitutionDetail from './pages/InstitutionDetail';
+import InstitutionCreate from './pages/InstitutionCreate';
+import InstitutionSubscription from './pages/InstitutionSubscription';
+import InstitutionAnalytics from './pages/InstitutionAnalytics';
 
 import {
   LoginPage,
@@ -85,6 +90,12 @@ function App() {
           <Route element={<ProtectedRoute requireSuperAdmin={true} />}>
             <Route path="/super-admin" element={<AdminLayout />}>
               <Route index element={<SuperAdminDashboard />} />
+              <Route path="institutions" element={<InstitutionsList />} />
+              <Route path="institutions/create" element={<InstitutionCreate />} />
+              <Route path="institutions/:id" element={<InstitutionDetail />} />
+              <Route path="institutions/:id/edit" element={<InstitutionDetail />} />
+              <Route path="institutions/:id/subscription" element={<InstitutionSubscription />} />
+              <Route path="institutions/:id/analytics" element={<InstitutionAnalytics />} />
             </Route>
           </Route>
 

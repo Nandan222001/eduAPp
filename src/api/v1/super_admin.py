@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, and_, or_, desc
 from datetime import datetime, timedelta
 from decimal import Decimal
+import math
 
 from src.database import get_db
 from src.dependencies.auth import get_current_user, require_super_admin
@@ -12,6 +13,7 @@ from src.models.institution import Institution
 from src.models.subscription import Subscription, Payment, Invoice, UsageRecord
 from src.models.student import Student
 from src.models.teacher import Teacher
+from src.models.role import Role
 from src.schemas.super_admin import (
     SuperAdminDashboardResponse,
     InstitutionMetricsSummary,
@@ -21,7 +23,16 @@ from src.schemas.super_admin import (
     RecentActivity,
     InstitutionPerformanceComparison,
     QuickActionStats,
+    InstitutionListResponse,
+    InstitutionListItem,
+    InstitutionCreate,
+    InstitutionUpdate,
+    SubscriptionUpdate,
+    BillingHistoryItem,
+    UsageMetric,
+    InstitutionAnalytics,
 )
+from src.utils.security import hash_password
 
 router = APIRouter(prefix="/super-admin", tags=["Super Admin"])
 
@@ -471,3 +482,532 @@ async def get_user_growth_statistics(
         ],
         "total_new_users": sum(count for _, count in daily_registrations),
     }
+
+
+@router.get("/institutions", response_model=InstitutionListResponse)
+async def list_institutions(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    search: Optional[str] = Query(None),
+    status: Optional[str] = Query(None),
+    plan: Optional[str] = Query(None),
+    sort_by: str = Query("created_at", regex="^(name|created_at|total_users|revenue)$"),
+    sort_order: str = Query("desc", regex="^(asc|desc)$"),
+    current_user: User = Depends(require_super_admin),
+    db: Session = Depends(get_db),
+):
+    """Get paginated list of institutions with filtering and sorting."""
+    query = db.query(Institution)
+    
+    if search:
+        query = query.filter(
+            or_(
+                Institution.name.ilike(f"%{search}%"),
+                Institution.slug.ilike(f"%{search}%"),
+                Institution.domain.ilike(f"%{search}%")
+            )
+        )
+    
+    if status:
+        if status == "active":
+            query = query.filter(Institution.is_active == True)
+        elif status == "inactive":
+            query = query.filter(Institution.is_active == False)
+    
+    total = query.count()
+    
+    if sort_order == "desc":
+        order_col = desc(getattr(Institution, sort_by))
+    else:
+        order_col = getattr(Institution, sort_by)
+    
+    institutions = query.order_by(order_col).offset((page - 1) * page_size).limit(page_size).all()
+    
+    items = []
+    for inst in institutions:
+        subscription = db.query(Subscription).filter(
+            Subscription.institution_id == inst.id
+        ).order_by(desc(Subscription.created_at)).first()
+        
+        if plan and subscription and subscription.plan_name != plan:
+            continue
+        
+        total_users = db.query(func.count(User.id)).filter(
+            User.institution_id == inst.id
+        ).scalar() or 0
+        
+        active_users = db.query(func.count(User.id)).filter(
+            and_(
+                User.institution_id == inst.id,
+                User.is_active == True
+            )
+        ).scalar() or 0
+        
+        total_revenue = db.query(func.sum(Payment.amount)).filter(
+            and_(
+                Payment.institution_id == inst.id,
+                Payment.status == 'paid'
+            )
+        ).scalar() or Decimal(0)
+        
+        items.append(InstitutionListItem(
+            id=inst.id,
+            name=inst.name,
+            slug=inst.slug,
+            domain=inst.domain,
+            is_active=inst.is_active,
+            max_users=inst.max_users,
+            created_at=inst.created_at,
+            subscription_status=subscription.status if subscription else None,
+            subscription_plan=subscription.plan_name if subscription else None,
+            total_users=total_users,
+            active_users=active_users,
+            total_revenue=float(total_revenue),
+        ))
+    
+    total_pages = math.ceil(total / page_size) if total > 0 else 0
+    
+    return InstitutionListResponse(
+        items=items,
+        total=total,
+        page=page,
+        page_size=page_size,
+        total_pages=total_pages,
+    )
+
+
+@router.post("/institutions", status_code=status.HTTP_201_CREATED)
+async def create_institution(
+    institution_data: InstitutionCreate,
+    current_user: User = Depends(require_super_admin),
+    db: Session = Depends(get_db),
+):
+    """Create a new institution with admin user and optional subscription."""
+    existing = db.query(Institution).filter(
+        or_(
+            Institution.slug == institution_data.slug,
+            Institution.domain == institution_data.domain
+        )
+    ).first()
+    
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Institution with this slug or domain already exists"
+        )
+    
+    existing_user = db.query(User).filter(User.email == institution_data.admin_user.email).first()
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User with this email already exists"
+        )
+    
+    institution = Institution(
+        name=institution_data.name,
+        slug=institution_data.slug,
+        domain=institution_data.domain,
+        description=institution_data.description,
+        max_users=institution_data.max_users,
+        is_active=True,
+    )
+    db.add(institution)
+    db.flush()
+    
+    admin_role = db.query(Role).filter(Role.name == "institution_admin").first()
+    if not admin_role:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Admin role not found"
+        )
+    
+    admin_user = User(
+        email=institution_data.admin_user.email,
+        first_name=institution_data.admin_user.first_name,
+        last_name=institution_data.admin_user.last_name,
+        phone=institution_data.admin_user.phone,
+        password_hash=hash_password(institution_data.admin_user.password),
+        institution_id=institution.id,
+        role_id=admin_role.id,
+        is_active=True,
+        email_verified=True,
+    )
+    db.add(admin_user)
+    
+    if institution_data.subscription:
+        sub_data = institution_data.subscription
+        start_date = datetime.utcnow()
+        trial_end_date = None
+        
+        if sub_data.trial_days and sub_data.trial_days > 0:
+            trial_end_date = start_date + timedelta(days=sub_data.trial_days)
+            subscription_status = "trial"
+        else:
+            subscription_status = "active"
+        
+        if sub_data.billing_cycle == "monthly":
+            end_date = start_date + timedelta(days=30)
+        elif sub_data.billing_cycle == "quarterly":
+            end_date = start_date + timedelta(days=90)
+        elif sub_data.billing_cycle == "yearly":
+            end_date = start_date + timedelta(days=365)
+        else:
+            end_date = start_date + timedelta(days=30)
+        
+        subscription = Subscription(
+            institution_id=institution.id,
+            plan_name=sub_data.plan_name,
+            status=subscription_status,
+            billing_cycle=sub_data.billing_cycle,
+            price=Decimal(str(sub_data.price)),
+            max_users=sub_data.max_users,
+            max_storage_gb=sub_data.max_storage_gb,
+            features=sub_data.features,
+            start_date=start_date,
+            end_date=end_date,
+            trial_end_date=trial_end_date,
+            next_billing_date=trial_end_date if trial_end_date else end_date,
+            auto_renew=True,
+        )
+        db.add(subscription)
+    
+    db.commit()
+    db.refresh(institution)
+    
+    return {
+        "id": institution.id,
+        "name": institution.name,
+        "slug": institution.slug,
+        "message": "Institution created successfully"
+    }
+
+
+@router.put("/institutions/{institution_id}")
+async def update_institution(
+    institution_id: int,
+    institution_data: InstitutionUpdate,
+    current_user: User = Depends(require_super_admin),
+    db: Session = Depends(get_db),
+):
+    """Update institution details."""
+    institution = db.query(Institution).filter(Institution.id == institution_id).first()
+    
+    if not institution:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Institution not found"
+        )
+    
+    if institution_data.slug and institution_data.slug != institution.slug:
+        existing = db.query(Institution).filter(
+            and_(
+                Institution.slug == institution_data.slug,
+                Institution.id != institution_id
+            )
+        ).first()
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Institution with this slug already exists"
+            )
+    
+    if institution_data.domain and institution_data.domain != institution.domain:
+        existing = db.query(Institution).filter(
+            and_(
+                Institution.domain == institution_data.domain,
+                Institution.id != institution_id
+            )
+        ).first()
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Institution with this domain already exists"
+            )
+    
+    update_data = institution_data.dict(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(institution, key, value)
+    
+    db.commit()
+    db.refresh(institution)
+    
+    return {
+        "id": institution.id,
+        "name": institution.name,
+        "message": "Institution updated successfully"
+    }
+
+
+@router.put("/institutions/{institution_id}/subscription")
+async def update_institution_subscription(
+    institution_id: int,
+    subscription_data: SubscriptionUpdate,
+    current_user: User = Depends(require_super_admin),
+    db: Session = Depends(get_db),
+):
+    """Update or upgrade/downgrade institution subscription."""
+    institution = db.query(Institution).filter(Institution.id == institution_id).first()
+    
+    if not institution:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Institution not found"
+        )
+    
+    subscription = db.query(Subscription).filter(
+        Subscription.institution_id == institution_id
+    ).order_by(desc(Subscription.created_at)).first()
+    
+    if not subscription:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No subscription found for this institution"
+        )
+    
+    update_data = subscription_data.dict(exclude_unset=True)
+    for key, value in update_data.items():
+        if key == "price" and value is not None:
+            setattr(subscription, key, Decimal(str(value)))
+        else:
+            setattr(subscription, key, value)
+    
+    db.commit()
+    db.refresh(subscription)
+    
+    return {
+        "id": subscription.id,
+        "plan_name": subscription.plan_name,
+        "status": subscription.status,
+        "message": "Subscription updated successfully"
+    }
+
+
+@router.get("/institutions/{institution_id}/billing-history")
+async def get_billing_history(
+    institution_id: int,
+    current_user: User = Depends(require_super_admin),
+    db: Session = Depends(get_db),
+):
+    """Get billing history for an institution."""
+    institution = db.query(Institution).filter(Institution.id == institution_id).first()
+    
+    if not institution:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Institution not found"
+        )
+    
+    payments = db.query(Payment).filter(
+        Payment.institution_id == institution_id
+    ).order_by(desc(Payment.created_at)).all()
+    
+    invoices = db.query(Invoice).filter(
+        Invoice.institution_id == institution_id
+    ).order_by(desc(Invoice.created_at)).all()
+    
+    billing_items = []
+    
+    for payment in payments:
+        billing_items.append(BillingHistoryItem(
+            id=payment.id,
+            payment_id=payment.id,
+            amount=float(payment.amount),
+            status=payment.status,
+            payment_method=payment.payment_method,
+            paid_at=payment.paid_at,
+            created_at=payment.created_at,
+        ))
+    
+    for invoice in invoices:
+        billing_items.append(BillingHistoryItem(
+            id=invoice.id,
+            invoice_number=invoice.invoice_number,
+            amount=float(invoice.total_amount),
+            status=invoice.status,
+            paid_at=invoice.paid_at,
+            created_at=invoice.created_at,
+        ))
+    
+    billing_items.sort(key=lambda x: x.created_at, reverse=True)
+    
+    return {"billing_history": billing_items}
+
+
+@router.get("/institutions/{institution_id}/usage")
+async def get_institution_usage(
+    institution_id: int,
+    current_user: User = Depends(require_super_admin),
+    db: Session = Depends(get_db),
+):
+    """Get current usage metrics for an institution."""
+    institution = db.query(Institution).filter(Institution.id == institution_id).first()
+    
+    if not institution:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Institution not found"
+        )
+    
+    subscription = db.query(Subscription).filter(
+        Subscription.institution_id == institution_id
+    ).order_by(desc(Subscription.created_at)).first()
+    
+    today = datetime.utcnow()
+    period_start = today.replace(day=1)
+    period_end = (period_start + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+    
+    total_users = db.query(func.count(User.id)).filter(
+        User.institution_id == institution_id
+    ).scalar() or 0
+    
+    max_users = subscription.max_users if subscription and subscription.max_users else None
+    
+    usage_metrics = []
+    
+    usage_metrics.append(UsageMetric(
+        metric_name="Active Users",
+        current_value=float(total_users),
+        limit=float(max_users) if max_users else None,
+        percentage_used=(total_users / max_users * 100) if max_users else None,
+        period_start=period_start,
+        period_end=period_end,
+    ))
+    
+    recent_usage = db.query(UsageRecord).filter(
+        UsageRecord.institution_id == institution_id
+    ).order_by(desc(UsageRecord.recorded_at)).limit(20).all()
+    
+    for record in recent_usage:
+        usage_metrics.append(UsageMetric(
+            metric_name=record.metric_name,
+            current_value=float(record.metric_value),
+            period_start=record.period_start,
+            period_end=record.period_end,
+        ))
+    
+    return {"usage_metrics": usage_metrics}
+
+
+@router.get("/institutions/{institution_id}/analytics")
+async def get_institution_analytics(
+    institution_id: int,
+    days: int = Query(30, ge=1, le=365),
+    current_user: User = Depends(require_super_admin),
+    db: Session = Depends(get_db),
+):
+    """Get detailed analytics for an institution."""
+    institution = db.query(Institution).filter(Institution.id == institution_id).first()
+    
+    if not institution:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Institution not found"
+        )
+    
+    today = datetime.utcnow()
+    start_date = today - timedelta(days=days)
+    
+    total_users = db.query(func.count(User.id)).filter(
+        User.institution_id == institution_id
+    ).scalar() or 0
+    
+    active_users = db.query(func.count(User.id)).filter(
+        and_(
+            User.institution_id == institution_id,
+            User.is_active == True
+        )
+    ).scalar() or 0
+    
+    new_users = db.query(func.count(User.id)).filter(
+        and_(
+            User.institution_id == institution_id,
+            User.created_at >= start_date
+        )
+    ).scalar() or 0
+    
+    students_count = db.query(func.count(Student.id)).filter(
+        Student.institution_id == institution_id
+    ).scalar() or 0
+    
+    teachers_count = db.query(func.count(Teacher.id)).filter(
+        Teacher.institution_id == institution_id
+    ).scalar() or 0
+    
+    daily_active = db.query(func.count(func.distinct(User.id))).filter(
+        and_(
+            User.institution_id == institution_id,
+            User.last_login >= today - timedelta(days=1)
+        )
+    ).scalar() or 0
+    
+    weekly_active = db.query(func.count(func.distinct(User.id))).filter(
+        and_(
+            User.institution_id == institution_id,
+            User.last_login >= today - timedelta(days=7)
+        )
+    ).scalar() or 0
+    
+    monthly_active = db.query(func.count(func.distinct(User.id))).filter(
+        and_(
+            User.institution_id == institution_id,
+            User.last_login >= today - timedelta(days=30)
+        )
+    ).scalar() or 0
+    
+    total_revenue = db.query(func.sum(Payment.amount)).filter(
+        and_(
+            Payment.institution_id == institution_id,
+            Payment.status == 'paid'
+        )
+    ).scalar() or Decimal(0)
+    
+    recent_revenue = db.query(func.sum(Payment.amount)).filter(
+        and_(
+            Payment.institution_id == institution_id,
+            Payment.status == 'paid',
+            Payment.paid_at >= start_date
+        )
+    ).scalar() or Decimal(0)
+    
+    usage_trends = []
+    daily_users = db.query(
+        func.date(User.last_login).label('date'),
+        func.count(func.distinct(User.id)).label('count')
+    ).filter(
+        and_(
+            User.institution_id == institution_id,
+            User.last_login >= start_date
+        )
+    ).group_by(func.date(User.last_login)).order_by(func.date(User.last_login)).all()
+    
+    for date, count in daily_users:
+        usage_trends.append({
+            "date": str(date),
+            "active_users": count
+        })
+    
+    analytics = InstitutionAnalytics(
+        institution_id=institution.id,
+        institution_name=institution.name,
+        user_metrics={
+            "total_users": total_users,
+            "active_users": active_users,
+            "new_users": new_users,
+            "students": students_count,
+            "teachers": teachers_count,
+        },
+        engagement_metrics={
+            "daily_active_users": daily_active,
+            "weekly_active_users": weekly_active,
+            "monthly_active_users": monthly_active,
+            "engagement_rate": (active_users / total_users * 100) if total_users > 0 else 0,
+        },
+        usage_trends=usage_trends,
+        revenue_metrics={
+            "total_revenue": float(total_revenue),
+            "recent_revenue": float(recent_revenue),
+            "currency": "INR",
+        }
+    )
+    
+    return analytics

@@ -1,381 +1,307 @@
-# Institution Management Backend - Implementation Summary
+# Institution Management Interface - Implementation Guide
 
 ## Overview
 
-This document summarizes the complete implementation of the institution management backend system for educational institutions. The system provides comprehensive CRUD operations, academic structure management, bulk import capabilities, and user profile management.
+This document describes the complete institution management interface for Super Admin, including institution list view, detail pages, creation wizard, subscription management, and usage analytics.
 
-## Implementation Details
+## Backend Implementation
 
-### 1. Database Models
+### 1. API Endpoints (src/api/v1/super_admin.py)
 
-Created 9 new database models with full SQLAlchemy ORM definitions:
+#### Institution Management
 
-#### Academic Models (`src/models/academic.py`)
-- **AcademicYear**: Manages academic year periods with start/end dates and current year tracking
-- **Grade**: Represents grade levels (classes) with display ordering
-- **Section**: Represents sections/divisions within grades with capacity limits
-- **Subject**: Manages subjects with unique codes and descriptions
-- **GradeSubject**: Many-to-many relationship linking subjects to grades with compulsory flag
+- **GET /api/v1/super-admin/institutions**
+  - Paginated list of institutions with filtering and sorting
+  - Query parameters: page, page_size, search, status, plan, sort_by, sort_order
+  - Returns: InstitutionListResponse with items, pagination metadata
 
-#### Teacher Models (`src/models/teacher.py`)
-- **Teacher**: Comprehensive teacher profiles with qualifications, specializations, and employment details
-- **TeacherSubject**: Many-to-many relationship linking teachers to subjects with primary subject designation
+- **POST /api/v1/super-admin/institutions**
+  - Create new institution with admin user and optional subscription
+  - Request body: InstitutionCreate (name, slug, domain, admin_user, subscription)
+  - Returns: Institution ID and success message
 
-#### Student Models (`src/models/student.py`)
-- **Student**: Detailed student profiles with admission info, parent details, and section assignments
+- **PUT /api/v1/super-admin/institutions/{institution_id}**
+  - Update institution details
+  - Request body: InstitutionUpdate (name, slug, domain, description, is_active, max_users)
+  - Returns: Updated institution data
 
-### 2. Database Relationships
+- **GET /api/v1/super-admin/institutions/{institution_id}/details**
+  - Get detailed information about institution
+  - Returns: Institution data, subscription, stats, usage records
 
-Updated existing models to support new relationships:
+#### Subscription Management
 
-#### Institution Model
-- Added relationships to all new entities (academic_years, grades, sections, subjects, teachers, students)
+- **PUT /api/v1/super-admin/institutions/{institution_id}/subscription**
+  - Update or upgrade/downgrade subscription
+  - Request body: SubscriptionUpdate (plan_name, billing_cycle, price, max_users, etc.)
+  - Returns: Updated subscription data
 
-#### User Model
-- Added optional relationships to Teacher and Student profiles
-- Enables linking user accounts to teacher/student profiles
+- **GET /api/v1/super-admin/institutions/{institution_id}/billing-history**
+  - Get billing history (payments and invoices)
+  - Returns: List of BillingHistoryItem objects
 
-### 3. Pydantic Schemas
+#### Analytics & Usage
 
-Created comprehensive validation schemas for all entities:
+- **GET /api/v1/super-admin/institutions/{institution_id}/usage**
+  - Get current usage metrics
+  - Returns: List of UsageMetric objects with current values and limits
 
-#### Academic Schemas (`src/schemas/academic.py`)
-- AcademicYear: Create, Update, Response schemas
-- Grade: Create, Update, Response schemas with nested sections/subjects
-- Section: Create, Update, Response schemas
-- Subject: Create, Update, Response schemas
-- GradeSubject: Create, Response schemas
+- **GET /api/v1/super-admin/institutions/{institution_id}/analytics**
+  - Get detailed analytics for institution
+  - Query parameters: days (default: 30)
+  - Returns: InstitutionAnalytics with user metrics, engagement, usage trends, revenue
 
-#### Teacher Schemas (`src/schemas/teacher.py`)
-- Teacher: Create, Update, Response schemas
-- TeacherSubject: Create, Response schemas
-- TeacherBulkImportRow: CSV import validation
-- BulkImportResult: Import result reporting
+### 2. Schemas (src/schemas/super_admin.py)
 
-#### Student Schemas (`src/schemas/student.py`)
-- Student: Create, Update, Response schemas
-- StudentBulkImportRow: CSV import validation
-- BulkImportResult: Import result reporting
+New schemas added:
 
-### 4. Business Logic Services
+```python
+# Institution Management
+- InstitutionListItem: Single institution in list view
+- InstitutionListResponse: Paginated list response
+- AdminUserCreate: Admin user creation data
+- SubscriptionPlanCreate: Subscription plan configuration
+- InstitutionCreate: Complete institution creation data
+- InstitutionUpdate: Institution update fields
 
-Implemented 6 comprehensive service classes:
+# Subscription & Billing
+- SubscriptionUpdate: Subscription modification data
+- BillingHistoryItem: Single billing record
+- UsageMetric: Usage tracking metric
 
-#### InstitutionService (`src/services/institution_service.py`)
-- CRUD operations for institutions
-- Search and filtering with pagination
-- Institution statistics aggregation
-- Duplicate validation
-
-#### AcademicYearService (`src/services/academic_service.py`)
-- CRUD operations for academic years
-- Automatic current year management
-- Date validation
-- Filtering and pagination
-
-#### GradeService (`src/services/academic_service.py`)
-- CRUD operations for grades
-- Display order management
-- Academic year linkage
-- Filtering by academic year
-
-#### SectionService (`src/services/academic_service.py`)
-- CRUD operations for sections
-- Capacity management
-- Grade linkage
-- Filtering by grade
-
-#### SubjectService (`src/services/academic_service.py`)
-- CRUD operations for subjects
-- Subject code validation
-- Grade assignment management
-- Search and filtering
-
-#### TeacherService (`src/services/teacher_service.py`)
-- CRUD operations for teachers
-- Subject assignment management
-- CSV bulk import with validation
-- Search across multiple fields
-- Email and employee ID uniqueness validation
-
-#### StudentService (`src/services/student_service.py`)
-- CRUD operations for students
-- Section assignment
-- CSV bulk import with validation
-- Automatic section lookup by grade and section name
-- Search across multiple fields
-- Email and admission number uniqueness validation
-
-#### UserProfileService (`src/services/user_profile_service.py`)
-- Unified user profile retrieval
-- Includes linked teacher/student profiles
-- Profile updates with validation
-- Username and email uniqueness checking
-
-### 5. API Endpoints
-
-Created 8 new API router modules with 60+ endpoints:
-
-#### Institution Endpoints (`src/api/v1/institutions.py`)
-- POST / - Create institution
-- GET / - List institutions with search and filtering
-- GET /{id} - Get institution details
-- GET /{id}/stats - Get institution statistics
-- PUT /{id} - Update institution
-- DELETE /{id} - Delete institution
-
-#### Academic Year Endpoints (`src/api/v1/academic_years.py`)
-- POST / - Create academic year
-- GET / - List academic years
-- GET /{id} - Get academic year
-- PUT /{id} - Update academic year
-- DELETE /{id} - Delete academic year
-
-#### Grade Endpoints (`src/api/v1/grades.py`)
-- POST / - Create grade
-- GET / - List grades
-- GET /{id} - Get grade
-- PUT /{id} - Update grade
-- DELETE /{id} - Delete grade
-
-#### Section Endpoints (`src/api/v1/sections.py`)
-- POST / - Create section
-- GET / - List sections
-- GET /{id} - Get section
-- PUT /{id} - Update section
-- DELETE /{id} - Delete section
-
-#### Subject Endpoints (`src/api/v1/subjects.py`)
-- POST / - Create subject
-- GET / - List subjects
-- GET /{id} - Get subject
-- PUT /{id} - Update subject
-- DELETE /{id} - Delete subject
-- POST /grade-subjects - Assign subject to grade
-- DELETE /grade-subjects/{grade_id}/{subject_id} - Remove subject from grade
-- GET /grades/{grade_id}/subjects - Get all subjects for a grade
-
-#### Teacher Endpoints (`src/api/v1/teachers.py`)
-- POST / - Create teacher
-- GET / - List teachers
-- GET /{id} - Get teacher
-- PUT /{id} - Update teacher
-- DELETE /{id} - Delete teacher
-- POST /bulk-import - Bulk import from CSV
-- POST /teacher-subjects - Assign subject to teacher
-- DELETE /teacher-subjects/{teacher_id}/{subject_id} - Remove subject from teacher
-- GET /{id}/subjects - Get teacher's subjects
-
-#### Student Endpoints (`src/api/v1/students.py`)
-- POST / - Create student
-- GET / - List students
-- GET /{id} - Get student
-- PUT /{id} - Update student
-- DELETE /{id} - Delete student
-- POST /bulk-import - Bulk import from CSV
-
-#### Profile Endpoints (`src/api/v1/profile.py`)
-- GET /me - Get current user's profile
-- PUT /me - Update current user's profile
-- GET /{user_id} - Get specific user's profile
-- PUT /{user_id} - Update specific user's profile
-
-### 6. Database Migration
-
-Created comprehensive migration file (`alembic/versions/005_create_institution_management_tables.py`):
-- Creates 9 new tables with proper relationships
-- Adds all necessary indexes for performance
-- Implements unique constraints for data integrity
-- Includes complete downgrade path
-
-### 7. Key Features Implemented
-
-#### CRUD Operations
-✅ Complete Create, Read, Update, Delete for all entities
-✅ Proper validation and error handling
-✅ Cascade deletion where appropriate
-
-#### Filtering & Pagination
-✅ Offset-based pagination with skip/limit
-✅ Search across relevant fields
-✅ Status filtering (is_active)
-✅ Relationship filtering (grade_id, section_id, etc.)
-
-#### Search Capabilities
-✅ Full-text search on names, emails, codes
-✅ Case-insensitive search
-✅ Multi-field search support
-
-#### Bulk Import
-✅ CSV file upload for teachers
-✅ CSV file upload for students
-✅ Row-by-row validation
-✅ Detailed error reporting
-✅ Partial success handling
-✅ Automatic section lookup for students
-
-#### Authorization & Security
-✅ Institution-based data isolation
-✅ Role-based access control
-✅ Superuser privileges
-✅ Resource ownership validation
-✅ JWT token authentication
-
-#### Data Validation
-✅ Email format validation
-✅ Date format validation
-✅ Unique constraint enforcement
-✅ Foreign key validation
-✅ Required field validation
-
-#### Statistics & Reporting
-✅ Institution-wide statistics
-✅ Count aggregations
-✅ Active vs. total counts
-
-### 8. Documentation
-
-Created comprehensive documentation:
-
-#### API Documentation (`docs/institution_management_api.md`)
-- Complete endpoint reference
-- Request/response examples
-- Query parameter descriptions
-- Error response formats
-- Best practices
-
-#### Bulk Import Templates (`docs/bulk_import_templates.md`)
-- CSV format specifications
-- Required and optional columns
-- Example CSV files
-- Validation rules
-- Error handling guide
-
-#### Implementation Guide (`docs/INSTITUTION_MANAGEMENT_README.md`)
-- Feature overview
-- Database schema description
-- Setup instructions
-- Usage examples
-- Troubleshooting guide
-
-## File Structure
-
-```
-src/
-├── models/
-│   ├── academic.py          # Academic structure models
-│   ├── teacher.py           # Teacher models
-│   ├── student.py           # Student models
-│   ├── institution.py       # Updated with new relationships
-│   ├── user.py              # Updated with profile relationships
-│   └── __init__.py          # Updated exports
-├── schemas/
-│   ├── academic.py          # Academic schemas
-│   ├── teacher.py           # Teacher schemas
-│   ├── student.py           # Student schemas
-│   └── __init__.py          # Updated exports
-├── services/
-│   ├── institution_service.py      # Institution business logic
-│   ├── academic_service.py         # Academic structure logic
-│   ├── teacher_service.py          # Teacher management logic
-│   ├── student_service.py          # Student management logic
-│   └── user_profile_service.py     # User profile logic
-└── api/v1/
-    ├── institutions.py      # Institution endpoints
-    ├── academic_years.py    # Academic year endpoints
-    ├── grades.py            # Grade endpoints
-    ├── sections.py          # Section endpoints
-    ├── subjects.py          # Subject endpoints
-    ├── teachers.py          # Teacher endpoints
-    ├── students.py          # Student endpoints
-    ├── profile.py           # Profile endpoints
-    └── __init__.py          # Updated router registration
-
-alembic/versions/
-└── 005_create_institution_management_tables.py
-
-docs/
-├── institution_management_api.md
-├── bulk_import_templates.md
-└── INSTITUTION_MANAGEMENT_README.md
+# Analytics
+- InstitutionAnalytics: Complete analytics data structure
 ```
 
-## Technical Highlights
+## Frontend Implementation
 
-### Database Design
-- Proper foreign key relationships with cascade rules
-- Composite unique constraints for data integrity
-- Strategic indexing for query performance
-- Normalized schema design
+### 1. Pages
 
-### Code Quality
-- Type hints throughout
-- Pydantic validation
-- DRY principles
-- Consistent naming conventions
-- Comprehensive error handling
+#### InstitutionsList.tsx
+- Data grid with search, filter, and sort functionality
+- Filter by status (active/inactive) and plan (Basic/Pro/Enterprise)
+- Sort by name, created_at, total_users, revenue
+- Pagination support (20 items per page)
+- Quick actions: View details, Edit institution
+- Status chips with color coding
 
-### API Design
-- RESTful conventions
-- Consistent response formats
-- Proper HTTP status codes
-- Pagination metadata
-- Search and filter support
+#### InstitutionDetail.tsx
+- Three-tab layout:
+  1. Profile Information: Basic details, timestamps
+  2. Subscription: Current plan, billing info
+  3. Usage & Analytics: Link to detailed analytics
+- Metric cards: Total users, students, teachers, revenue
+- Edit dialog for updating institution details
+- Navigation to subscription management and analytics
 
-### Security
-- Institution-based multi-tenancy
-- Authorization checks on all endpoints
-- Input validation
-- SQL injection prevention (ORM)
-- XSS prevention (Pydantic)
+#### InstitutionCreate.tsx
+- Multi-step wizard (3 steps):
+  1. Basic Information: Name, slug, domain, description, max users
+  2. Admin User: Create admin account (email, name, password)
+  3. Subscription Plan: Optional subscription setup
+- Auto-slug generation from institution name
+- Form validation at each step
+- Password visibility toggle
 
-## Testing Recommendations
+#### InstitutionSubscription.tsx
+- Current subscription details display
+- Subscription metric cards (plan, billing cycle, period)
+- Update subscription dialog
+- Billing history table with payments and invoices
+- Status indicators for payment status
 
-To validate the implementation:
+#### InstitutionAnalytics.tsx
+- Time range selector (7, 30, 90, 180, 365 days)
+- User metrics cards (total, active, new users, revenue)
+- Line chart: User activity trend over time
+- Bar chart: User distribution (students, teachers, etc.)
+- Engagement metrics: DAU, WAU, MAU, engagement rate
+- Revenue summary with total and recent revenue
 
-1. **Run migrations**: `alembic upgrade head`
-2. **Start server**: `uvicorn src.main:app --reload`
-3. **Access docs**: `http://localhost:8000/docs`
-4. **Test flow**:
-   - Create institution
-   - Create academic year
-   - Create grades
-   - Create sections
-   - Create subjects
-   - Assign subjects to grades
-   - Import teachers via CSV
-   - Import students via CSV
-   - Test search and filtering
-   - Verify authorization
+### 2. API Client (frontend/src/api/superAdmin.ts)
 
-## Performance Optimizations
+Added methods:
+```typescript
+- listInstitutions(params): Get paginated institution list
+- createInstitution(data): Create new institution
+- updateInstitution(id, data): Update institution
+- updateSubscription(id, data): Update subscription
+- getBillingHistory(id): Get billing history
+- getUsageMetrics(id): Get usage metrics
+- getInstitutionAnalytics(id, days): Get analytics data
+```
 
-- Database indexes on foreign keys and search fields
-- Eager loading with joinedload for related data
-- Pagination to limit result sets
-- Query filtering at database level
-- Optimized relationship loading
+### 3. Routing (frontend/src/App.tsx)
 
-## Scalability Considerations
+Added routes under `/super-admin`:
+```
+/super-admin/institutions - List view
+/super-admin/institutions/create - Creation wizard
+/super-admin/institutions/:id - Detail page
+/super-admin/institutions/:id/edit - Edit page (same as detail)
+/super-admin/institutions/:id/subscription - Subscription management
+/super-admin/institutions/:id/analytics - Analytics dashboard
+```
 
-The implementation supports:
-- Multiple institutions (multi-tenant)
-- Large datasets with pagination
-- Bulk operations via CSV import
-- Efficient queries with proper indexing
-- Future caching integration points
+### 4. Dependencies
 
-## Conclusion
+Added to package.json:
+```json
+"chart.js": "^4.4.1",
+"react-chartjs-2": "^5.2.0"
+```
 
-This implementation provides a complete, production-ready institution management backend with:
-- ✅ 9 new database models
-- ✅ 60+ API endpoints
-- ✅ 6 service classes
-- ✅ Comprehensive validation
-- ✅ Bulk import capabilities
-- ✅ Search and filtering
-- ✅ Authorization and security
-- ✅ Complete documentation
-- ✅ Database migrations
+## Features
 
-All code is ready for deployment and follows FastAPI and SQLAlchemy best practices.
+### Institution List View
+- Search by name, slug, or domain
+- Filter by status (active/inactive)
+- Filter by subscription plan
+- Sort by multiple fields (name, created date, users, revenue)
+- Pagination with configurable page size
+- Color-coded status chips
+- Quick access to view/edit
+
+### Institution Creation
+- Step-by-step wizard interface
+- Automatic slug generation
+- Admin user creation with password
+- Optional subscription setup with trial
+- Form validation and error handling
+- Success navigation to detail page
+
+### Institution Detail
+- Comprehensive profile information
+- Real-time metrics display
+- Subscription status and details
+- Edit capability with dialog interface
+- Tab-based organization
+- Links to subscription and analytics
+
+### Subscription Management
+- View current subscription details
+- Update plan, billing cycle, pricing
+- Upgrade/downgrade capabilities
+- Complete billing history
+- Payment and invoice tracking
+- Status indicators
+
+### Analytics Dashboard
+- Flexible time range selection
+- Interactive charts (Chart.js)
+- User activity trends
+- Engagement metrics (DAU/WAU/MAU)
+- User distribution visualization
+- Revenue tracking
+- Exportable data visualization
+
+## Security
+
+- All endpoints protected with `require_super_admin` dependency
+- Input validation using Pydantic schemas
+- Unique constraint checks (slug, domain, email)
+- Password hashing for admin user creation
+- RBAC enforcement on all routes
+
+## Data Flow
+
+1. **List Institutions**: Query DB → Filter/Sort → Aggregate stats → Return paginated list
+2. **Create Institution**: Validate → Create Institution → Create Admin User → Create Subscription → Commit
+3. **Update Institution**: Validate → Check uniqueness → Update fields → Commit
+4. **Analytics**: Query usage data → Aggregate metrics → Calculate trends → Return analytics
+
+## Performance Considerations
+
+- Pagination to handle large datasets
+- Indexed fields for fast filtering/sorting
+- Aggregated queries for statistics
+- Lazy loading of detailed data
+- Caching opportunities for analytics
+
+## Error Handling
+
+- HTTP 400 for validation errors
+- HTTP 404 for not found resources
+- HTTP 500 for server errors
+- Detailed error messages in responses
+- Frontend error boundaries and alerts
+
+## Future Enhancements
+
+1. Bulk operations (import/export)
+2. Advanced analytics filters
+3. Custom report generation
+4. Email notifications for events
+5. Audit log for changes
+6. Institution cloning/templates
+7. Multi-tenancy improvements
+8. Real-time updates with WebSocket
+9. Advanced billing features
+10. Integration with payment gateways
+
+## Testing
+
+To test the implementation:
+
+1. Backend:
+```bash
+pytest tests/test_super_admin.py
+```
+
+2. Frontend:
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+3. Access the interface at:
+```
+http://localhost:5173/super-admin/institutions
+```
+
+## Dependencies Installation
+
+Backend (already in pyproject.toml):
+- FastAPI
+- SQLAlchemy
+- Pydantic
+
+Frontend (update package.json):
+```bash
+cd frontend
+npm install chart.js react-chartjs-2
+```
+
+## Environment Variables
+
+No additional environment variables required. Uses existing configuration from `.env`:
+- Database connection
+- JWT settings
+- API base URL
+
+## Database Migrations
+
+No new migrations needed. Uses existing tables:
+- institutions
+- subscriptions
+- payments
+- invoices
+- usage_records
+- users
+
+## Deployment Notes
+
+1. Install frontend dependencies: `npm install`
+2. Build frontend: `npm run build`
+3. Restart backend service
+4. Verify super admin role exists in database
+5. Test all endpoints with super admin credentials
+
+## Support
+
+For issues or questions:
+- Check API documentation: `/docs` endpoint
+- Review error logs in `logs/` directory
+- Verify user has super_admin role
+- Check database connectivity

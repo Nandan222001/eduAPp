@@ -321,7 +321,12 @@ export default function SuperAdminDashboard() {
           <IconButton onClick={fetchDashboardData} color="primary">
             <RefreshIcon />
           </IconButton>
-          <Button variant="contained" startIcon={<AddBusinessIcon />} size="large">
+          <Button
+            variant="contained"
+            startIcon={<AddBusinessIcon />}
+            size="large"
+            onClick={() => (window.location.href = '/super-admin/institutions/create')}
+          >
             Add New Institution
           </Button>
         </Stack>
@@ -721,7 +726,13 @@ export default function SuperAdminDashboard() {
                     </Typography>
                   </TableCell>
                   <TableCell align="center">
-                    <Button size="small" variant="outlined">
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      onClick={() =>
+                        (window.location.href = `/super-admin/institutions/${institution.id}`)
+                      }
+                    >
                       View Details
                     </Button>
                   </TableCell>
@@ -733,11 +744,21 @@ export default function SuperAdminDashboard() {
       </Paper>
 
       <Box sx={{ mt: 3, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-        <Button variant="outlined" startIcon={<AddBusinessIcon />} size="large">
+        <Button
+          variant="outlined"
+          startIcon={<AddBusinessIcon />}
+          size="large"
+          onClick={() => (window.location.href = '/super-admin/institutions/create')}
+        >
           Onboard New Institution
         </Button>
-        <Button variant="outlined" startIcon={<SchoolIcon />} size="large">
-          Bulk Import Institutions
+        <Button
+          variant="outlined"
+          startIcon={<SchoolIcon />}
+          size="large"
+          onClick={() => (window.location.href = '/super-admin/institutions')}
+        >
+          View All Institutions
         </Button>
         <Button variant="outlined" startIcon={<AssignmentIcon />} size="large">
           Generate Reports
