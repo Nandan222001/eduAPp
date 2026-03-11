@@ -22,6 +22,8 @@ import {
   Psychology as AIIcon,
   Flag as GoalIcon,
   Payment as PaymentIcon,
+  CloudDownload as ExportIcon,
+  CloudUpload as ImportIcon,
 } from '@mui/icons-material';
 import { NavigationItem } from '@/types/navigation';
 
@@ -286,6 +288,26 @@ export const navigationConfig: NavigationItem[] = [
     path: '/admin/subscription',
     icon: <PaymentIcon />,
     roles: ['admin'],
+  },
+  {
+    id: 'data-management',
+    title: 'Data Management',
+    icon: <ImportIcon />,
+    roles: ['admin'],
+    children: [
+      {
+        id: 'data-export',
+        title: 'Export Data',
+        path: '/admin/data/export',
+        icon: <ExportIcon />,
+      },
+      {
+        id: 'data-import',
+        title: 'Import Data',
+        path: '/admin/data/import',
+        icon: <ImportIcon />,
+      },
+    ],
   },
   {
     id: 'settings',

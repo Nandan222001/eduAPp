@@ -46,6 +46,8 @@ import ClassPerformanceAnalytics from './pages/ClassPerformanceAnalytics';
 import InstitutionAnalyticsDashboard from './pages/InstitutionAnalyticsDashboard';
 import SubscriptionBilling from './pages/SubscriptionBilling';
 import SearchResultsPage from './pages/SearchResultsPage';
+import DataExport from './pages/DataExport';
+import DataImport from './pages/DataImport';
 
 import {
   LoginPage,
@@ -131,6 +133,8 @@ function App() {
               <Route path="analytics" element={<InstitutionAnalyticsDashboard />} />
               <Route path="analytics/class/:classId" element={<ClassPerformanceAnalytics />} />
               <Route path="subscription" element={<SubscriptionBilling />} />
+              <Route path="data/export" element={<DataExport />} />
+              <Route path="data/import" element={<DataImport />} />
               <Route path="search" element={<SearchResultsPage />} />
               <Route path="settings" element={<div>Settings</div>} />
               <Route path="profile" element={<div>Profile</div>} />

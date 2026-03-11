@@ -41,7 +41,8 @@ from src.api.v1 import (
     institution_admin,
     ai_prediction_dashboard,
     study_materials,
-    search
+    search,
+    data_management
 )
 from src.api import ml
 
@@ -90,3 +91,4 @@ api_router.include_router(institution_admin.router, prefix="/institution-admin",
 api_router.include_router(ai_prediction_dashboard.router, prefix="", tags=["ai-prediction-dashboard"])
 api_router.include_router(study_materials.router, prefix="", tags=["study-materials"])
 api_router.include_router(search.router, prefix="", tags=["search"])
+api_router.include_router(data_management.router, prefix="", tags=["data-management"])
