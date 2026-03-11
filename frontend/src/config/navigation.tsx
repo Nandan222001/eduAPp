@@ -21,6 +21,7 @@ import {
   Edit as EditIcon,
   Psychology as AIIcon,
   Flag as GoalIcon,
+  Payment as PaymentIcon,
 } from '@mui/icons-material';
 import { NavigationItem } from '@/types/navigation';
 
@@ -278,6 +279,13 @@ export const navigationConfig: NavigationItem[] = [
     path: '/admin/analytics',
     icon: <AnalyticsIcon />,
     roles: ['admin', 'teacher'],
+  },
+  {
+    id: 'subscription',
+    title: 'Subscription & Billing',
+    path: '/admin/subscription',
+    icon: <PaymentIcon />,
+    roles: ['admin'],
   },
   {
     id: 'settings',

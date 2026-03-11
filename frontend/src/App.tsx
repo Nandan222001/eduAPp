@@ -44,6 +44,7 @@ import GamificationDashboard from './pages/GamificationDashboard';
 import StudentPerformanceAnalytics from './pages/StudentPerformanceAnalytics';
 import ClassPerformanceAnalytics from './pages/ClassPerformanceAnalytics';
 import InstitutionAnalyticsDashboard from './pages/InstitutionAnalyticsDashboard';
+import SubscriptionBilling from './pages/SubscriptionBilling';
 
 import {
   LoginPage,
@@ -128,6 +129,7 @@ function App() {
               <Route path="communication/messages" element={<div>Messages</div>} />
               <Route path="analytics" element={<InstitutionAnalyticsDashboard />} />
               <Route path="analytics/class/:classId" element={<ClassPerformanceAnalytics />} />
+              <Route path="subscription" element={<SubscriptionBilling />} />
               <Route path="settings" element={<div>Settings</div>} />
               <Route path="profile" element={<div>Profile</div>} />
             </Route>
