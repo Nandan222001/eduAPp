@@ -40,6 +40,7 @@ import PaperViewerPage from './pages/PaperViewerPage';
 import QuestionBankBrowserPage from './pages/QuestionBankBrowserPage';
 import AIPredictionDashboard from './pages/AIPredictionDashboard';
 import GoalsManagement from './pages/GoalsManagement';
+import GamificationDashboard from './pages/GamificationDashboard';
 
 import {
   LoginPage,
@@ -119,8 +120,7 @@ function App() {
               <Route path="attendance/defaulters" element={<AttendanceDefaultersPage />} />
               <Route path="attendance/corrections" element={<AttendanceCorrectionPage />} />
               <Route path="goals" element={<GoalsManagement />} />
-              <Route path="gamification/achievements" element={<div>Achievements</div>} />
-              <Route path="gamification/leaderboard" element={<div>Leaderboard</div>} />
+              <Route path="gamification" element={<GamificationDashboard />} />
               <Route path="communication/announcements" element={<div>Announcements</div>} />
               <Route path="communication/messages" element={<div>Messages</div>} />
               <Route path="analytics" element={<div>Analytics</div>} />
@@ -138,6 +138,7 @@ function App() {
               <Route index element={<TeacherDashboard />} />
               <Route path="dashboard" element={<TeacherDashboard />} />
               <Route path="goals" element={<GoalsManagement />} />
+              <Route path="gamification" element={<GamificationDashboard />} />
             </Route>
           </Route>
 
@@ -149,6 +150,7 @@ function App() {
               <Route path="dashboard" element={<StudentDashboard />} />
               <Route path="ai-prediction" element={<AIPredictionDashboard />} />
               <Route path="goals" element={<GoalsManagement />} />
+              <Route path="gamification" element={<GamificationDashboard />} />
               <Route path="assignments" element={<div>Student Assignments</div>} />
               <Route path="materials" element={<div>Study Materials</div>} />
               <Route path="question-bank" element={<div>Question Bank</div>} />
