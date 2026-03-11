@@ -15,6 +15,10 @@ import {
   EmojiEvents as AchievementsIcon,
   TrendingUp as AnalyticsIcon,
   Forum as ForumIcon,
+  CheckCircle as CheckCircleIcon,
+  CalendarToday as CalendarTodayIcon,
+  Warning as WarningIcon,
+  Edit as EditIcon,
 } from '@mui/icons-material';
 import { NavigationItem } from '@/types/navigation';
 
@@ -138,6 +142,36 @@ export const navigationConfig: NavigationItem[] = [
     path: '/admin/attendance',
     icon: <CalendarIcon />,
     roles: ['admin', 'teacher', 'student'],
+    children: [
+      {
+        id: 'attendance-mark',
+        title: 'Mark Attendance',
+        path: '/admin/attendance/mark',
+        icon: <CheckCircleIcon />,
+        roles: ['admin', 'teacher'],
+      },
+      {
+        id: 'attendance-sheet',
+        title: 'Attendance Sheet',
+        path: '/admin/attendance/sheet',
+        icon: <CalendarTodayIcon />,
+        roles: ['admin', 'teacher'],
+      },
+      {
+        id: 'attendance-defaulters',
+        title: 'Defaulters Report',
+        path: '/admin/attendance/defaulters',
+        icon: <WarningIcon />,
+        roles: ['admin', 'teacher'],
+      },
+      {
+        id: 'attendance-corrections',
+        title: 'Corrections',
+        path: '/admin/attendance/corrections',
+        icon: <EditIcon />,
+        roles: ['admin', 'teacher'],
+      },
+    ],
   },
   {
     id: 'gamification',

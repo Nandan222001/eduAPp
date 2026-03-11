@@ -22,6 +22,11 @@ import TeacherBulkImport from './pages/TeacherBulkImport';
 import TeacherPerformanceDashboard from './pages/TeacherPerformanceDashboard';
 import TeacherRoleAssignment from './pages/TeacherRoleAssignment';
 import TeacherDashboard from './pages/TeacherDashboard';
+import AttendanceOverviewPage from './pages/AttendanceOverviewPage';
+import AttendanceMarkingPage from './pages/AttendanceMarkingPage';
+import AttendanceSheetPage from './pages/AttendanceSheetPage';
+import AttendanceDefaultersPage from './pages/AttendanceDefaultersPage';
+import AttendanceCorrectionPage from './pages/AttendanceCorrectionPage';
 
 import {
   LoginPage,
@@ -78,7 +83,11 @@ function App() {
               <Route path="examinations/schedule" element={<div>Exam Schedule</div>} />
               <Route path="examinations/results" element={<div>Exam Results</div>} />
               <Route path="examinations/analysis" element={<div>Exam Analysis</div>} />
-              <Route path="attendance" element={<div>Attendance</div>} />
+              <Route path="attendance" element={<AttendanceOverviewPage />} />
+              <Route path="attendance/mark" element={<AttendanceMarkingPage />} />
+              <Route path="attendance/sheet" element={<AttendanceSheetPage />} />
+              <Route path="attendance/defaulters" element={<AttendanceDefaultersPage />} />
+              <Route path="attendance/corrections" element={<AttendanceCorrectionPage />} />
               <Route path="gamification/achievements" element={<div>Achievements</div>} />
               <Route path="gamification/leaderboard" element={<div>Leaderboard</div>} />
               <Route path="communication/announcements" element={<div>Announcements</div>} />

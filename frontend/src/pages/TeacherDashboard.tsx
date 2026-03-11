@@ -327,7 +327,7 @@ export default function TeacherDashboard() {
   }, [user]);
 
   const handleMarkAttendance = () => {
-    navigate('/teacher/attendance/mark');
+    navigate('/admin/attendance/mark');
   };
 
   const handleCreateAssignment = () => {
