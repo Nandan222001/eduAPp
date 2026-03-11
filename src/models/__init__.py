@@ -7,7 +7,7 @@ from src.models.audit_log import AuditLog
 from src.models.password_reset_token import PasswordResetToken
 from src.models.academic import AcademicYear, Grade, Section, Subject, GradeSubject, Chapter, Topic
 from src.models.teacher import Teacher, TeacherSubject
-from src.models.student import Student
+from src.models.student import Student, Parent, StudentParent
 from src.models.attendance import Attendance, AttendanceCorrection, AttendanceSummary, AttendanceStatus, CorrectionStatus
 from src.models.assignment import Assignment, AssignmentFile, Submission, SubmissionFile, AssignmentStatus, SubmissionStatus
 from src.models.examination import Exam, ExamSubject, ExamSchedule, ExamMarks, ExamResult, GradeConfiguration, ExamPerformanceAnalytics, ExamType, ExamStatus
@@ -48,6 +48,8 @@ __all__ = [
     "Teacher",
     "TeacherSubject",
     "Student",
+    "Parent",
+    "StudentParent",
     "Attendance",
     "AttendanceCorrection",
     "AttendanceSummary",

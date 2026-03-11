@@ -14,6 +14,7 @@ from src.api.v1 import (
     grade_configurations,
     teachers, 
     students, 
+    parents,
     profile,
     attendance,
     assignments,
@@ -58,6 +59,7 @@ api_router.include_router(timetables.router, prefix="/timetables", tags=["timeta
 api_router.include_router(grade_configurations.router, prefix="/grade-configurations", tags=["grade-configurations"])
 api_router.include_router(teachers.router, prefix="/teachers", tags=["teachers"])
 api_router.include_router(students.router, prefix="/students", tags=["students"])
+api_router.include_router(parents.router, prefix="/parents", tags=["parents"])
 api_router.include_router(profile.router, prefix="/profile", tags=["profile"])
 api_router.include_router(attendance.router, prefix="/attendance", tags=["attendance"])
 api_router.include_router(assignments.router, prefix="/assignments", tags=["assignments"])
