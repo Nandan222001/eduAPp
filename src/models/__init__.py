@@ -29,6 +29,10 @@ from src.models.analytics import (
     AnalyticsCache, StudentPerformanceMetrics, ClassPerformanceMetrics,
     InstitutionPerformanceMetrics, GeneratedReport, ReportType, ReportStatus
 )
+from src.models.study_material import (
+    StudyMaterial, MaterialBookmark, MaterialAccessLog, MaterialShare, MaterialTag,
+    MaterialType
+)
 
 __all__ = [
     "Institution",
@@ -136,4 +140,10 @@ __all__ = [
     "GeneratedReport",
     "ReportType",
     "ReportStatus",
+    "StudyMaterial",
+    "MaterialBookmark",
+    "MaterialAccessLog",
+    "MaterialShare",
+    "MaterialTag",
+    "MaterialType",
 ]

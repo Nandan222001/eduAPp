@@ -42,6 +42,7 @@ class Institution(Base):
     exams = relationship("Exam", back_populates="institution", cascade="all, delete-orphan")
     previous_year_papers = relationship("PreviousYearPaper", back_populates="institution", cascade="all, delete-orphan")
     questions_bank = relationship("QuestionBank", back_populates="institution", cascade="all, delete-orphan")
+    study_materials = relationship("StudyMaterial", back_populates="institution", cascade="all, delete-orphan")
     
     __table_args__ = (
         Index('idx_institution_active', 'is_active'),
