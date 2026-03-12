@@ -50,6 +50,12 @@ import SubscriptionBilling from './pages/SubscriptionBilling';
 import SearchResultsPage from './pages/SearchResultsPage';
 import DataExport from './pages/DataExport';
 import DataImport from './pages/DataImport';
+import FlashcardDeckList from './pages/FlashcardDeckList';
+import FlashcardStudyPage from './pages/FlashcardStudyPage';
+import QuizList from './pages/QuizList';
+import QuizTakePage from './pages/QuizTakePage';
+import QuizLeaderboardPage from './pages/QuizLeaderboardPage';
+import QuizAnalyticsPage from './pages/QuizAnalyticsPage';
 
 import {
   LoginPage,
@@ -183,6 +189,12 @@ function App() {
                     <Route path="data/export" element={<DataExport />} />
                     <Route path="data/import" element={<DataImport />} />
                     <Route path="search" element={<SearchResultsPage />} />
+                    <Route path="flashcards" element={<FlashcardDeckList />} />
+                    <Route path="flashcards/deck/:deckId/study" element={<FlashcardStudyPage />} />
+                    <Route path="quizzes" element={<QuizList />} />
+                    <Route path="quizzes/:quizId/take" element={<QuizTakePage />} />
+                    <Route path="quizzes/:quizId/leaderboard" element={<QuizLeaderboardPage />} />
+                    <Route path="quizzes/:quizId/analytics" element={<QuizAnalyticsPage />} />
                     <Route path="settings" element={<div>Settings</div>} />
                     <Route path="profile" element={<div>Profile</div>} />
                   </Route>
@@ -206,6 +218,12 @@ function App() {
                     <Route path="goals" element={<GoalsManagement />} />
                     <Route path="gamification" element={<GamificationDashboard />} />
                     <Route path="search" element={<SearchResultsPage />} />
+                    <Route path="flashcards" element={<FlashcardDeckList />} />
+                    <Route path="flashcards/deck/:deckId/study" element={<FlashcardStudyPage />} />
+                    <Route path="quizzes" element={<QuizList />} />
+                    <Route path="quizzes/:quizId/take" element={<QuizTakePage />} />
+                    <Route path="quizzes/:quizId/leaderboard" element={<QuizLeaderboardPage />} />
+                    <Route path="quizzes/:quizId/analytics" element={<QuizAnalyticsPage />} />
                   </Route>
                 </Route>
 
@@ -227,6 +245,12 @@ function App() {
                     <Route path="question-bank" element={<div>Question Bank</div>} />
                     <Route path="previous-papers" element={<div>Previous Papers</div>} />
                     <Route path="progress" element={<div>My Progress</div>} />
+                    <Route path="flashcards" element={<FlashcardDeckList />} />
+                    <Route path="flashcards/deck/:deckId/study" element={<FlashcardStudyPage />} />
+                    <Route path="quizzes" element={<QuizList />} />
+                    <Route path="quizzes/:quizId/take" element={<QuizTakePage />} />
+                    <Route path="quizzes/:quizId/leaderboard" element={<QuizLeaderboardPage />} />
+                    <Route path="quizzes/:quizId/analytics" element={<QuizAnalyticsPage />} />
                   </Route>
                 </Route>
 

@@ -50,6 +50,14 @@ from src.models.study_group import (
     StudyGroup, GroupMember, GroupMessage, GroupResource, GroupActivity, GroupInvite,
     GroupMemberRole, MessageType, ActivityType, InviteStatus
 )
+from src.models.flashcard import (
+    Flashcard, FlashcardDeck, FlashcardDeckShare, FlashcardStudyProgress,
+    FlashcardStudySession, FlashcardDeckVisibility, SpacedRepetitionLevel
+)
+from src.models.quiz import (
+    Quiz, QuizQuestion, QuizAttempt, QuizResponse, QuizLeaderboard, QuizAnalytics,
+    QuizType, QuestionType, QuizStatus, QuizAttemptStatus
+)
 
 __all__ = [
     "Institution",
@@ -212,4 +220,21 @@ __all__ = [
     "MessageType",
     "ActivityType",
     "InviteStatus",
+    "Flashcard",
+    "FlashcardDeck",
+    "FlashcardDeckShare",
+    "FlashcardStudyProgress",
+    "FlashcardStudySession",
+    "FlashcardDeckVisibility",
+    "SpacedRepetitionLevel",
+    "Quiz",
+    "QuizQuestion",
+    "QuizAttempt",
+    "QuizResponse",
+    "QuizLeaderboard",
+    "QuizAnalytics",
+    "QuizType",
+    "QuestionType",
+    "QuizStatus",
+    "QuizAttemptStatus",
 ]

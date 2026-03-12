@@ -276,6 +276,20 @@ export const navigationConfig: NavigationItem[] = [
     ],
   },
   {
+    id: 'flashcards',
+    title: 'Flashcards',
+    path: '/admin/flashcards',
+    icon: <BookIcon />,
+    roles: ['admin', 'teacher', 'student'],
+  },
+  {
+    id: 'quizzes',
+    title: 'Quizzes',
+    path: '/admin/quizzes',
+    icon: <AssignmentIcon />,
+    roles: ['admin', 'teacher', 'student'],
+  },
+  {
     id: 'analytics',
     title: 'Analytics',
     path: '/admin/analytics',

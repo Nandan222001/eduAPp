@@ -42,7 +42,9 @@ from src.api.v1 import (
     ai_prediction_dashboard,
     study_materials,
     search,
-    data_management
+    data_management,
+    flashcards,
+    quizzes
 )
 from src.api import ml
 
@@ -92,3 +94,5 @@ api_router.include_router(ai_prediction_dashboard.router, prefix="", tags=["ai-p
 api_router.include_router(study_materials.router, prefix="", tags=["study-materials"])
 api_router.include_router(search.router, prefix="", tags=["search"])
 api_router.include_router(data_management.router, prefix="", tags=["data-management"])
+api_router.include_router(flashcards.router, prefix="", tags=["flashcards"])
+api_router.include_router(quizzes.router, prefix="", tags=["quizzes"])
