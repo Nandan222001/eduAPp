@@ -67,6 +67,7 @@ class AuthService:
             "sub": user.id,
             "institution_id": user.institution_id,
             "role_id": user.role_id,
+            "role_slug": user.role.slug if user.role else None,
             "email": user.email,
         }
 
@@ -141,6 +142,7 @@ class AuthService:
             "sub": user.id,
             "institution_id": user.institution_id,
             "role_id": user.role_id,
+            "role_slug": user.role.slug if user.role else None,
             "email": user.email,
         }
 

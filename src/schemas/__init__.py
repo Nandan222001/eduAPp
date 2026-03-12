@@ -169,6 +169,16 @@ from src.schemas.goal import (
     GoalSummary,
     BulkGoalStatusUpdate,
 )
+from src.schemas.rate_limit import (
+    RateLimitViolationBase,
+    RateLimitViolationCreate,
+    RateLimitViolationResponse,
+    RateLimitStatsBase,
+    RateLimitStatsResponse,
+    RateLimitDashboardResponse,
+    RateLimitInfo,
+    RateLimitViolationFilter,
+)
 
 __all__ = [
     "InstitutionBase",
@@ -314,4 +324,12 @@ __all__ = [
     "GoalProgressReport",
     "GoalSummary",
     "BulkGoalStatusUpdate",
+    "RateLimitViolationBase",
+    "RateLimitViolationCreate",
+    "RateLimitViolationResponse",
+    "RateLimitStatsBase",
+    "RateLimitStatsResponse",
+    "RateLimitDashboardResponse",
+    "RateLimitInfo",
+    "RateLimitViolationFilter",
 ]

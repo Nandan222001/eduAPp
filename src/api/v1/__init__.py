@@ -47,7 +47,8 @@ from src.api.v1 import (
     flashcards,
     quizzes,
     chatbot,
-    dashboard_widgets
+    dashboard_widgets,
+    rate_limits
 )
 from src.api import ml
 
@@ -102,3 +103,4 @@ api_router.include_router(flashcards.router, prefix="", tags=["flashcards"])
 api_router.include_router(quizzes.router, prefix="", tags=["quizzes"])
 api_router.include_router(chatbot.router, prefix="/chatbot", tags=["chatbot"])
 api_router.include_router(dashboard_widgets.router, prefix="/dashboard", tags=["dashboard-widgets"])
+api_router.include_router(rate_limits.router, prefix="/rate-limits", tags=["rate-limits"])

@@ -62,6 +62,7 @@ from src.models.quiz import (
 from src.models.dashboard_widget import (
     DashboardWidget, WidgetPreset, WidgetType, WidgetSize
 )
+from src.models.rate_limit import RateLimitViolation, RateLimitStats
 
 __all__ = [
     "Institution",
@@ -248,4 +249,6 @@ __all__ = [
     "WidgetPreset",
     "WidgetType",
     "WidgetSize",
+    "RateLimitViolation",
+    "RateLimitStats",
 ]

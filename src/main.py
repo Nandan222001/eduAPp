@@ -1,10 +1,14 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 from src.config import settings
 from src.redis_client import init_redis, close_redis
 from src.api.v1 import api_router
 from src.middleware.tenant_context import TenantContextMiddleware
 from src.middleware.sentry_middleware import init_sentry
+from src.middleware.rate_limit import limiter, rate_limit_exceeded_handler
+from src.middleware.rate_limit_headers import RateLimitHeadersMiddleware
 
 
 @asynccontextmanager
@@ -22,6 +26,10 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
+
+app.add_middleware(RateLimitHeadersMiddleware)
 app.add_middleware(TenantContextMiddleware)
 
 app.include_router(api_router, prefix="/api/v1")
