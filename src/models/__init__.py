@@ -59,6 +59,9 @@ from src.models.quiz import (
     Quiz, QuizQuestion, QuizAttempt, QuizResponse, QuizLeaderboard, QuizAnalytics,
     QuizType, QuestionType, QuizStatus, QuizAttemptStatus
 )
+from src.models.dashboard_widget import (
+    DashboardWidget, WidgetPreset, WidgetType, WidgetSize
+)
 
 __all__ = [
     "Institution",
@@ -241,4 +244,8 @@ __all__ = [
     "QuestionType",
     "QuizStatus",
     "QuizAttemptStatus",
+    "DashboardWidget",
+    "WidgetPreset",
+    "WidgetType",
+    "WidgetSize",
 ]
