@@ -63,6 +63,10 @@ from src.models.dashboard_widget import (
     DashboardWidget, WidgetPreset, WidgetType, WidgetSize
 )
 from src.models.rate_limit import RateLimitViolation, RateLimitStats
+from src.models.performance_monitoring import (
+    APIPerformanceMetric, DatabaseQueryMetric, CacheMetric, TaskQueueMetric,
+    ResourceUtilizationMetric, PerformanceAlert, MetricStatus, AlertSeverity, AlertStatus
+)
 
 __all__ = [
     "Institution",
@@ -251,4 +255,13 @@ __all__ = [
     "WidgetSize",
     "RateLimitViolation",
     "RateLimitStats",
+    "APIPerformanceMetric",
+    "DatabaseQueryMetric",
+    "CacheMetric",
+    "TaskQueueMetric",
+    "ResourceUtilizationMetric",
+    "PerformanceAlert",
+    "MetricStatus",
+    "AlertSeverity",
+    "AlertStatus",
 ]

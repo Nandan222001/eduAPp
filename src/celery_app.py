@@ -5,7 +5,11 @@ celery_app = Celery(
     "notification_worker",
     broker=settings.redis_url,
     backend=settings.redis_url,
-    include=["src.tasks.notification_tasks", "src.tasks.analytics_tasks"]
+    include=[
+        "src.tasks.notification_tasks",
+        "src.tasks.analytics_tasks",
+        "src.tasks.performance_monitoring_tasks"
+    ]
 )
 
 celery_app.conf.update(
@@ -38,5 +42,25 @@ celery_app.conf.beat_schedule = {
     "clean-analytics-cache": {
         "task": "analytics.clean_expired_cache",
         "schedule": 3600.0,
+    },
+    "check-api-performance": {
+        "task": "performance.check_api_performance",
+        "schedule": 300.0,  # Every 5 minutes
+    },
+    "check-database-performance": {
+        "task": "performance.check_database_performance",
+        "schedule": 300.0,  # Every 5 minutes
+    },
+    "check-cache-performance": {
+        "task": "performance.check_cache_performance",
+        "schedule": 300.0,  # Every 5 minutes
+    },
+    "check-resource-utilization": {
+        "task": "performance.check_resource_utilization",
+        "schedule": 60.0,  # Every minute
+    },
+    "cleanup-old-metrics": {
+        "task": "performance.cleanup_old_metrics",
+        "schedule": 86400.0,  # Daily
     },
 }

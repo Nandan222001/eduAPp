@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+import asyncio
 from fastapi import FastAPI, Request
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -9,13 +10,26 @@ from src.middleware.tenant_context import TenantContextMiddleware
 from src.middleware.sentry_middleware import init_sentry
 from src.middleware.rate_limit import limiter, rate_limit_exceeded_handler
 from src.middleware.rate_limit_headers import RateLimitHeadersMiddleware
+from src.middleware.performance_tracking import (
+    PerformanceTrackingMiddleware,
+    collect_resource_metrics,
+)
+from src.middleware.database_tracking import db_tracker
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_sentry()
     await init_redis()
+    
+    # Start background resource monitoring
+    resource_task = asyncio.create_task(collect_resource_metrics())
+    
     yield
+    
+    # Cancel background tasks
+    resource_task.cancel()
+    
     await close_redis()
 
 
@@ -29,6 +43,7 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 
+app.add_middleware(PerformanceTrackingMiddleware)
 app.add_middleware(RateLimitHeadersMiddleware)
 app.add_middleware(TenantContextMiddleware)
 
