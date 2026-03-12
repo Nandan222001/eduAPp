@@ -5,7 +5,11 @@ celery_app = Celery(
     "notification_worker",
     broker=settings.redis_url,
     backend=settings.redis_url,
-    include=["src.tasks.notification_tasks", "src.tasks.analytics_tasks"]
+    include=[
+        "src.tasks.notification_tasks",
+        "src.tasks.analytics_tasks",
+        "src.tasks.ml_training_tasks"
+    ]
 )
 
 celery_app.conf.update(
@@ -38,5 +42,13 @@ celery_app.conf.beat_schedule = {
     "clean-analytics-cache": {
         "task": "analytics.clean_expired_cache",
         "schedule": 3600.0,
+    },
+    "scheduled-ml-training": {
+        "task": "ml_training.scheduled_training",
+        "schedule": 86400.0,
+    },
+    "cleanup-old-model-versions": {
+        "task": "ml_training.cleanup_old_model_versions",
+        "schedule": 604800.0,
     },
 }

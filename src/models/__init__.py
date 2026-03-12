@@ -59,6 +59,10 @@ from src.models.quiz import (
     Quiz, QuizQuestion, QuizAttempt, QuizResponse, QuizLeaderboard, QuizAnalytics,
     QuizType, QuestionType, QuizStatus, QuizAttemptStatus
 )
+from src.models.ml_training import (
+    MLTrainingJob, ModelPerformanceMetrics, ModelPromotionLog,
+    TrainingStatus, TrainingJobType
+)
 
 __all__ = [
     "Institution",
@@ -241,4 +245,9 @@ __all__ = [
     "QuestionType",
     "QuizStatus",
     "QuizAttemptStatus",
+    "MLTrainingJob",
+    "ModelPerformanceMetrics",
+    "ModelPromotionLog",
+    "TrainingStatus",
+    "TrainingJobType",
 ]
