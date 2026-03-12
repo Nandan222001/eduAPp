@@ -49,7 +49,8 @@ from src.api.v1 import (
     chatbot,
     dashboard_widgets,
     rate_limits,
-    performance_monitoring
+    performance_monitoring,
+    database_maintenance
 )
 from src.api import ml
 
@@ -106,3 +107,4 @@ api_router.include_router(chatbot.router, prefix="/chatbot", tags=["chatbot"])
 api_router.include_router(dashboard_widgets.router, prefix="/dashboard", tags=["dashboard-widgets"])
 api_router.include_router(rate_limits.router, prefix="/rate-limits", tags=["rate-limits"])
 api_router.include_router(performance_monitoring.router, prefix="/admin", tags=["performance-monitoring"])
+api_router.include_router(database_maintenance.router, tags=["database-maintenance"])
