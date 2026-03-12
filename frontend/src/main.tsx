@@ -6,6 +6,8 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import App from './App';
 import ThemeWrapper from './components/ThemeWrapper';
 import { AccessibilityProvider } from './contexts/AccessibilityContext';
+import { WebSocketProvider } from './contexts/WebSocketContext';
+import { WebSocketConnectionStatus } from './components/common/WebSocketConnectionStatus';
 import './index.css';
 
 const queryClient = new QueryClient({
@@ -23,9 +25,12 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <AccessibilityProvider>
-          <ThemeWrapper>
-            <App />
-          </ThemeWrapper>
+          <WebSocketProvider>
+            <ThemeWrapper>
+              <App />
+              <WebSocketConnectionStatus />
+            </ThemeWrapper>
+          </WebSocketProvider>
         </AccessibilityProvider>
       </BrowserRouter>
       <ReactQueryDevtools initialIsOpen={false} />

@@ -11,3 +11,8 @@ export { default as useKeyboardNavigation } from './useKeyboardNavigation';
 export { default as useRovingTabIndex } from './useRovingTabIndex';
 export { default as useGlobalKeyboardShortcuts } from './useGlobalKeyboardShortcuts';
 export { useChatbot } from './useChatbot';
+export { useRealtimeNotifications } from './useRealtimeNotifications';
+export { useRealtimeChat } from './useRealtimeChat';
+export { useOnlinePresence } from './useOnlinePresence';
+export { useRealtimeAttendance } from './useRealtimeAttendance';
+export { useQuizLeaderboard } from './useQuizLeaderboard';
