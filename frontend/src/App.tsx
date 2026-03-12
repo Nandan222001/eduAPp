@@ -57,6 +57,7 @@ import QuizTakePage from './pages/QuizTakePage';
 import QuizLeaderboardPage from './pages/QuizLeaderboardPage';
 import QuizAnalyticsPage from './pages/QuizAnalyticsPage';
 import PomodoroTimer from './pages/PomodoroTimer';
+import SettingsPage from './pages/SettingsPage';
 
 import {
   LoginPage,
@@ -198,8 +199,8 @@ function App() {
                     <Route path="quizzes/:quizId/take" element={<QuizTakePage />} />
                     <Route path="quizzes/:quizId/leaderboard" element={<QuizLeaderboardPage />} />
                     <Route path="quizzes/:quizId/analytics" element={<QuizAnalyticsPage />} />
-                    <Route path="settings" element={<div>Settings</div>} />
-                    <Route path="profile" element={<div>Profile</div>} />
+                    <Route path="settings" element={<SettingsPage />} />
+                    <Route path="profile" element={<SettingsPage />} />
                   </Route>
                 </Route>
 
@@ -227,6 +228,7 @@ function App() {
                     <Route path="quizzes/:quizId/take" element={<QuizTakePage />} />
                     <Route path="quizzes/:quizId/leaderboard" element={<QuizLeaderboardPage />} />
                     <Route path="quizzes/:quizId/analytics" element={<QuizAnalyticsPage />} />
+                    <Route path="settings" element={<SettingsPage />} />
                   </Route>
                 </Route>
 
@@ -255,6 +257,7 @@ function App() {
                     <Route path="quizzes/:quizId/take" element={<QuizTakePage />} />
                     <Route path="quizzes/:quizId/leaderboard" element={<QuizLeaderboardPage />} />
                     <Route path="quizzes/:quizId/analytics" element={<QuizAnalyticsPage />} />
+                    <Route path="settings" element={<SettingsPage />} />
                   </Route>
                 </Route>
 

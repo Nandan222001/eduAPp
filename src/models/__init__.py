@@ -1,5 +1,6 @@
 from src.models.institution import Institution
 from src.models.user import User
+from src.models.user_settings import UserSettings, UserDevice, AccountDeletionRequest
 from src.models.role import Role
 from src.models.permission import Permission
 from src.models.subscription import Subscription
@@ -62,6 +63,9 @@ from src.models.quiz import (
 __all__ = [
     "Institution",
     "User",
+    "UserSettings",
+    "UserDevice",
+    "AccountDeletionRequest",
     "Role",
     "Permission",
     "Subscription",
