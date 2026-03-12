@@ -50,7 +50,8 @@ from src.api.v1 import (
     ml_training,
     ml_monitoring,
     ml_analytics,
-    doubts
+    doubts,
+    learning_paths
 )
 from src.api import ml
 
@@ -108,3 +109,4 @@ api_router.include_router(ml_training.router, prefix="", tags=["ml-training"])
 api_router.include_router(ml_monitoring.router, prefix="", tags=["ml-monitoring"])
 api_router.include_router(ml_analytics.router, prefix="", tags=["ml-analytics"])
 api_router.include_router(doubts.router, prefix="", tags=["doubts-intelligence"])
+api_router.include_router(learning_paths.router, prefix="", tags=["learning-paths"])
