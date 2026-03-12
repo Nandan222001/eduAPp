@@ -13,7 +13,12 @@ from src.models.attendance import Attendance, AttendanceCorrection, AttendanceSu
 from src.models.assignment import Assignment, AssignmentFile, Submission, SubmissionFile, AssignmentStatus, SubmissionStatus
 from src.models.examination import Exam, ExamSubject, ExamSchedule, ExamMarks, ExamResult, GradeConfiguration, ExamPerformanceAnalytics, ExamType, ExamStatus
 from src.models.previous_year_papers import PreviousYearPaper, QuestionBank, TopicPrediction, QuestionBookmark, QuestionType, DifficultyLevel, BloomTaxonomyLevel, Board
-from src.models.notification import Notification, NotificationPreference, Announcement, Message, NotificationTemplate, NotificationChannel, NotificationPriority, NotificationStatus, AudienceType
+from src.models.notification import (
+    Notification, NotificationPreference, Announcement, Message, NotificationTemplate,
+    NotificationDelivery, NotificationEngagement, NotificationAnalytics,
+    NotificationChannel, NotificationPriority, NotificationStatus, AudienceType,
+    DigestMode, NotificationGroup
+)
 from src.models.gamification import (
     Badge, UserBadge, UserPoints, PointHistory, BadgeType, BadgeRarity, PointEventType,
     Achievement, UserAchievement, Leaderboard, LeaderboardEntry, StreakTracker,
@@ -49,7 +54,11 @@ from src.models.doubt import (
 )
 from src.models.study_group import (
     StudyGroup, GroupMember, GroupMessage, GroupResource, GroupActivity, GroupInvite,
-    GroupMemberRole, MessageType, ActivityType, InviteStatus
+    StudyBuddyProfile, StudyBuddyMatch, StudySession, SessionParticipant,
+    CollaborativeNote, NoteEditor, NoteRevision, PeerTutorProfile, TutoringRequest,
+    TutoringSession, GroupPerformanceAnalytics,
+    GroupMemberRole, MessageType, ActivityType, InviteStatus, SessionStatus,
+    MatchStatus, TutorRequestStatus
 )
 from src.models.flashcard import (
     Flashcard, FlashcardDeck, FlashcardDeckShare, FlashcardStudyProgress,
@@ -58,6 +67,14 @@ from src.models.flashcard import (
 from src.models.quiz import (
     Quiz, QuizQuestion, QuizAttempt, QuizResponse, QuizLeaderboard, QuizAnalytics,
     QuizType, QuestionType, QuizStatus, QuizAttemptStatus
+)
+from src.models.dashboard_widget import (
+    DashboardWidget, WidgetPreset, WidgetType, WidgetSize
+)
+from src.models.rate_limit import RateLimitViolation, RateLimitStats
+from src.models.performance_monitoring import (
+    APIPerformanceMetric, DatabaseQueryMetric, CacheMetric, TaskQueueMetric,
+    ResourceUtilizationMetric, PerformanceAlert, MetricStatus, AlertSeverity, AlertStatus
 )
 
 __all__ = [
@@ -116,10 +133,15 @@ __all__ = [
     "Announcement",
     "Message",
     "NotificationTemplate",
+    "NotificationDelivery",
+    "NotificationEngagement",
+    "NotificationAnalytics",
     "NotificationChannel",
     "NotificationPriority",
     "NotificationStatus",
     "AudienceType",
+    "DigestMode",
+    "NotificationGroup",
     "Badge",
     "UserBadge",
     "UserPoints",
@@ -220,10 +242,24 @@ __all__ = [
     "GroupResource",
     "GroupActivity",
     "GroupInvite",
+    "StudyBuddyProfile",
+    "StudyBuddyMatch",
+    "StudySession",
+    "SessionParticipant",
+    "CollaborativeNote",
+    "NoteEditor",
+    "NoteRevision",
+    "PeerTutorProfile",
+    "TutoringRequest",
+    "TutoringSession",
+    "GroupPerformanceAnalytics",
     "GroupMemberRole",
     "MessageType",
     "ActivityType",
     "InviteStatus",
+    "SessionStatus",
+    "MatchStatus",
+    "TutorRequestStatus",
     "Flashcard",
     "FlashcardDeck",
     "FlashcardDeckShare",
@@ -241,4 +277,19 @@ __all__ = [
     "QuestionType",
     "QuizStatus",
     "QuizAttemptStatus",
+    "DashboardWidget",
+    "WidgetPreset",
+    "WidgetType",
+    "WidgetSize",
+    "RateLimitViolation",
+    "RateLimitStats",
+    "APIPerformanceMetric",
+    "DatabaseQueryMetric",
+    "CacheMetric",
+    "TaskQueueMetric",
+    "ResourceUtilizationMetric",
+    "PerformanceAlert",
+    "MetricStatus",
+    "AlertSeverity",
+    "AlertStatus",
 ]

@@ -25,6 +25,7 @@ from src.api.v1 import (
     question_bank,
     question_bookmarks,
     notifications,
+    notification_analytics,
     announcements,
     messages,
     notification_templates,
@@ -46,7 +47,12 @@ from src.api.v1 import (
     data_management,
     flashcards,
     quizzes,
-    chatbot
+    chatbot,
+    dashboard_widgets,
+    rate_limits,
+    performance_monitoring,
+    database_maintenance,
+    collaboration
 )
 from src.api import ml
 
@@ -77,6 +83,7 @@ api_router.include_router(previous_year_papers.router, prefix="/previous-year-pa
 api_router.include_router(question_bank.router, prefix="/question-bank", tags=["question-bank"])
 api_router.include_router(question_bookmarks.router, prefix="/question-bookmarks", tags=["question-bookmarks"])
 api_router.include_router(notifications.router, prefix="/notifications", tags=["notifications"])
+api_router.include_router(notification_analytics.router, prefix="/notification-analytics", tags=["notification-analytics"])
 api_router.include_router(announcements.router, prefix="/announcements", tags=["announcements"])
 api_router.include_router(messages.router, prefix="/messages", tags=["messages"])
 api_router.include_router(notification_templates.router, prefix="/notification-templates", tags=["notification-templates"])
@@ -100,3 +107,8 @@ api_router.include_router(data_management.router, prefix="", tags=["data-managem
 api_router.include_router(flashcards.router, prefix="", tags=["flashcards"])
 api_router.include_router(quizzes.router, prefix="", tags=["quizzes"])
 api_router.include_router(chatbot.router, prefix="/chatbot", tags=["chatbot"])
+api_router.include_router(dashboard_widgets.router, prefix="/dashboard", tags=["dashboard-widgets"])
+api_router.include_router(rate_limits.router, prefix="/rate-limits", tags=["rate-limits"])
+api_router.include_router(performance_monitoring.router, prefix="/admin", tags=["performance-monitoring"])
+api_router.include_router(database_maintenance.router, tags=["database-maintenance"])
+api_router.include_router(collaboration.router, prefix="/collaboration", tags=["collaboration"])

@@ -90,6 +90,11 @@ celerybeat-schedule
 celerybeat.pid
 celery_worker.log
 
+# Performance monitoring exports and cache
+performance_exports/
+metrics_cache/
+*.performance.json
+
 # ML/AI models and artifacts
 models/
 ml_models/
