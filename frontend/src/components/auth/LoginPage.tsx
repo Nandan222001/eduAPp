@@ -19,6 +19,7 @@ import {
 import { Visibility, VisibilityOff, Email, Lock, VpnKey } from '@mui/icons-material';
 import { authApi } from '@/api/auth';
 import { useAuthStore } from '@/store/useAuthStore';
+import { getDashboardRoute } from '@/utils/roleHelpers';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -70,7 +71,7 @@ export default function LoginPage() {
     try {
       const response = await authApi.login(emailPassword);
       login(response.user, response.tokens);
-      navigate('/dashboard');
+      navigate(getDashboardRoute(response.user.role));
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Invalid email or password';
       setError(errorMessage);
@@ -108,7 +109,7 @@ export default function LoginPage() {
     try {
       const response = await authApi.loginWithOTP(otpLogin);
       login(response.user, response.tokens);
-      navigate('/dashboard');
+      navigate(getDashboardRoute(response.user.role));
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Invalid OTP';
       setError(errorMessage);
