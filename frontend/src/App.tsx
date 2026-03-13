@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import { AdminLayout } from './components/admin';
 import { ParentLayout } from './components/parent';
@@ -78,6 +78,19 @@ import { ChatbotWidget } from './components/chatbot';
 import { InstallPrompt } from './components/common/InstallPrompt';
 import { UpdatePrompt } from './components/common/UpdatePrompt';
 import { OfflineIndicator as PWAOfflineIndicator } from './components/common/PWAOfflineIndicator';
+import { useAuthStore } from './store/useAuthStore';
+import { getDashboardRoute } from './utils/roleHelpers';
+
+function DashboardRedirect() {
+  const { user } = useAuthStore();
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  const dashboardRoute = getDashboardRoute(user.role);
+  return <Navigate to={dashboardRoute} replace />;
+}
 
 function App() {
   const isDevelopment = import.meta.env.DEV;
@@ -130,6 +143,7 @@ function App() {
                   <Route index element={<Home />} />
                   <Route path="about" element={<About />} />
                 </Route>
+                <Route path="/dashboard" element={<DashboardRedirect />} />
               </Route>
 
               <Route
