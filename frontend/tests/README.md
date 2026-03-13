@@ -1,378 +1,971 @@
-# Demo User Test Configuration
+# Test Documentation
 
-This directory contains test setup and utilities for testing with demo user context in the frontend application.
+Comprehensive guide to testing the Student Portal frontend application, including unit tests, integration tests, E2E tests, and manual testing procedures.
+
+---
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Test Structure](#test-structure)
+- [Running Tests](#running-tests)
+  - [Unit Tests](#unit-tests)
+  - [Integration Tests](#integration-tests)
+  - [E2E Tests](#e2e-tests)
+  - [Coverage Reports](#coverage-reports)
+- [Demo User Test Credentials](#demo-user-test-credentials)
+- [Test Utilities](#test-utilities)
+- [Expected Behaviors](#expected-behaviors)
+- [Known Limitations](#known-limitations)
+- [Troubleshooting](#troubleshooting)
+- [Writing Tests](#writing-tests)
+- [Best Practices](#best-practices)
+
+---
 
 ## Overview
 
-The `setup.ts` file provides comprehensive mock implementations and test utilities that ensure:
+The Student Portal frontend uses a comprehensive testing strategy:
 
-- **Isolation**: All tests run independently without side effects
-- **Clean state**: Automatic cleanup before and after each test
-- **Demo user support**: Easy setup for testing with demo user credentials
-- **Flexibility**: Support for multiple user roles and custom configurations
+- **Unit Tests**: Test individual components and functions in isolation
+- **Integration Tests**: Test component interactions and API integrations
+- **E2E Tests**: Test complete user journeys through the application
+- **Manual Tests**: Human verification of UX, accessibility, and responsive design
 
-## Features
+### Testing Stack
 
-### 1. LocalStorage Mock
+- **Test Runner**: [Vitest](https://vitest.dev/) - Fast, Vite-native test runner
+- **Component Testing**: [React Testing Library](https://testing-library.com/react)
+- **E2E Testing**: [Playwright](https://playwright.dev/)
+- **Mocking**: [MSW](https://mswjs.io/) (Mock Service Worker)
+- **Assertions**: [Jest DOM](https://github.com/testing-library/jest-dom)
 
-A complete localStorage implementation that works in the test environment:
+---
 
-```typescript
-// Automatically available in all tests
-localStorage.setItem('key', 'value');
-const value = localStorage.getItem('key');
-localStorage.clear();
+## Test Structure
+
+```
+frontend/
+├── tests/                          # Test utilities and setup
+│   ├── README.md                   # This file
+│   ├── setup.ts                    # Core test utilities & auth state management
+│   ├── test-utils.tsx              # React component testing utilities
+│   ├── index.ts                    # Central export point
+│   ├── types.d.ts                  # TypeScript type definitions
+│   ├── demo-user-setup.test.ts     # Tests for setup utilities
+│   ├── test-utils.test.tsx         # Tests for test-utils
+│   ├── e2e/                        # E2E test specifications
+│   │   └── demo-user-flow.spec.ts  # Demo user journey tests
+│   ├── examples/                   # Example test patterns
+│   │   └── integration-example.test.tsx
+│   └── manual/                     # Manual testing scripts
+│       └── demo-user-test-script.md
+├── src/
+│   ├── **/*.test.tsx               # Component unit tests (co-located)
+│   ├── api/**/*.test.ts            # API unit tests
+│   └── setupTests.ts               # Test setup with MSW handlers
+├── vitest.config.ts                # Vitest configuration
+└── package.json                    # Test scripts
 ```
 
-### 2. Demo User Setup Utilities
+### Test File Naming Conventions
 
-Quick functions to set up different user contexts:
+- **Unit Tests**: `*.test.tsx` or `*.test.ts` (co-located with source files)
+- **E2E Tests**: `*.spec.ts` (in `tests/e2e/` directory)
+- **Integration Tests**: `integration-*.test.tsx` (in `tests/examples/`)
 
-```typescript
-import {
-  setupDemoStudent,
-  setupDemoTeacher,
-  setupDemoParent,
-  setupDemoAdmin,
-} from '../tests/setup';
+---
 
-// In your test
-describe('StudentDashboard', () => {
-  beforeEach(() => {
-    setupDemoStudent(); // Sets up demo student user with auth
-  });
+## Running Tests
 
-  it('should display student dashboard', () => {
-    // Test with demo student context
-  });
-});
+### Unit Tests
+
+Unit tests run in watch mode by default, re-running when files change.
+
+**Run in watch mode (interactive):**
+
+```bash
+npm test
 ```
 
-### 3. Custom User Creation
+**Run once (non-interactive):**
 
-Create users with specific properties:
+```bash
+npm test -- --run
+```
+
+**Run specific test file:**
+
+```bash
+npm test -- LoginPage.test.tsx
+```
+
+**Run tests matching pattern:**
+
+```bash
+npm test -- --grep "authentication"
+```
+
+**Run with UI:**
+
+```bash
+npm run test:ui
+```
+
+Opens an interactive browser-based UI for exploring and debugging tests.
+
+### Integration Tests
+
+Integration tests use the same runner as unit tests but test component interactions and API integrations.
+
+**Run all integration tests:**
+
+```bash
+npm test -- integration
+```
+
+**Run specific integration test:**
+
+```bash
+npm test -- tests/examples/integration-example.test.tsx
+```
+
+### E2E Tests
+
+End-to-end tests use Playwright to test complete user journeys in a real browser.
+
+**Run all E2E tests (headless):**
+
+```bash
+npm run test:e2e
+```
+
+**Run with interactive UI:**
+
+```bash
+npm run test:e2e:ui
+```
+
+**Run specific E2E test:**
+
+```bash
+npm run test:e2e -- demo-user-flow.spec.ts
+```
+
+**Run in specific browser:**
+
+```bash
+npm run test:e2e -- --project=chromium
+npm run test:e2e -- --project=firefox
+npm run test:e2e -- --project=webkit
+```
+
+**Run in headed mode (see the browser):**
+
+```bash
+npm run test:e2e -- --headed
+```
+
+**Debug mode (pause on failure):**
+
+```bash
+npm run test:e2e -- --debug
+```
+
+### Coverage Reports
+
+**Generate coverage report:**
+
+```bash
+npm run test:coverage
+```
+
+Coverage reports are generated in the `coverage/` directory and include:
+
+- HTML report: `coverage/index.html`
+- Text summary in terminal
+- LCOV format for CI tools
+
+**Coverage Thresholds:**
+
+- Lines: 70%
+- Functions: 70%
+- Branches: 70%
+- Statements: 70%
+
+---
+
+## Demo User Test Credentials
+
+### Primary Demo User (Student)
+
+```
+Email:     demo@example.com
+Password:  Demo@123
+Name:      Alex Johnson
+Role:      Student
+```
+
+### Demo User Data
+
+The demo user has pre-populated data for testing:
+
+| Data Type             | Value                            |
+| --------------------- | -------------------------------- |
+| **Attendance**        | 80%                              |
+| **Points**            | 2,450                            |
+| **Performance Score** | 86-89%                           |
+| **Institution**       | Demo University                  |
+| **Email Verified**    | Yes                              |
+| **Is Demo User**      | Yes (identified by email domain) |
+
+### Expected Dashboard Data
+
+**Upcoming Assignments:**
+
+- Multiple assignments with various due dates
+- Different subjects (Mathematics, Physics, etc.)
+- Mix of pending and submitted statuses
+
+**Recent Grades:**
+
+- Graded submissions showing A, B, C ratings
+- Subject-specific performance data
+
+**Badges:**
+
+- Multiple earned badges (First Login, Assignment Master, etc.)
+- Badge icons/images displayed
+
+**Goals:**
+
+- Academic goals with progress tracking
+- Different goal types (grade, skill, attendance)
+
+**AI Predictions:**
+
+- Topic probability rankings
+- Topics include: Quadratic, Trigonometric, Circle, Probability, Calculus
+- Probability percentages for each topic
+
+---
+
+## Test Utilities
+
+### Setup Utilities (`tests/setup.ts`)
+
+Utilities for managing authentication state and user context.
+
+#### Quick User Setup
 
 ```typescript
-import { createCustomAuthUser, setupCustomUserAuth } from '../tests/setup';
+import { setupDemoStudent, setupDemoTeacher, setupUnauthenticatedState } from '@/tests/setup';
 
+// Setup demo student
+setupDemoStudent();
+
+// Setup demo teacher
+setupDemoTeacher();
+
+// Setup unauthenticated state
+setupUnauthenticatedState();
+```
+
+#### Available Setup Functions
+
+| Function                              | Description                       |
+| ------------------------------------- | --------------------------------- |
+| `setupDemoStudent()`                  | Setup demo user with student role |
+| `setupDemoTeacher()`                  | Setup demo user with teacher role |
+| `setupDemoParent()`                   | Setup demo user with parent role  |
+| `setupDemoAdmin()`                    | Setup demo user with admin role   |
+| `setupRegularUserAuth(role?, email?)` | Setup non-demo user               |
+| `setupCustomUserAuth(user, tokens?)`  | Setup custom user                 |
+| `setupUnauthenticatedState()`         | Clear all auth state              |
+| `clearAuth()`                         | Clear authentication state        |
+
+#### User Creation Functions
+
+```typescript
+import { createDemoUser, createCustomAuthUser } from '@/tests/setup';
+
+// Create demo user
+const demoUser = createDemoUser('student');
+
+// Create custom user
 const customUser = createCustomAuthUser({
   role: 'teacher',
   email: 'custom@example.com',
   firstName: 'Custom',
   lastName: 'Teacher',
 });
-
-setupCustomUserAuth(customUser);
 ```
 
-### 4. Auth State Management
-
-Utilities to manage authentication state:
+#### State Query Functions
 
 ```typescript
-import { clearAuth, setupUnauthenticatedState, getCurrentAuthUser } from '../tests/setup';
+import { getCurrentAuthUser, isDemoUserInStore, getAuthState } from '@/tests/setup';
 
-// Clear all auth state
-clearAuth();
-
-// Set up unauthenticated state
-setupUnauthenticatedState();
-
-// Check current user
+// Get current user
 const user = getCurrentAuthUser();
+
+// Check if demo user
+const isDemo = isDemoUserInStore();
+
+// Get complete auth state
+const state = getAuthState();
 ```
 
-### 5. Test Context Builders
+### React Testing Utilities (`tests/test-utils.tsx`)
 
-Create complete test contexts with all necessary data:
+Utilities for rendering React components with necessary providers.
 
-```typescript
-import { createDemoUserTestContext, createRegularUserTestContext } from '../tests/setup';
-
-const demoContext = createDemoUserTestContext('student');
-// { user, tokens, isDemo: true, role: 'student' }
-
-const regularContext = createRegularUserTestContext('teacher', 'teacher@example.com');
-// { user, tokens, isDemo: false, role: 'teacher' }
-```
-
-## Available Utilities
-
-### User Setup Functions
-
-| Function                              | Description                                                |
-| ------------------------------------- | ---------------------------------------------------------- |
-| `setupDemoUserAuth(role?)`            | Sets up demo user with specified role (default: 'student') |
-| `setupRegularUserAuth(role?, email?)` | Sets up non-demo user                                      |
-| `setupCustomUserAuth(user, tokens?)`  | Sets up custom user with optional tokens                   |
-| `setupDemoStudent()`                  | Quick setup for demo student                               |
-| `setupDemoTeacher()`                  | Quick setup for demo teacher                               |
-| `setupDemoParent()`                   | Quick setup for demo parent                                |
-| `setupDemoAdmin()`                    | Quick setup for demo admin                                 |
-| `clearAuth()`                         | Clears all authentication state                            |
-| `setupUnauthenticatedState()`         | Sets up unauthenticated state                              |
-
-### User Creation Functions
-
-| Function                          | Description                        |
-| --------------------------------- | ---------------------------------- |
-| `createDemoUser(role?)`           | Creates demo user object           |
-| `createDemoTokens()`              | Creates demo auth tokens           |
-| `createCustomAuthUser(overrides)` | Creates custom user with overrides |
-
-### State Query Functions
-
-| Function               | Description                         |
-| ---------------------- | ----------------------------------- |
-| `isDemoUserInStore()`  | Checks if current user is demo user |
-| `getCurrentAuthUser()` | Gets current user from store        |
-| `getAuthState()`       | Gets complete auth state            |
-
-### Mock Helper Functions
-
-| Function                              | Description                 |
-| ------------------------------------- | --------------------------- |
-| `createMockResponse<T>(data, delay?)` | Creates mock API response   |
-| `createMockError(message, code?)`     | Creates mock error response |
-
-### Test Context Functions
-
-| Function                                      | Description                           |
-| --------------------------------------------- | ------------------------------------- |
-| `createDemoUserTestContext(role?)`            | Creates complete demo user context    |
-| `createRegularUserTestContext(role?, email?)` | Creates complete regular user context |
-
-## Lifecycle Hooks
-
-The setup file automatically runs cleanup hooks:
-
-- **beforeEach**: Clears localStorage, resets auth store, removes persisted state
-- **afterEach**: Clears localStorage, resets auth store, clears timers and mocks
-
-You don't need to manually clean up in most cases, but you can if needed.
-
-## Usage Examples
-
-### Example 1: Testing with Demo Student
+#### Render Functions
 
 ```typescript
-import { describe, it, expect } from 'vitest';
-import { setupDemoStudent, clearAuth } from '../tests/setup';
-import { isDemoUser } from '@/api/demoDataApi';
+import { renderWithDemoStudent, screen, userEvent } from '@/tests/test-utils';
 
-describe('Demo User Detection', () => {
-  it('should detect demo user', () => {
-    setupDemoStudent();
-    expect(isDemoUser()).toBe(true);
-  });
+it('should render component', async () => {
+  const user = userEvent.setup();
 
-  it('should not detect regular user as demo', () => {
-    setupRegularUserAuth();
-    expect(isDemoUser()).toBe(false);
-  });
+  renderWithDemoStudent(<MyComponent />);
+
+  expect(screen.getByText('Welcome')).toBeInTheDocument();
+  await user.click(screen.getByRole('button'));
 });
 ```
 
-### Example 2: Testing Different Roles
+#### Available Render Functions
+
+| Function                                             | Description                          |
+| ---------------------------------------------------- | ------------------------------------ |
+| `renderWithDemoStudent(ui, options?)`                | Render with demo student context     |
+| `renderWithDemoTeacher(ui, options?)`                | Render with demo teacher context     |
+| `renderWithDemoParent(ui, options?)`                 | Render with demo parent context      |
+| `renderWithDemoAdmin(ui, options?)`                  | Render with demo admin context       |
+| `renderWithRegularUser(ui, role?, email?, options?)` | Render with regular user             |
+| `renderUnauthenticated(ui, options?)`                | Render without authentication        |
+| `renderWithProviders(ui, options)`                   | Generic render with custom providers |
+
+#### Helper Functions
 
 ```typescript
-import { describe, it, expect } from 'vitest';
-import { setupDemoTeacher, setupDemoStudent } from '../tests/setup';
+import { waitForCondition, delay, createMockFile, createMockChangeEvent } from '@/tests/test-utils';
 
-describe('Role-based Access', () => {
-  it('should allow teacher access', () => {
-    setupDemoTeacher();
-    // Test teacher-specific functionality
-  });
+// Wait for condition
+await waitForCondition(() => dataLoaded, 5000);
 
-  it('should allow student access', () => {
-    setupDemoStudent();
-    // Test student-specific functionality
-  });
-});
+// Add delay
+await delay(100);
+
+// Create mock file
+const file = createMockFile('test.pdf', 2048, 'application/pdf');
+
+// Create mock event
+const event = createMockChangeEvent('new value');
 ```
 
-### Example 3: Custom User Scenarios
+---
 
-```typescript
-import { describe, it, expect } from 'vitest';
-import { createCustomAuthUser, setupCustomUserAuth } from '../tests/setup';
+## Expected Behaviors
 
-describe('Custom User Scenarios', () => {
-  it('should handle unverified email', () => {
-    const user = createCustomAuthUser({
-      emailVerified: false,
-    });
-    setupCustomUserAuth(user);
-    // Test unverified email flow
-  });
+### Authentication Flow
 
-  it('should handle superuser', () => {
-    const user = createCustomAuthUser({
-      role: 'admin',
-      isSuperuser: true,
-    });
-    setupCustomUserAuth(user);
-    // Test superuser functionality
-  });
-});
-```
+**Valid Login:**
 
-### Example 4: Testing API Mocks
+1. User enters `demo@example.com` and `Demo@123`
+2. Form submits successfully
+3. User redirects to `/student/dashboard`
+4. Dashboard loads with user data
+5. Welcome message shows "Alex Johnson"
 
-```typescript
-import { describe, it, expect } from 'vitest';
-import { createMockResponse, createMockError } from '../tests/setup';
+**Invalid Login:**
 
-describe('API Error Handling', () => {
-  it('should handle successful response', async () => {
-    const mockData = { id: 1, name: 'Test' };
-    const response = await createMockResponse(mockData);
-    expect(response).toEqual(mockData);
-  });
+1. User enters incorrect credentials
+2. Error message displays
+3. User remains on login page
+4. No redirect occurs
 
-  it('should handle error response', async () => {
-    await expect(createMockError('Not found', 404)).rejects.toMatchObject({
-      response: {
-        status: 404,
-        data: { message: 'Not found' },
-      },
-    });
-  });
-});
-```
+**Session Persistence:**
 
-### Example 5: Testing Unauthenticated State
+1. User logs in successfully
+2. Page refresh maintains logged-in state
+3. User data persists across refreshes
+4. Tokens stored in localStorage
 
-```typescript
-import { describe, it, expect } from 'vitest';
-import { setupUnauthenticatedState, getCurrentAuthUser } from '../tests/setup';
+### Dashboard Behavior
 
-describe('Unauthenticated Flow', () => {
-  it('should handle unauthenticated user', () => {
-    setupUnauthenticatedState();
-    expect(getCurrentAuthUser()).toBeNull();
-    // Test login flow, redirects, etc.
-  });
-});
-```
+**Data Loading:**
 
-## Integration with Existing Tests
+1. Dashboard shows loading state initially
+2. Data loads within 5-10 seconds
+3. All widgets populate with data
+4. No error states displayed
 
-The setup file is automatically loaded via `vitest.config.ts`:
+**Navigation:**
 
-```typescript
-export default defineConfig({
-  test: {
-    setupFiles: ['./src/setupTests.ts', './tests/setup.ts'],
-    // ...
-  },
-});
-```
+1. Navigation menu accessible
+2. All student routes clickable
+3. Page transitions smooth (< 1 second)
+4. URL updates correctly
 
-This means all utilities are available in every test file without additional imports.
+**Interactive Elements:**
 
-## Best Practices
+1. Buttons respond to clicks
+2. Forms accept input
+3. Charts/graphs render
+4. Tooltips appear on hover
 
-1. **Always use setup utilities**: Don't manually create auth state; use the provided utilities
-2. **Prefer role-specific functions**: Use `setupDemoStudent()` instead of `setupDemoUserAuth('student')`
-3. **Clean state is automatic**: Don't worry about cleanup; it's handled automatically
-4. **Test isolation**: Each test starts with a clean slate
-5. **Use test contexts**: For complex scenarios, use context builders to organize test data
+### Analytics Page
+
+**Performance Display:**
+
+1. Performance score shows 86-89%
+2. Charts render correctly
+3. Subject breakdown visible
+4. Historical data displayed
+
+**Chart Interactions:**
+
+1. Hover shows tooltips
+2. Data points clickable (if implemented)
+3. Legends interactive
+4. Responsive to viewport size
+
+### AI Prediction Dashboard
+
+**Topic Rankings:**
+
+1. Table/list of topics displayed
+2. Topics include: Quadratic, Trigonometric, Circle, Probability, Calculus
+3. Probability percentages shown
+4. Ranking order visible
+
+---
+
+## Known Limitations
+
+### Demo User Limitations
+
+1. **Read-Only Data**: Demo user data is mocked and doesn't persist changes
+2. **No Real API**: All API calls are intercepted by MSW
+3. **Limited Scope**: Only student role fully implemented for demo
+4. **No File Uploads**: File upload features may be mocked
+5. **Fixed Data**: Same data returned on every request
+
+### Test Environment Limitations
+
+1. **No Real Backend**: Tests run against mocked API responses
+2. **Timing Issues**: Async operations may occasionally timeout
+3. **Browser Compatibility**: E2E tests limited to Chromium/Firefox/WebKit
+4. **Network Conditions**: Offline testing requires manual DevTools setup
+5. **External Services**: Third-party integrations (Sentry, etc.) mocked
+
+### Known Test Flakiness
+
+1. **Race Conditions**: Occasional failures in async tests
+2. **Timing Sensitive**: Tests depending on exact timing may fail
+3. **Animation Issues**: Tests may fail during CSS animations
+4. **Network Delays**: MSW response delays may cause timeouts
+
+### Coverage Gaps
+
+1. **Edge Cases**: Some error scenarios not fully covered
+2. **Complex Flows**: Multi-step processes partially tested
+3. **Accessibility**: A11y testing not comprehensive
+4. **Performance**: Limited performance testing
+
+---
 
 ## Troubleshooting
 
-### Issue: Tests interfering with each other
+### Common Test Failures
 
-**Solution**: The automatic cleanup should prevent this. If it persists, manually call `clearAuth()` in your test.
+#### "Element not found" errors
 
-### Issue: localStorage not persisting
+**Problem**: `screen.getByText()` or similar query fails
 
-**Solution**: This is expected. localStorage is cleared between tests. If you need persistence within a test, don't call `clearAuth()`.
+**Solutions:**
 
-### Issue: Auth state not updating
+1. Check if element rendered asynchronously:
 
-**Solution**: Make sure you're using `useAuthStore.setState()` or the provided utilities, not direct mutations.
+   ```typescript
+   await waitFor(() => {
+     expect(screen.getByText('Text')).toBeInTheDocument();
+   });
+   ```
+
+2. Use more flexible query:
+
+   ```typescript
+   screen.getByText(/text/i); // Case-insensitive regex
+   ```
+
+3. Check the component actually renders:
+   ```typescript
+   screen.debug(); // Print rendered output
+   ```
+
+#### Timeout errors in async tests
+
+**Problem**: Test times out waiting for async operation
+
+**Solutions:**
+
+1. Increase timeout:
+
+   ```typescript
+   await waitFor(
+     () => {
+       /* ... */
+     },
+     { timeout: 10000 }
+   );
+   ```
+
+2. Check if promises resolve:
+
+   ```typescript
+   await waitForCondition(() => dataLoaded);
+   ```
+
+3. Verify MSW handlers are registered:
+   ```typescript
+   // Check src/setupTests.ts has handlers
+   ```
+
+#### "localStorage is not defined"
+
+**Problem**: Tests fail accessing localStorage
+
+**Solution**: Already mocked in `tests/setup.ts`, ensure it's imported:
+
+```typescript
+import '@/tests/setup';
+```
+
+#### Authentication state not persisting
+
+**Problem**: User logged out between tests
+
+**Solutions:**
+
+1. Setup auth in `beforeEach`:
+
+   ```typescript
+   beforeEach(() => {
+     setupDemoStudent();
+   });
+   ```
+
+2. Check for automatic cleanup:
+   ```typescript
+   // Cleanup runs automatically via setup.ts
+   ```
+
+#### MSW handlers not intercepting requests
+
+**Problem**: Real API requests made instead of mocked
+
+**Solutions:**
+
+1. Verify MSW setup in `src/setupTests.ts`
+2. Check handler patterns match request URLs:
+   ```typescript
+   http.get('/api/students/:id', () => {
+     /* ... */
+   });
+   ```
+3. Start MSW server explicitly if needed
+
+#### E2E tests failing on CI
+
+**Problem**: Playwright tests pass locally but fail on CI
+
+**Solutions:**
+
+1. Install Playwright browsers on CI:
+
+   ```bash
+   npx playwright install --with-deps
+   ```
+
+2. Use `waitForNetworkIdle` for async operations:
+
+   ```typescript
+   await waitForNetworkIdle(page);
+   ```
+
+3. Increase timeouts for slower CI environments:
+   ```typescript
+   test.setTimeout(60000);
+   ```
+
+#### Test isolation issues
+
+**Problem**: Tests pass individually but fail when run together
+
+**Solutions:**
+
+1. Verify cleanup in `afterEach`:
+
+   ```typescript
+   afterEach(() => {
+     vi.clearAllMocks();
+     clearAuth();
+   });
+   ```
+
+2. Don't share mutable state between tests
+3. Use `beforeEach` to reset state
+
+#### Chart/canvas tests failing
+
+**Problem**: Tests involving charts or canvas elements fail
+
+**Solutions:**
+
+1. Mock the chart library:
+
+   ```typescript
+   vi.mock('react-chartjs-2', () => ({
+     Line: () => <div>Chart</div>
+   }));
+   ```
+
+2. Query by test ID instead of visual elements:
+   ```typescript
+   <canvas data-testid="chart" />
+   expect(screen.getByTestId('chart')).toBeInTheDocument();
+   ```
+
+### Performance Issues
+
+#### Tests running slowly
+
+**Solutions:**
+
+1. Run specific test file instead of all tests:
+
+   ```bash
+   npm test -- specific-file.test.tsx
+   ```
+
+2. Disable coverage when not needed:
+
+   ```bash
+   npm test -- --coverage=false
+   ```
+
+3. Use `test.concurrent` for independent tests:
+   ```typescript
+   test.concurrent('test 1', async () => {
+     /* ... */
+   });
+   ```
+
+#### Out of memory errors
+
+**Solutions:**
+
+1. Increase Node memory:
+
+   ```bash
+   NODE_OPTIONS=--max-old-space-size=4096 npm test
+   ```
+
+2. Run tests in smaller batches
+3. Clear caches between runs
+
+### Debug Strategies
+
+#### Enable verbose logging
+
+```bash
+npm test -- --reporter=verbose
+```
+
+#### Use debug tools
+
+```typescript
+// React Testing Library
+screen.debug(); // Print DOM
+screen.logTestingPlaygroundURL(); // Get selector suggestions
+
+// Vitest
+await vi.waitFor(
+  () => {
+    /* ... */
+  },
+  {
+    onTimeout: () => {
+      console.log('Timeout - current state:', getCurrentAuthUser());
+    },
+  }
+);
+```
+
+#### Run single test
+
+```typescript
+it.only('should test specific case', () => {
+  // Only this test runs
+});
+```
+
+#### Skip failing test temporarily
+
+```typescript
+it.skip('should test broken case', () => {
+  // This test is skipped
+});
+```
+
+---
+
+## Writing Tests
+
+### Unit Test Example
+
+```typescript
+import { describe, it, expect, beforeEach } from 'vitest';
+import { renderWithDemoStudent, screen, userEvent } from '@/tests/test-utils';
+import { MyComponent } from './MyComponent';
+
+describe('MyComponent', () => {
+  beforeEach(() => {
+    // Setup runs before each test
+  });
+
+  it('should render correctly', () => {
+    renderWithDemoStudent(<MyComponent />);
+
+    expect(screen.getByText('Hello')).toBeInTheDocument();
+  });
+
+  it('should handle user interaction', async () => {
+    const user = userEvent.setup();
+
+    renderWithDemoStudent(<MyComponent />);
+
+    await user.click(screen.getByRole('button'));
+
+    expect(screen.getByText('Clicked')).toBeInTheDocument();
+  });
+});
+```
+
+### Integration Test Example
+
+```typescript
+import { describe, it, expect, vi } from 'vitest';
+import { renderWithDemoStudent, screen, waitFor } from '@/tests/test-utils';
+import { Dashboard } from './Dashboard';
+
+describe('Dashboard Integration', () => {
+  it('should load user data and display dashboard', async () => {
+    renderWithDemoStudent(<Dashboard />);
+
+    // Wait for async data loading
+    await waitFor(() => {
+      expect(screen.getByText(/Alex Johnson/)).toBeInTheDocument();
+    });
+
+    // Verify all sections loaded
+    expect(screen.getByText(/Attendance/)).toBeInTheDocument();
+    expect(screen.getByText(/Assignments/)).toBeInTheDocument();
+    expect(screen.getByText(/Grades/)).toBeInTheDocument();
+  });
+});
+```
+
+### E2E Test Example
+
+```typescript
+import { test, expect } from '@playwright/test';
+
+test('should complete login flow', async ({ page }) => {
+  await page.goto('/login');
+
+  await page.fill('[name="email"]', 'demo@example.com');
+  await page.fill('[name="password"]', 'Demo@123');
+  await page.click('button[type="submit"]');
+
+  await expect(page).toHaveURL(/dashboard/);
+  await expect(page.locator('text=Alex Johnson')).toBeVisible();
+});
+```
+
+---
+
+## Best Practices
+
+### Test Organization
+
+1. **Use descriptive test names**:
+
+   ```typescript
+   // Good
+   it('should display error message when login fails');
+
+   // Bad
+   it('works');
+   ```
+
+2. **Group related tests**:
+
+   ```typescript
+   describe('Authentication', () => {
+     describe('Login', () => {
+       it('should succeed with valid credentials');
+       it('should fail with invalid credentials');
+     });
+
+     describe('Logout', () => {
+       it('should clear session');
+     });
+   });
+   ```
+
+3. **One assertion concept per test**: Test one behavior at a time
+
+### Test Quality
+
+1. **Arrange-Act-Assert pattern**:
+
+   ```typescript
+   it('should update count', async () => {
+     // Arrange
+     const user = userEvent.setup();
+     renderWithDemoStudent(<Counter />);
+
+     // Act
+     await user.click(screen.getByText('Increment'));
+
+     // Assert
+     expect(screen.getByText('Count: 1')).toBeInTheDocument();
+   });
+   ```
+
+2. **Avoid implementation details**: Test behavior, not implementation
+
+   ```typescript
+   // Good - test what user sees
+   expect(screen.getByText('Welcome')).toBeInTheDocument();
+
+   // Bad - test implementation
+   expect(component.state.isWelcome).toBe(true);
+   ```
+
+3. **Use semantic queries**:
+
+   ```typescript
+   // Good - semantic
+   screen.getByRole('button', { name: /submit/i });
+
+   // Acceptable - accessible
+   screen.getByLabelText('Email');
+
+   // Last resort
+   screen.getByTestId('submit-button');
+   ```
+
+### Performance
+
+1. **Use `beforeEach` for common setup**:
+
+   ```typescript
+   beforeEach(() => {
+     setupDemoStudent();
+   });
+   ```
+
+2. **Clean up after tests**:
+
+   ```typescript
+   afterEach(() => {
+     vi.clearAllMocks();
+   });
+   ```
+
+3. **Mock expensive operations**:
+   ```typescript
+   vi.mock('./expensiveModule', () => ({
+     expensiveFunction: vi.fn(),
+   }));
+   ```
+
+### Maintainability
+
+1. **Extract test utilities**: Create reusable helpers
+2. **Use constants for test data**: Don't repeat magic values
+3. **Keep tests simple**: If complex, refactor the code
+4. **Document edge cases**: Add comments for tricky scenarios
+
+---
+
+## Manual Tests
+
+For manual testing procedures, see [manual/demo-user-test-script.md](./manual/demo-user-test-script.md).
+
+Manual tests cover:
+
+- Login flows (valid/invalid credentials)
+- Dashboard navigation
+- Data consistency across pages
+- Interactive features (charts, forms, etc.)
+- Responsive design (desktop, tablet, mobile)
+- Offline mode behavior
+- Cross-browser compatibility
+- Accessibility (keyboard navigation, screen readers)
+- Performance testing
+
+---
+
+## Related Documentation
+
+- **[INDEX.md](./INDEX.md)** - Complete index of test documentation
+- **[QUICK_REFERENCE.md](./QUICK_REFERENCE.md)** - Quick recipes for common scenarios
+- **[TEST_CHECKLIST.md](./TEST_CHECKLIST.md)** - Checklist for writing quality tests
+- **[IMPLEMENTATION_SUMMARY.md](./IMPLEMENTATION_SUMMARY.md)** - Implementation details
+- **[examples/integration-example.test.tsx](./examples/integration-example.test.tsx)** - Complete integration test example
+- **[manual/demo-user-test-script.md](./manual/demo-user-test-script.md)** - Manual testing procedures
+
+---
+
+## Getting Help
+
+1. **Check this documentation** for common patterns
+2. **Review example tests** in `tests/examples/`
+3. **Search existing tests** in `src/` for similar scenarios
+4. **Enable debug mode** to inspect failing tests
+5. **Ask team members** for guidance
+
+---
 
 ## Contributing
 
 When adding new test utilities:
 
-1. Add the function to `tests/setup.ts`
-2. Document it in this README
-3. Add usage examples
-4. Ensure it maintains test isolation
+1. Add function to `setup.ts` or `test-utils.tsx`
+2. Add TypeScript types to `types.d.ts`
+3. Write tests for the utility
+4. Document in this README
+5. Add examples to QUICK_REFERENCE.md
+6. Ensure test isolation is maintained
 
-## React Component Testing with test-utils.tsx
+---
 
-In addition to the setup utilities, we provide `test-utils.tsx` for testing React components with proper providers and context.
+## Summary
 
-### Render Functions
+This testing infrastructure provides:
 
-All render functions automatically wrap components with necessary providers (Router, QueryClient, Theme):
+- ✅ **Fast feedback**: Vitest runs tests quickly with watch mode
+- ✅ **Comprehensive coverage**: Unit, integration, and E2E tests
+- ✅ **Easy setup**: One-line setup for common scenarios
+- ✅ **Type safety**: Full TypeScript support
+- ✅ **Test isolation**: Each test starts with clean state
+- ✅ **Rich utilities**: Extensive helpers for common operations
+- ✅ **Well documented**: Clear examples and guides
 
-```typescript
-import { renderWithDemoStudent, screen } from '../tests/test-utils';
-
-it('should render dashboard', () => {
-  renderWithDemoStudent(<StudentDashboard />);
-  expect(screen.getByText('Welcome')).toBeInTheDocument();
-});
-```
-
-Available render functions:
-
-- `renderWithDemoStudent(ui, options?)` - Renders with demo student
-- `renderWithDemoTeacher(ui, options?)` - Renders with demo teacher
-- `renderWithDemoParent(ui, options?)` - Renders with demo parent
-- `renderWithDemoAdmin(ui, options?)` - Renders with demo admin
-- `renderWithRegularUser(ui, role?, email?, options?)` - Renders with regular user
-- `renderUnauthenticated(ui, options?)` - Renders without auth
-- `renderWithProviders(ui, options)` - Generic render with custom auth state
-
-### User Interactions
-
-```typescript
-import { renderWithDemoStudent, screen, userEvent } from '../tests/test-utils';
-
-it('should handle form submission', async () => {
-  const user = userEvent.setup();
-  renderWithDemoStudent(<LoginForm />);
-
-  await user.type(screen.getByLabelText('Email'), 'test@example.com');
-  await user.click(screen.getByText('Submit'));
-});
-```
-
-### Mock Utilities
-
-```typescript
-import { createMockFile, createMockChangeEvent } from '../tests/test-utils';
-
-// Create mock files for upload testing
-const file = createMockFile('assignment.pdf', 2048, 'application/pdf');
-
-// Create mock events
-const event = createMockChangeEvent('new value');
-```
-
-### Async Utilities
-
-```typescript
-import { waitForCondition, delay } from '../tests/test-utils';
-
-// Wait for a condition
-await waitForCondition(() => dataLoaded);
-
-// Add delay
-await delay(100);
-```
-
-## Related Files
-
-- `src/setupTests.ts` - Main test setup with MSW handlers
-- `tests/setup.ts` - Demo user test configuration and auth utilities
-- `tests/test-utils.tsx` - React component testing utilities
-- `src/data/dummyData.ts` - Demo user data and credentials
-- `src/store/useAuthStore.ts` - Auth store implementation
-- `src/api/demoDataApi.ts` - Demo data API implementation
+**Happy Testing! 🧪**
