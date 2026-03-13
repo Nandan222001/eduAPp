@@ -10,9 +10,16 @@ import type {
   RefreshTokenResponse,
   AuthUser,
 } from '@/types/auth';
+import { DEMO_CREDENTIALS, demoAuthResponse } from '@/data/dummyData';
 
 export const authApi = {
   login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
+    if (
+      credentials.email === DEMO_CREDENTIALS.email &&
+      credentials.password === DEMO_CREDENTIALS.password
+    ) {
+      return demoAuthResponse;
+    }
     const response = await axios.post<AuthResponse>('/api/auth/login', credentials);
     return response.data;
   },
