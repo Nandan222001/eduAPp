@@ -5,6 +5,7 @@ export const getDashboardRoute = (role: UserRole): string => {
     student: '/student/dashboard',
     teacher: '/teacher/dashboard',
     admin: '/admin',
+    institution_admin: '/admin',
     parent: '/parent/dashboard',
     superadmin: '/super-admin',
   };
