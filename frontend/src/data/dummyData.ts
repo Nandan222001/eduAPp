@@ -1,15 +1,5 @@
-import {
-  AuthUser,
-  AuthTokens,
-  AuthResponse,
-  UserRole,
-} from '@/types/auth';
-import {
-  Assignment,
-  AssignmentStatus,
-  Submission,
-  SubmissionStatus,
-} from '@/types/assignment';
+import { AuthUser, AuthTokens, AuthResponse, UserRole } from '@/types/auth';
+import { Assignment, AssignmentStatus, Submission, SubmissionStatus } from '@/types/assignment';
 import {
   Badge,
   UserBadge,
@@ -20,40 +10,43 @@ import {
   BadgeType,
   BadgeRarity,
 } from '@/types/gamification';
-import {
-  Goal,
-  GoalType,
-  GoalStatus,
-  Milestone,
-} from '@/types/goals';
-import {
-  ExamResult,
-  SubjectResult,
-  ExamType,
-} from '@/types/examination';
-import {
-  Student,
-  StudentProfile,
-  AttendanceSummary,
-  ParentInfo,
-} from '@/api/students';
-import {
-  Teacher,
-  Subject,
-} from '@/api/teachers';
+import { Goal, GoalType, GoalStatus } from '@/types/goals';
+import { ExamResult } from '@/types/examination';
+import { StudentProfile, AttendanceSummary, ParentInfo } from '@/api/students';
+import { Teacher, Subject, TeacherMyDashboardData } from '@/api/teachers';
 import {
   TopicProbabilityRanking,
   FocusAreaRecommendation,
   StudyTimeAllocation,
   MarksDistribution,
 } from '@/api/aiPredictionDashboard';
-import {
-  MonthlyAttendanceData,
-  AttendanceStatus,
-} from '@/api/attendance';
+import { MonthlyAttendanceData, AttendanceStatus } from '@/api/attendance';
+import { ParentDashboard } from '@/types/parent';
+import { DashboardResponse as InstitutionAdminDashboard } from '@/api/institutionAdmin';
+import { SuperAdminDashboardResponse } from '@/api/superAdmin';
 
 export const DEMO_CREDENTIALS = {
   email: 'demo@example.com',
+  password: 'Demo@123',
+};
+
+export const TEACHER_CREDENTIALS = {
+  email: 'teacher@demo.com',
+  password: 'Demo@123',
+};
+
+export const PARENT_CREDENTIALS = {
+  email: 'parent@demo.com',
+  password: 'Demo@123',
+};
+
+export const ADMIN_CREDENTIALS = {
+  email: 'admin@demo.com',
+  password: 'Demo@123',
+};
+
+export const SUPERADMIN_CREDENTIALS = {
+  email: 'superadmin@demo.com',
   password: 'Demo@123',
 };
 
@@ -80,8 +73,92 @@ export const demoAuthUser: AuthUser = {
   updatedAt: '2024-01-15T10:30:00Z',
 };
 
+export const teacherAuthUser: AuthUser = {
+  id: '2001',
+  email: TEACHER_CREDENTIALS.email,
+  firstName: 'Emily',
+  lastName: 'Carter',
+  fullName: 'Dr. Emily Carter',
+  role: 'teacher' as UserRole,
+  avatar: 'https://i.pravatar.cc/150?img=47',
+  isActive: true,
+  emailVerified: true,
+  isSuperuser: false,
+  institution_id: 1,
+  createdAt: '2015-08-01T09:00:00Z',
+  updatedAt: '2024-01-15T10:30:00Z',
+};
+
+export const parentAuthUser: AuthUser = {
+  id: '5001',
+  email: PARENT_CREDENTIALS.email,
+  firstName: 'Robert',
+  lastName: 'Williams',
+  fullName: 'Robert Williams',
+  role: 'parent' as UserRole,
+  avatar: 'https://i.pravatar.cc/150?img=60',
+  isActive: true,
+  emailVerified: true,
+  isSuperuser: false,
+  institution_id: 1,
+  createdAt: '2023-04-01T09:00:00Z',
+  updatedAt: '2024-01-15T10:30:00Z',
+};
+
+export const adminAuthUser: AuthUser = {
+  id: '3001',
+  email: ADMIN_CREDENTIALS.email,
+  firstName: 'Michael',
+  lastName: 'Anderson',
+  fullName: 'Michael Anderson',
+  role: 'institution_admin' as UserRole,
+  avatar: 'https://i.pravatar.cc/150?img=68',
+  isActive: true,
+  emailVerified: true,
+  isSuperuser: false,
+  institution_id: 1,
+  createdAt: '2020-01-15T09:00:00Z',
+  updatedAt: '2024-01-15T10:30:00Z',
+};
+
+export const superadminAuthUser: AuthUser = {
+  id: '9001',
+  email: SUPERADMIN_CREDENTIALS.email,
+  firstName: 'Sarah',
+  lastName: 'Thompson',
+  fullName: 'Sarah Thompson',
+  role: 'superadmin' as UserRole,
+  avatar: 'https://i.pravatar.cc/150?img=44',
+  isActive: true,
+  emailVerified: true,
+  isSuperuser: true,
+  institution_id: 0,
+  createdAt: '2019-01-01T09:00:00Z',
+  updatedAt: '2024-01-15T10:30:00Z',
+};
+
 export const demoAuthResponse: AuthResponse = {
   user: demoAuthUser,
+  tokens: demoAuthTokens,
+};
+
+export const teacherAuthResponse: AuthResponse = {
+  user: teacherAuthUser,
+  tokens: demoAuthTokens,
+};
+
+export const parentAuthResponse: AuthResponse = {
+  user: parentAuthUser,
+  tokens: demoAuthTokens,
+};
+
+export const adminAuthResponse: AuthResponse = {
+  user: adminAuthUser,
+  tokens: demoAuthTokens,
+};
+
+export const superadminAuthResponse: AuthResponse = {
+  user: superadminAuthUser,
   tokens: demoAuthTokens,
 };
 
@@ -324,8 +401,8 @@ export const demoAssignments: Assignment[] = [
     grade_id: 10,
     section_id: 101,
     subject_id: 2,
-    title: 'Newton\'s Laws Lab Report',
-    description: 'Complete lab report on Newton\'s laws experiment',
+    title: "Newton's Laws Lab Report",
+    description: "Complete lab report on Newton's laws experiment",
     instructions: 'Include hypothesis, methodology, results, and conclusion',
     due_date: '2024-02-10T23:59:59Z',
     publish_date: '2024-01-25T08:00:00Z',
@@ -1400,6 +1477,753 @@ export const demoData = {
     marksDistribution: demoMarksDistribution,
   },
   analytics: demoPerformanceAnalytics,
+};
+
+export const teacherDashboardData: TeacherMyDashboardData = {
+  teacher_id: 201,
+  teacher_name: 'Dr. Emily Carter',
+  my_classes: [
+    {
+      class_id: 1,
+      class_name: '10th Grade',
+      section: 'A',
+      subject: 'Mathematics',
+      student_count: 45,
+      average_score: 82.5,
+      room_number: 'R-201',
+    },
+    {
+      class_id: 2,
+      class_name: '10th Grade',
+      section: 'B',
+      subject: 'Mathematics',
+      student_count: 42,
+      average_score: 78.3,
+      room_number: 'R-201',
+    },
+    {
+      class_id: 3,
+      class_name: '9th Grade',
+      section: 'A',
+      subject: 'Mathematics',
+      student_count: 38,
+      average_score: 85.1,
+      room_number: 'R-202',
+    },
+  ],
+  todays_schedule: [
+    {
+      id: 1,
+      time_slot: '08:00 - 09:00',
+      start_time: '08:00',
+      end_time: '09:00',
+      class_name: '10th Grade',
+      section: 'A',
+      subject: 'Mathematics',
+      room_number: 'R-201',
+      status: 'completed',
+    },
+    {
+      id: 2,
+      time_slot: '10:00 - 11:00',
+      start_time: '10:00',
+      end_time: '11:00',
+      class_name: '9th Grade',
+      section: 'A',
+      subject: 'Mathematics',
+      room_number: 'R-202',
+      status: 'ongoing',
+    },
+    {
+      id: 3,
+      time_slot: '14:00 - 15:00',
+      start_time: '14:00',
+      end_time: '15:00',
+      class_name: '10th Grade',
+      section: 'B',
+      subject: 'Mathematics',
+      room_number: 'R-201',
+      status: 'upcoming',
+    },
+  ],
+  pending_grading: {
+    total_count: 28,
+    assignments: [
+      {
+        id: 1,
+        title: 'Quadratic Equations Problem Set',
+        class_name: '10th Grade',
+        section: 'A',
+        subject: 'Mathematics',
+        submission_count: 12,
+        due_date: '2024-02-05T23:59:59Z',
+        priority: 'high',
+      },
+      {
+        id: 6,
+        title: 'Algebra Test - Chapter 5',
+        class_name: '10th Grade',
+        section: 'B',
+        subject: 'Mathematics',
+        submission_count: 10,
+        due_date: '2024-02-08T23:59:59Z',
+        priority: 'high',
+      },
+      {
+        id: 7,
+        title: 'Geometry Problems',
+        class_name: '9th Grade',
+        section: 'A',
+        subject: 'Mathematics',
+        submission_count: 6,
+        due_date: '2024-02-12T23:59:59Z',
+        priority: 'medium',
+      },
+    ],
+  },
+  recent_submissions: [
+    {
+      id: 201,
+      student_name: 'Emma Wilson',
+      student_photo: 'https://i.pravatar.cc/150?img=5',
+      assignment_title: 'Quadratic Equations Problem Set',
+      class_name: '10th Grade',
+      section: 'A',
+      submitted_at: '2024-02-14T18:30:00Z',
+      status: 'pending',
+    },
+    {
+      id: 202,
+      student_name: 'Michael Chen',
+      student_photo: 'https://i.pravatar.cc/150?img=13',
+      assignment_title: 'Quadratic Equations Problem Set',
+      class_name: '10th Grade',
+      section: 'A',
+      submitted_at: '2024-02-14T17:15:00Z',
+      status: 'pending',
+    },
+    {
+      id: 203,
+      student_name: 'Sophia Martinez',
+      student_photo: 'https://i.pravatar.cc/150?img=9',
+      assignment_title: 'Algebra Test - Chapter 5',
+      class_name: '10th Grade',
+      section: 'B',
+      submitted_at: '2024-02-14T16:45:00Z',
+      status: 'graded',
+      score: 88,
+    },
+  ],
+  class_performance: [
+    {
+      class_name: '10th Grade',
+      section: 'A',
+      subject: 'Mathematics',
+      average_score: 82.5,
+      attendance_rate: 92.3,
+      student_count: 45,
+    },
+    {
+      class_name: '10th Grade',
+      section: 'B',
+      subject: 'Mathematics',
+      average_score: 78.3,
+      attendance_rate: 88.7,
+      student_count: 42,
+    },
+    {
+      class_name: '9th Grade',
+      section: 'A',
+      subject: 'Mathematics',
+      average_score: 85.1,
+      attendance_rate: 94.5,
+      student_count: 38,
+    },
+  ],
+  upcoming_exams: [
+    {
+      id: 301,
+      exam_name: 'Mid-Term Examination',
+      exam_type: 'Mid-Term',
+      class_name: '10th Grade',
+      section: 'A',
+      subject: 'Mathematics',
+      date: '2024-03-15T09:00:00Z',
+      duration_minutes: 180,
+      total_marks: 100,
+    },
+    {
+      id: 302,
+      exam_name: 'Mid-Term Examination',
+      exam_type: 'Mid-Term',
+      class_name: '10th Grade',
+      section: 'B',
+      subject: 'Mathematics',
+      date: '2024-03-15T09:00:00Z',
+      duration_minutes: 180,
+      total_marks: 100,
+    },
+  ],
+  statistics: {
+    total_students: 125,
+    pending_grading_count: 28,
+    todays_classes: 3,
+    this_week_attendance: 91.8,
+  },
+};
+
+export const parentDashboardData: ParentDashboard = {
+  parent_info: {
+    id: 5001,
+    first_name: 'Robert',
+    last_name: 'Williams',
+    email: PARENT_CREDENTIALS.email,
+    phone: '+1-555-5001',
+    photo_url: 'https://i.pravatar.cc/150?img=60',
+  },
+  children: [
+    {
+      id: 1101,
+      first_name: 'Emma',
+      last_name: 'Williams',
+      admission_number: 'STD2022045',
+      photo_url: 'https://i.pravatar.cc/150?img=5',
+      section_name: 'A',
+      grade_name: '8th Grade',
+    },
+    {
+      id: 1102,
+      first_name: 'Noah',
+      last_name: 'Williams',
+      admission_number: 'STD2023067',
+      photo_url: 'https://i.pravatar.cc/150?img=13',
+      section_name: 'B',
+      grade_name: '6th Grade',
+    },
+  ],
+  selected_child: {
+    id: 1101,
+    first_name: 'Emma',
+    last_name: 'Williams',
+    admission_number: 'STD2022045',
+    photo_url: 'https://i.pravatar.cc/150?img=5',
+    section_name: 'A',
+    grade_name: '8th Grade',
+    attendance_percentage: 94.5,
+    current_rank: 5,
+    average_score: 88.2,
+    total_students: 48,
+    attendance_status: 'present',
+  },
+  today_attendance: {
+    date: '2024-02-15',
+    status: 'present',
+    is_absent: false,
+    is_present: true,
+    is_late: false,
+    is_half_day: false,
+    alert_sent: false,
+  },
+  attendance_stats: {
+    total_days: 160,
+    present_days: 151,
+    absent_days: 5,
+    late_days: 3,
+    half_days: 1,
+    attendance_percentage: 94.5,
+  },
+  recent_grades: [
+    {
+      subject_name: 'Mathematics',
+      exam_name: 'Unit Test 3',
+      exam_type: 'Unit Test',
+      marks_obtained: 92,
+      total_marks: 100,
+      percentage: 92.0,
+      grade: 'A+',
+      exam_date: '2024-02-10T00:00:00Z',
+      rank: 3,
+    },
+    {
+      subject_name: 'Science',
+      exam_name: 'Unit Test 3',
+      exam_type: 'Unit Test',
+      marks_obtained: 88,
+      total_marks: 100,
+      percentage: 88.0,
+      grade: 'A',
+      exam_date: '2024-02-08T00:00:00Z',
+      rank: 7,
+    },
+    {
+      subject_name: 'English',
+      exam_name: 'Unit Test 3',
+      exam_type: 'Unit Test',
+      marks_obtained: 85,
+      total_marks: 100,
+      percentage: 85.0,
+      grade: 'A',
+      exam_date: '2024-02-07T00:00:00Z',
+      rank: 5,
+    },
+    {
+      subject_name: 'Social Studies',
+      exam_name: 'Unit Test 3',
+      exam_type: 'Unit Test',
+      marks_obtained: 90,
+      total_marks: 100,
+      percentage: 90.0,
+      grade: 'A+',
+      exam_date: '2024-02-05T00:00:00Z',
+      rank: 4,
+    },
+  ],
+  pending_assignments: [
+    {
+      id: 201,
+      title: 'Algebra Problem Set - Chapter 8',
+      subject_name: 'Mathematics',
+      due_date: '2024-02-18T23:59:59Z',
+      days_remaining: 3,
+      description: 'Complete all exercises from Chapter 8',
+      max_marks: 50,
+      is_overdue: false,
+    },
+    {
+      id: 202,
+      title: 'Science Project: Solar System Model',
+      subject_name: 'Science',
+      due_date: '2024-02-22T23:59:59Z',
+      days_remaining: 7,
+      description: 'Create a detailed model of the solar system',
+      max_marks: 100,
+      is_overdue: false,
+    },
+    {
+      id: 203,
+      title: 'English Essay: My Favorite Book',
+      subject_name: 'English',
+      due_date: '2024-02-25T23:59:59Z',
+      days_remaining: 10,
+      description: 'Write a 500-word essay about your favorite book',
+      max_marks: 50,
+      is_overdue: false,
+    },
+  ],
+  weekly_progress: {
+    week_start: '2024-02-12',
+    week_end: '2024-02-18',
+    attendance_days: 5,
+    present_days: 5,
+    assignments_completed: 3,
+    assignments_pending: 3,
+    average_score: 88.7,
+    subject_performance: [
+      {
+        subject_name: 'Mathematics',
+        average_score: 90.5,
+        total_assignments: 2,
+        completed_assignments: 2,
+        pending_assignments: 1,
+        attendance_percentage: 100,
+      },
+      {
+        subject_name: 'Science',
+        average_score: 88.0,
+        total_assignments: 2,
+        completed_assignments: 1,
+        pending_assignments: 1,
+        attendance_percentage: 100,
+      },
+    ],
+  },
+  goals: [
+    {
+      id: 10,
+      title: 'Achieve 95% in Mathematics',
+      description: 'Focus on algebra and geometry',
+      goal_type: 'academic',
+      target_value: 95,
+      current_value: 90,
+      progress_percentage: 94.7,
+      status: 'in_progress',
+      start_date: '2024-01-01',
+      end_date: '2024-03-31',
+      days_remaining: 45,
+    },
+    {
+      id: 11,
+      title: 'Improve Attendance to 98%',
+      description: 'Maintain consistent attendance',
+      goal_type: 'behavioral',
+      target_value: 98,
+      current_value: 94.5,
+      progress_percentage: 96.4,
+      status: 'in_progress',
+      start_date: '2024-01-01',
+      end_date: '2024-06-30',
+      days_remaining: 135,
+    },
+  ],
+  teacher_messages: [
+    {
+      id: 1,
+      teacher_name: 'Dr. Smith',
+      subject: 'Mathematics',
+      content: 'Emma is doing excellent work in algebra. Keep it up!',
+      created_at: '2024-02-14T10:30:00Z',
+      is_read: false,
+    },
+    {
+      id: 2,
+      teacher_name: 'Ms. Johnson',
+      subject: 'Science',
+      content: 'Please remind Emma to submit her project by Friday.',
+      created_at: '2024-02-13T14:15:00Z',
+      is_read: true,
+    },
+  ],
+  performance_comparison: {
+    current_term: 'Term 2',
+    previous_term: 'Term 1',
+    current_term_data: [
+      {
+        term_name: 'Term 2',
+        subject_name: 'Mathematics',
+        average_marks: 90,
+        total_marks: 100,
+        percentage: 90.0,
+        grade: 'A+',
+      },
+      {
+        term_name: 'Term 2',
+        subject_name: 'Science',
+        average_marks: 88,
+        total_marks: 100,
+        percentage: 88.0,
+        grade: 'A',
+      },
+    ],
+    previous_term_data: [
+      {
+        term_name: 'Term 1',
+        subject_name: 'Mathematics',
+        average_marks: 85,
+        total_marks: 100,
+        percentage: 85.0,
+        grade: 'A',
+      },
+      {
+        term_name: 'Term 1',
+        subject_name: 'Science',
+        average_marks: 82,
+        total_marks: 100,
+        percentage: 82.0,
+        grade: 'A',
+      },
+    ],
+    improvement_subjects: ['Mathematics', 'Science'],
+    declined_subjects: [],
+    overall_improvement: 5.5,
+  },
+};
+
+export const adminDashboardData: InstitutionAdminDashboard = {
+  overview: {
+    student_count: 1250,
+    teacher_count: 85,
+    total_users: 1450,
+  },
+  attendance_summary: {
+    date: '2024-02-15',
+    total_students: 1250,
+    present: 1150,
+    absent: 75,
+    late: 25,
+    percentage: 92.0,
+  },
+  recent_exam_results: [
+    {
+      exam_id: 1,
+      exam_name: 'Mid-Term Examination',
+      exam_type: 'Mid-Term',
+      date: '2024-02-10',
+      total_students: 450,
+      passed_students: 425,
+      average_percentage: 82.5,
+    },
+    {
+      exam_id: 2,
+      exam_name: 'Unit Test 3',
+      exam_type: 'Unit Test',
+      date: '2024-02-08',
+      total_students: 380,
+      passed_students: 365,
+      average_percentage: 78.3,
+    },
+  ],
+  upcoming_events: [
+    {
+      id: 1,
+      title: 'Annual Sports Day',
+      event_type: 'sports',
+      date: '2024-03-20',
+      description: 'Annual inter-school sports competition',
+    },
+    {
+      id: 2,
+      title: 'Science Fair',
+      event_type: 'academic',
+      date: '2024-03-25',
+      description: 'Student science project exhibition',
+    },
+    {
+      id: 3,
+      title: 'Parent-Teacher Meeting',
+      event_type: 'meeting',
+      date: '2024-03-15',
+      description: 'Quarterly parent-teacher conference',
+    },
+  ],
+  pending_tasks: [
+    {
+      id: '1',
+      task_type: 'approval',
+      title: 'Pending Leave Requests',
+      description: 'Review and approve pending leave requests',
+      count: 12,
+      priority: 'high',
+      due_date: '2024-02-18',
+    },
+    {
+      id: '2',
+      task_type: 'review',
+      title: 'New Admissions',
+      description: 'Process new admission applications',
+      count: 25,
+      priority: 'medium',
+      due_date: '2024-02-22',
+    },
+    {
+      id: '3',
+      task_type: 'payment',
+      title: 'Fee Collection',
+      description: 'Follow up on pending fee payments',
+      count: 45,
+      priority: 'high',
+      due_date: '2024-02-20',
+    },
+  ],
+  performance_trends: [
+    {
+      month: 'Sep 2023',
+      average_score: 75.5,
+      attendance_rate: 88.2,
+      student_count: 1200,
+    },
+    {
+      month: 'Oct 2023',
+      average_score: 77.2,
+      attendance_rate: 89.5,
+      student_count: 1215,
+    },
+    {
+      month: 'Nov 2023',
+      average_score: 78.8,
+      attendance_rate: 90.1,
+      student_count: 1230,
+    },
+    {
+      month: 'Dec 2023',
+      average_score: 80.5,
+      attendance_rate: 91.3,
+      student_count: 1235,
+    },
+    {
+      month: 'Jan 2024',
+      average_score: 81.2,
+      attendance_rate: 91.8,
+      student_count: 1245,
+    },
+    {
+      month: 'Feb 2024',
+      average_score: 82.0,
+      attendance_rate: 92.0,
+      student_count: 1250,
+    },
+  ],
+  quick_statistics: [
+    {
+      label: 'Active Students',
+      value: '1,250',
+      trend: '+2.5%',
+      icon: 'users',
+    },
+    {
+      label: 'Average Attendance',
+      value: '92%',
+      trend: '+0.8%',
+      icon: 'calendar-check',
+    },
+    {
+      label: 'Total Revenue',
+      value: '$485,000',
+      trend: '+5.2%',
+      icon: 'dollar-sign',
+    },
+    {
+      label: 'Pass Rate',
+      value: '94.4%',
+      trend: '+1.2%',
+      icon: 'award',
+    },
+  ],
+};
+
+export const superadminDashboardData: SuperAdminDashboardResponse = {
+  metrics_summary: {
+    total_institutions: 125,
+    active_subscriptions: 98,
+    mrr: 145000,
+    arr: 1740000,
+    institution_growth_trend: 8.5,
+  },
+  subscription_distribution: {
+    active: 98,
+    trial: 15,
+    expired: 8,
+    cancelled: 4,
+  },
+  platform_usage: {
+    dau: 45000,
+    mau: 125000,
+    total_users: 185000,
+    active_users: 140000,
+    dau_mau_ratio: 0.36,
+  },
+  revenue_trends: [
+    {
+      month: 'Sep 2023',
+      mrr: 125000,
+      arr: 1500000,
+      total_revenue: 125000,
+    },
+    {
+      month: 'Oct 2023',
+      mrr: 130000,
+      arr: 1560000,
+      total_revenue: 130000,
+    },
+    {
+      month: 'Nov 2023',
+      mrr: 135000,
+      arr: 1620000,
+      total_revenue: 135000,
+    },
+    {
+      month: 'Dec 2023',
+      mrr: 138000,
+      arr: 1656000,
+      total_revenue: 138000,
+    },
+    {
+      month: 'Jan 2024',
+      mrr: 142000,
+      arr: 1704000,
+      total_revenue: 142000,
+    },
+    {
+      month: 'Feb 2024',
+      mrr: 145000,
+      arr: 1740000,
+      total_revenue: 145000,
+    },
+  ],
+  recent_activities: [
+    {
+      type: 'new_institution',
+      title: 'New Institution Onboarded',
+      description: 'Green Valley School joined the platform',
+      time: '2024-02-15T10:30:00Z',
+      institution_id: 126,
+    },
+    {
+      type: 'subscription_upgrade',
+      title: 'Subscription Upgraded',
+      description: 'Riverside Academy upgraded to Premium plan',
+      time: '2024-02-14T15:20:00Z',
+      institution_id: 45,
+    },
+    {
+      type: 'payment_received',
+      title: 'Payment Received',
+      description: 'Monthly payment received from 15 institutions',
+      time: '2024-02-14T09:00:00Z',
+    },
+    {
+      type: 'trial_expiring',
+      title: 'Trial Expiring Soon',
+      description: '5 institutions have trials expiring in 3 days',
+      time: '2024-02-13T08:00:00Z',
+    },
+  ],
+  institution_performance: [
+    {
+      id: 1,
+      name: 'Springfield High School',
+      total_users: 2500,
+      active_users: 2350,
+      subscription_status: 'active',
+      revenue: 2500,
+      last_activity: '2024-02-15T14:30:00Z',
+      engagement: 94.0,
+    },
+    {
+      id: 2,
+      name: 'Riverside Academy',
+      total_users: 1800,
+      active_users: 1680,
+      subscription_status: 'active',
+      revenue: 3500,
+      last_activity: '2024-02-15T12:15:00Z',
+      engagement: 93.3,
+    },
+    {
+      id: 3,
+      name: 'Oakwood Institute',
+      total_users: 3200,
+      active_users: 2950,
+      subscription_status: 'active',
+      revenue: 4000,
+      last_activity: '2024-02-15T11:45:00Z',
+      engagement: 92.2,
+    },
+    {
+      id: 4,
+      name: 'Maple Leaf School',
+      total_users: 1500,
+      active_users: 1350,
+      subscription_status: 'trial',
+      revenue: 0,
+      last_activity: '2024-02-15T10:20:00Z',
+      engagement: 90.0,
+    },
+    {
+      id: 5,
+      name: 'Cedar Grove Academy',
+      total_users: 2200,
+      active_users: 1980,
+      subscription_status: 'active',
+      revenue: 2800,
+      last_activity: '2024-02-15T09:30:00Z',
+      engagement: 90.0,
+    },
+  ],
+  quick_actions: {
+    trials_expiring_soon: 5,
+    grace_period_ending: 3,
+    pending_onboarding: 2,
+  },
 };
 
 export default demoData;
