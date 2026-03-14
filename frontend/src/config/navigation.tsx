@@ -30,17 +30,51 @@ import { NavigationItem } from '@/types/navigation';
 
 export const navigationConfig: NavigationItem[] = [
   {
+    id: 'superadmin-dashboard',
+    title: 'Dashboard',
+    path: '/super-admin',
+    icon: <DashboardIcon />,
+    roles: ['superadmin'],
+  },
+  {
+    id: 'superadmin-institutions',
+    title: 'Institutions',
+    icon: <BusinessIcon />,
+    roles: ['superadmin'],
+    children: [
+      {
+        id: 'superadmin-institutions-list',
+        title: 'All Institutions',
+        path: '/super-admin/institutions',
+        icon: <BusinessIcon />,
+      },
+      {
+        id: 'superadmin-institutions-create',
+        title: 'Create Institution',
+        path: '/super-admin/institutions/create',
+        icon: <BusinessIcon />,
+      },
+    ],
+  },
+  {
+    id: 'superadmin-settings',
+    title: 'Settings',
+    path: '/super-admin/settings',
+    icon: <SettingsIcon />,
+    roles: ['superadmin'],
+  },
+  {
     id: 'dashboard',
     title: 'Dashboard',
     path: '/admin',
     icon: <DashboardIcon />,
-    roles: ['admin', 'teacher', 'student'],
+    roles: ['admin', 'institution_admin', 'teacher', 'student'],
   },
   {
     id: 'institutions',
     title: 'Institutions',
     icon: <BusinessIcon />,
-    roles: ['admin'],
+    roles: ['admin', 'institution_admin'],
     children: [
       {
         id: 'institutions-list',
@@ -60,7 +94,7 @@ export const navigationConfig: NavigationItem[] = [
     id: 'users',
     title: 'Users',
     icon: <PeopleIcon />,
-    roles: ['admin'],
+    roles: ['admin', 'institution_admin'],
     children: [
       {
         id: 'users-students',
@@ -86,7 +120,7 @@ export const navigationConfig: NavigationItem[] = [
     id: 'academic',
     title: 'Academic',
     icon: <SchoolIcon />,
-    roles: ['admin', 'teacher'],
+    roles: ['admin', 'institution_admin', 'teacher'],
     children: [
       {
         id: 'academic-classes',
@@ -113,28 +147,28 @@ export const navigationConfig: NavigationItem[] = [
     title: 'Assignments',
     path: '/admin/assignments',
     icon: <AssignmentIcon />,
-    roles: ['admin', 'teacher', 'student'],
+    roles: ['admin', 'institution_admin', 'teacher', 'student'],
     badge: 5,
   },
   {
     id: 'examinations',
     title: 'Examinations',
     icon: <AssessmentIcon />,
-    roles: ['admin', 'teacher', 'student'],
+    roles: ['admin', 'institution_admin', 'teacher', 'student'],
     children: [
       {
         id: 'examinations-list',
         title: 'All Exams',
         path: '/admin/examinations/list',
         icon: <AssessmentIcon />,
-        roles: ['admin', 'teacher'],
+        roles: ['admin', 'institution_admin', 'teacher'],
       },
       {
         id: 'examinations-create',
         title: 'Create Exam',
         path: '/admin/examinations/create',
         icon: <AssessmentIcon />,
-        roles: ['admin'],
+        roles: ['admin', 'institution_admin'],
       },
       {
         id: 'examinations-schedule',
@@ -160,7 +194,7 @@ export const navigationConfig: NavigationItem[] = [
     id: 'previous-year-papers',
     title: 'Previous Year Papers',
     icon: <BookIcon />,
-    roles: ['admin', 'teacher', 'student'],
+    roles: ['admin', 'institution_admin', 'teacher', 'student'],
     children: [
       {
         id: 'papers-list',
@@ -173,7 +207,7 @@ export const navigationConfig: NavigationItem[] = [
         title: 'Upload Paper',
         path: '/admin/papers/upload',
         icon: <BookIcon />,
-        roles: ['admin', 'teacher'],
+        roles: ['admin', 'institution_admin', 'teacher'],
       },
       {
         id: 'question-bank',
@@ -196,35 +230,35 @@ export const navigationConfig: NavigationItem[] = [
     title: 'Attendance',
     path: '/admin/attendance',
     icon: <CalendarIcon />,
-    roles: ['admin', 'teacher', 'student'],
+    roles: ['admin', 'institution_admin', 'teacher', 'student'],
     children: [
       {
         id: 'attendance-mark',
         title: 'Mark Attendance',
         path: '/admin/attendance/mark',
         icon: <CheckCircleIcon />,
-        roles: ['admin', 'teacher'],
+        roles: ['admin', 'institution_admin', 'teacher'],
       },
       {
         id: 'attendance-sheet',
         title: 'Attendance Sheet',
         path: '/admin/attendance/sheet',
         icon: <CalendarTodayIcon />,
-        roles: ['admin', 'teacher'],
+        roles: ['admin', 'institution_admin', 'teacher'],
       },
       {
         id: 'attendance-defaulters',
         title: 'Defaulters Report',
         path: '/admin/attendance/defaulters',
         icon: <WarningIcon />,
-        roles: ['admin', 'teacher'],
+        roles: ['admin', 'institution_admin', 'teacher'],
       },
       {
         id: 'attendance-corrections',
         title: 'Corrections',
         path: '/admin/attendance/corrections',
         icon: <EditIcon />,
-        roles: ['admin', 'teacher'],
+        roles: ['admin', 'institution_admin', 'teacher'],
       },
     ],
   },
@@ -241,13 +275,13 @@ export const navigationConfig: NavigationItem[] = [
     title: 'Goals',
     path: '/admin/goals',
     icon: <GoalIcon />,
-    roles: ['admin', 'teacher', 'student'],
+    roles: ['admin', 'institution_admin', 'teacher', 'student'],
   },
   {
     id: 'gamification',
     title: 'Gamification',
     icon: <AchievementsIcon />,
-    roles: ['admin', 'teacher', 'student'],
+    roles: ['admin', 'institution_admin', 'teacher', 'student'],
     children: [
       {
         id: 'gamification-achievements',
@@ -267,7 +301,7 @@ export const navigationConfig: NavigationItem[] = [
     id: 'communication',
     title: 'Communication',
     icon: <ForumIcon />,
-    roles: ['admin', 'teacher', 'student'],
+    roles: ['admin', 'institution_admin', 'teacher', 'student'],
     children: [
       {
         id: 'communication-announcements',
@@ -289,34 +323,34 @@ export const navigationConfig: NavigationItem[] = [
     title: 'Flashcards',
     path: '/admin/flashcards',
     icon: <BookIcon />,
-    roles: ['admin', 'teacher', 'student'],
+    roles: ['admin', 'institution_admin', 'teacher', 'student'],
   },
   {
     id: 'quizzes',
     title: 'Quizzes',
     path: '/admin/quizzes',
     icon: <AssignmentIcon />,
-    roles: ['admin', 'teacher', 'student'],
+    roles: ['admin', 'institution_admin', 'teacher', 'student'],
   },
   {
     id: 'analytics',
     title: 'Analytics',
     path: '/admin/analytics',
     icon: <AnalyticsIcon />,
-    roles: ['admin', 'teacher'],
+    roles: ['admin', 'institution_admin', 'teacher'],
   },
   {
     id: 'subscription',
     title: 'Subscription & Billing',
     path: '/admin/subscription',
     icon: <PaymentIcon />,
-    roles: ['admin'],
+    roles: ['admin', 'institution_admin'],
   },
   {
     id: 'data-management',
     title: 'Data Management',
     icon: <ImportIcon />,
-    roles: ['admin'],
+    roles: ['admin', 'institution_admin'],
     children: [
       {
         id: 'data-export',
@@ -337,6 +371,6 @@ export const navigationConfig: NavigationItem[] = [
     title: 'Settings',
     path: '/admin/settings',
     icon: <SettingsIcon />,
-    roles: ['admin'],
+    roles: ['admin', 'institution_admin'],
   },
 ];
