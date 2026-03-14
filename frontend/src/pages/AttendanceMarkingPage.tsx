@@ -41,6 +41,7 @@ import attendanceApi, {
   BulkAttendanceCreate,
 } from '@/api/attendance';
 import studentsApi from '@/api/students';
+import { isDemoUser, demoDataApi } from '@/api/demoDataApi';
 
 interface Section {
   id: number;
@@ -81,7 +82,8 @@ export default function AttendanceMarkingPage() {
 
   const loadSections = async () => {
     try {
-      const response = await studentsApi.listStudents({ limit: 1000 });
+      const api = isDemoUser() ? demoDataApi.students : studentsApi;
+      const response = await api.listStudents({ limit: 1000 });
       const uniqueSections = Array.from(
         new Map(
           response.items.filter((s) => s.section).map((s) => [s.section!.id, s.section!])
@@ -108,7 +110,8 @@ export default function AttendanceMarkingPage() {
 
     try {
       setLoading(true);
-      const response = await studentsApi.listStudents({
+      const studentsApiToUse = isDemoUser() ? demoDataApi.students : studentsApi;
+      const response = await studentsApiToUse.listStudents({
         section_id: selectedSection,
         is_active: true,
         limit: 1000,
@@ -123,7 +126,8 @@ export default function AttendanceMarkingPage() {
       }> = [];
 
       try {
-        const attendanceResponse = await attendanceApi.listAttendances({
+        const attendanceApiToUse = isDemoUser() ? demoDataApi.attendance : attendanceApi;
+        const attendanceResponse = await attendanceApiToUse.listAttendances({
           section_id: selectedSection,
           start_date: dateStr,
           end_date: dateStr,
@@ -207,7 +211,8 @@ export default function AttendanceMarkingPage() {
         })),
       };
 
-      const result = await attendanceApi.bulkMarkAttendance(bulkData);
+      const attendanceApiToUse = isDemoUser() ? demoDataApi.attendance : attendanceApi;
+      const result = await attendanceApiToUse.bulkMarkAttendance(bulkData);
 
       if (result.failed > 0) {
         setError(

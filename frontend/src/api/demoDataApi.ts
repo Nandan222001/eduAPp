@@ -293,6 +293,20 @@ export const demoAssignmentsApi = {
   deleteFile: async (_assignmentId: number, _fileId: number): Promise<void> => {
     return Promise.resolve();
   },
+
+  createRubricCriteria: async (_assignmentId: number, _criteria: Record<string, unknown>) => {
+    return Promise.resolve({
+      id: 1,
+      assignment_id: _assignmentId,
+      ..._criteria,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    });
+  },
+
+  bulkDownloadSubmissions: async (_assignmentId: number): Promise<Blob> => {
+    return Promise.resolve(new Blob(['Demo submissions'], { type: 'application/zip' }));
+  },
 };
 
 export const demoSubmissionsApi = {
@@ -385,6 +399,15 @@ export const demoAttendanceApi = {
     _subjectId?: number
   ) => {
     return Promise.resolve([]);
+  },
+
+  bulkMarkAttendance: async (_data: Record<string, unknown>) => {
+    const attendances = _data.attendances as unknown[] | undefined;
+    return Promise.resolve({
+      success: attendances?.length || 0,
+      failed: 0,
+      errors: [],
+    });
   },
 };
 
@@ -741,16 +764,29 @@ export const demoAnalyticsApi = {
 
   getClassPerformanceAnalytics: async (
     classId: number,
-    _periodStart?: string,
-    _periodEnd?: string
+    periodStart?: string,
+    periodEnd?: string
   ) => {
     return Promise.resolve({
       class_id: classId,
+      grade: '10th Grade',
+      section: 'A',
+      teacher_id: 1,
+      teacher_name: 'John Smith',
+      period_start: periodStart || '2024-01-01',
+      period_end: periodEnd || new Date().toISOString(),
       total_students: 45,
-      average_performance: 85.5,
-      subject_averages: [],
+      score_trends: [],
+      student_distribution: [],
+      subject_difficulty: [],
       top_performers: [],
-      students_needing_help: [],
+      bottom_performers: [],
+      class_statistics: {
+        averageScore: 85.5,
+        medianScore: 84.0,
+        attendanceRate: 92.3,
+        assignmentCompletionRate: 88.7,
+      },
     });
   },
 

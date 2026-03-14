@@ -33,6 +33,7 @@ import {
 } from '@mui/icons-material';
 import examinationsApi from '@/api/examinations';
 import { ExamSubject, BulkMarksEntry } from '@/types/examination';
+import { isDemoUser } from '@/api/demoDataApi';
 
 interface MarksRow {
   student_id: number;
@@ -61,10 +62,34 @@ export default function MarksEntryPage() {
     try {
       setLoading(true);
       const examId = parseInt(searchParams.get('exam_id') || '1');
-      const data = await examinationsApi.listExamSubjects(examId, 1);
-      setSubjects(data);
-      if (data.length > 0) {
-        setSelectedSubject(data[0].id);
+      if (isDemoUser()) {
+        setSubjects([
+          {
+            id: 1,
+            subject_id: 1,
+            subject_name: 'Mathematics',
+            theory_max_marks: 80,
+            practical_max_marks: 20,
+            theory_passing_marks: 32,
+            practical_passing_marks: 8,
+          } as ExamSubject,
+          {
+            id: 2,
+            subject_id: 2,
+            subject_name: 'Science',
+            theory_max_marks: 70,
+            practical_max_marks: 30,
+            theory_passing_marks: 28,
+            practical_passing_marks: 12,
+          } as ExamSubject,
+        ]);
+        setSelectedSubject(1);
+      } else {
+        const data = await examinationsApi.listExamSubjects(examId, 1);
+        setSubjects(data);
+        if (data.length > 0) {
+          setSelectedSubject(data[0].id);
+        }
       }
     } catch (err) {
       setError(
@@ -91,7 +116,6 @@ export default function MarksEntryPage() {
 
     try {
       setLoading(true);
-      const existingMarks = await examinationsApi.getSubjectMarks(selectedSubject, 1);
 
       const mockStudents = [
         { id: 1, name: 'John Doe', roll_number: '001' },
@@ -100,6 +124,18 @@ export default function MarksEntryPage() {
         { id: 4, name: 'Alice Williams', roll_number: '004' },
         { id: 5, name: 'Charlie Brown', roll_number: '005' },
       ];
+
+      let existingMarks: Array<{
+        student_id: number;
+        theory_marks_obtained?: number;
+        practical_marks_obtained?: number;
+        total_marks_obtained?: number;
+        is_absent?: boolean;
+        remarks?: string;
+      }> = [];
+      if (!isDemoUser()) {
+        existingMarks = await examinationsApi.getSubjectMarks(selectedSubject, 1);
+      }
 
       const rows: MarksRow[] = mockStudents.map((student) => {
         const existingMark = existingMarks.find((m) => m.student_id === student.id);
@@ -162,14 +198,16 @@ export default function MarksEntryPage() {
         remarks: row.remarks || undefined,
       }));
 
-      await examinationsApi.bulkEnterMarks(
-        {
-          exam_subject_id: selectedSubject,
-          marks_entries: marksEntries,
-        },
-        1,
-        1
-      );
+      if (!isDemoUser()) {
+        await examinationsApi.bulkEnterMarks(
+          {
+            exam_subject_id: selectedSubject,
+            marks_entries: marksEntries,
+          },
+          1,
+          1
+        );
+      }
 
       setSuccess(true);
       setMarksData(marksData.map((row) => ({ ...row, status: 'saved' })));

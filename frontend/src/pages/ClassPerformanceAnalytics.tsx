@@ -32,6 +32,7 @@ import {
 import { analyticsApi } from '@/api/analytics';
 import type { ClassPerformanceAnalytics } from '@/types/analytics';
 import { subDays, subMonths } from 'date-fns';
+import { isDemoUser, demoDataApi } from '@/api/demoDataApi';
 
 export default function ClassPerformanceAnalytics() {
   const theme = useTheme();
@@ -64,7 +65,8 @@ export default function ClassPerformanceAnalytics() {
             break;
         }
 
-        const data = await analyticsApi.getClassPerformanceAnalytics(
+        const api = isDemoUser() ? demoDataApi.analytics : analyticsApi;
+        const data = await api.getClassPerformanceAnalytics(
           selectedClass,
           startDate.toISOString(),
           endDate.toISOString()

@@ -19,6 +19,7 @@ import {
 import { Download as DownloadIcon, Refresh as RefreshIcon } from '@mui/icons-material';
 import attendanceApi, { AttendanceStatus, StudentAttendanceReport } from '@/api/attendance';
 import studentsApi from '@/api/students';
+import { isDemoUser, demoDataApi } from '@/api/demoDataApi';
 
 interface Section {
   id: number;
@@ -57,7 +58,8 @@ export default function AttendanceSheetPage() {
 
   const loadSections = async () => {
     try {
-      const response = await studentsApi.listStudents({ limit: 1000 });
+      const api = isDemoUser() ? demoDataApi.students : studentsApi;
+      const response = await api.listStudents({ limit: 1000 });
       const uniqueSections = Array.from(
         new Map(
           response.items.filter((s) => s.section).map((s) => [s.section!.id, s.section!])
@@ -95,7 +97,8 @@ export default function AttendanceSheetPage() {
       const startDateStr = startDate.toISOString().split('T')[0];
       const endDateStr = endDate.toISOString().split('T')[0];
 
-      const report = await attendanceApi.getSectionReport(
+      const attendanceApiToUse = isDemoUser() ? demoDataApi.attendance : attendanceApi;
+      const report = await attendanceApiToUse.getSectionReport(
         selectedSection,
         startDateStr,
         endDateStr,
@@ -106,7 +109,7 @@ export default function AttendanceSheetPage() {
 
       const monthlyDataMap: MonthlyAttendanceData = {};
       for (const student of report) {
-        const detailedReport = await attendanceApi.getStudentDetailedReport(
+        const detailedReport = await attendanceApiToUse.getStudentDetailedReport(
           student.student_id,
           startDateStr,
           endDateStr,

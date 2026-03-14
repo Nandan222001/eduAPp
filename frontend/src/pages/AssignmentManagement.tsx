@@ -21,6 +21,7 @@ import {
 } from '../components/assignments';
 import { Assignment, AssignmentCreateInput, RubricCriteria, Submission } from '../types/assignment';
 import { assignmentApi, submissionApi } from '../api/assignments';
+import { isDemoUser, demoDataApi } from '@/api/demoDataApi';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -60,7 +61,8 @@ export const AssignmentManagement: React.FC = () => {
   const loadAssignments = async () => {
     try {
       setLoading(true);
-      const response = await assignmentApi.list();
+      const api = isDemoUser() ? demoDataApi.assignments : assignmentApi;
+      const response = await api.list();
       setAssignments(response.items);
     } catch (error) {
       showSnackbar('Failed to load assignments', 'error');
@@ -76,13 +78,14 @@ export const AssignmentManagement: React.FC = () => {
   const handleCreateAssignment = async (data: AssignmentCreateInput, files: File[]) => {
     try {
       setLoading(true);
-      const assignment = await assignmentApi.create(data);
+      const api = isDemoUser() ? demoDataApi.assignments : assignmentApi;
+      const assignment = await api.create(data);
 
       for (const file of files) {
-        await assignmentApi.uploadFile(assignment.id, file);
+        await api.uploadFile(assignment.id, file);
       }
 
-      if (rubricCriteria.length > 0) {
+      if (rubricCriteria.length > 0 && !isDemoUser()) {
         for (const criteria of rubricCriteria) {
           await assignmentApi.createRubricCriteria(assignment.id, criteria);
         }
@@ -104,10 +107,11 @@ export const AssignmentManagement: React.FC = () => {
 
     try {
       setLoading(true);
-      await assignmentApi.update(selectedAssignment.id, data);
+      const api = isDemoUser() ? demoDataApi.assignments : assignmentApi;
+      await api.update(selectedAssignment.id, data);
 
       for (const file of files) {
-        await assignmentApi.uploadFile(selectedAssignment.id, file);
+        await api.uploadFile(selectedAssignment.id, file);
       }
 
       showSnackbar('Assignment updated successfully', 'success');
@@ -128,7 +132,8 @@ export const AssignmentManagement: React.FC = () => {
 
     try {
       setLoading(true);
-      await assignmentApi.delete(assignment.id);
+      const api = isDemoUser() ? demoDataApi.assignments : assignmentApi;
+      await api.delete(assignment.id);
       showSnackbar('Assignment deleted successfully', 'success');
       loadAssignments();
     } catch (error) {
@@ -141,7 +146,8 @@ export const AssignmentManagement: React.FC = () => {
   const handleViewAssignment = async (assignment: Assignment) => {
     try {
       setLoading(true);
-      const fullAssignment = await assignmentApi.getWithRubric(assignment.id);
+      const api = isDemoUser() ? demoDataApi.assignments : assignmentApi;
+      const fullAssignment = await api.getWithRubric(assignment.id);
       setSelectedAssignment(fullAssignment);
       await loadSubmissions(assignment.id);
       setTabValue(1);
@@ -154,7 +160,8 @@ export const AssignmentManagement: React.FC = () => {
 
   const loadSubmissions = async (assignmentId: number) => {
     try {
-      const response = await assignmentApi.listSubmissions(assignmentId);
+      const api = isDemoUser() ? demoDataApi.assignments : assignmentApi;
+      const response = await api.listSubmissions(assignmentId);
       setSubmissions(response.items);
     } catch (error) {
       showSnackbar('Failed to load submissions', 'error');
@@ -164,7 +171,8 @@ export const AssignmentManagement: React.FC = () => {
   const handleReviewSubmission = async (submission: Submission) => {
     try {
       setLoading(true);
-      const fullSubmission = await submissionApi.get(submission.id);
+      const api = isDemoUser() ? demoDataApi.submissions : submissionApi;
+      const fullSubmission = await api.get(submission.id);
       setSelectedSubmission(fullSubmission);
       setReviewOpen(true);
     } catch (error) {
@@ -177,6 +185,10 @@ export const AssignmentManagement: React.FC = () => {
   const handleDownloadSubmissions = async (assignment: Assignment) => {
     try {
       setLoading(true);
+      if (isDemoUser()) {
+        showSnackbar('Download not available in demo mode', 'error');
+        return;
+      }
       const blob = await assignmentApi.bulkDownloadSubmissions(assignment.id);
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -204,7 +216,8 @@ export const AssignmentManagement: React.FC = () => {
 
     try {
       setLoading(true);
-      await submissionApi.grade(selectedSubmission.id, {
+      const api = isDemoUser() ? demoDataApi.submissions : submissionApi;
+      await api.grade(selectedSubmission.id, {
         marks_obtained: marks,
         grade,
         feedback,
