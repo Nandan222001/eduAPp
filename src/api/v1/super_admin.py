@@ -33,6 +33,18 @@ from src.schemas.super_admin import (
     InstitutionAnalytics,
 )
 from src.utils.security import hash_password
+from src.services.branding_service import branding_service
+from src.schemas.branding import (
+    InstitutionBrandingCreate,
+    InstitutionBrandingUpdate,
+    InstitutionBrandingResponse,
+    BrandingPreviewResponse,
+    CustomDomainRequest,
+    CustomDomainResponse,
+    UploadLogoResponse,
+)
+from fastapi import File, UploadFile, Request
+from src.middleware.branding_middleware import get_branding_context
 
 router = APIRouter(prefix="/super-admin", tags=["Super Admin"])
 
@@ -1011,3 +1023,142 @@ async def get_institution_analytics(
     )
     
     return analytics
+
+
+# ==================== Branding Endpoints ====================
+
+@router.get("/institutions/{institution_id}/branding", response_model=InstitutionBrandingResponse)
+async def get_institution_branding(
+    institution_id: int,
+    current_user: User = Depends(require_super_admin),
+    db: Session = Depends(get_db),
+):
+    """Get branding configuration for an institution."""
+    branding = branding_service.get_branding_by_institution_id(db, institution_id)
+    
+    if not branding:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Branding not found for this institution"
+        )
+    
+    return branding
+
+
+@router.post("/institutions/{institution_id}/branding", response_model=InstitutionBrandingResponse, status_code=status.HTTP_201_CREATED)
+async def create_institution_branding(
+    institution_id: int,
+    branding_data: InstitutionBrandingCreate,
+    current_user: User = Depends(require_super_admin),
+    db: Session = Depends(get_db),
+):
+    """Create branding configuration for an institution."""
+    if branding_data.institution_id != institution_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Institution ID mismatch"
+        )
+    
+    branding = branding_service.create_branding(db, branding_data)
+    return branding
+
+
+@router.put("/institutions/{institution_id}/branding", response_model=InstitutionBrandingResponse)
+async def update_institution_branding(
+    institution_id: int,
+    branding_data: InstitutionBrandingUpdate,
+    current_user: User = Depends(require_super_admin),
+    db: Session = Depends(get_db),
+):
+    """Update branding configuration for an institution."""
+    branding = branding_service.update_branding(db, institution_id, branding_data)
+    return branding
+
+
+@router.post("/institutions/{institution_id}/branding/upload-logo", response_model=UploadLogoResponse)
+async def upload_logo(
+    institution_id: int,
+    field: str = Query(..., regex="^(logo|favicon|email_logo|login_background)$"),
+    file: UploadFile = File(...),
+    current_user: User = Depends(require_super_admin),
+    db: Session = Depends(get_db),
+):
+    """Upload logo, favicon, or other branding assets to S3."""
+    file_url, s3_key = branding_service.upload_logo(db, institution_id, file, field)
+    
+    return UploadLogoResponse(
+        url=file_url,
+        s3_key=s3_key,
+        field=field
+    )
+
+
+@router.post("/institutions/{institution_id}/branding/custom-domain", response_model=CustomDomainResponse)
+async def set_custom_domain(
+    institution_id: int,
+    domain_data: CustomDomainRequest,
+    current_user: User = Depends(require_super_admin),
+    db: Session = Depends(get_db),
+):
+    """Set custom domain for an institution."""
+    result = branding_service.set_custom_domain(db, institution_id, domain_data)
+    return CustomDomainResponse(**result)
+
+
+@router.post("/institutions/{institution_id}/branding/verify-domain")
+async def verify_custom_domain(
+    institution_id: int,
+    current_user: User = Depends(require_super_admin),
+    db: Session = Depends(get_db),
+):
+    """Verify custom domain ownership."""
+    verified = branding_service.verify_domain(db, institution_id)
+    
+    return {
+        "verified": verified,
+        "message": "Domain verified successfully" if verified else "Domain verification failed"
+    }
+
+
+@router.get("/institutions/{institution_id}/branding/preview", response_model=BrandingPreviewResponse)
+async def preview_branding(
+    institution_id: int,
+    current_user: User = Depends(require_super_admin),
+    db: Session = Depends(get_db),
+):
+    """Get branding preview data."""
+    preview = branding_service.get_branding_preview(db, institution_id)
+    return BrandingPreviewResponse(**preview)
+
+
+@router.delete("/institutions/{institution_id}/branding")
+async def delete_institution_branding(
+    institution_id: int,
+    current_user: User = Depends(require_super_admin),
+    db: Session = Depends(get_db),
+):
+    """Delete branding configuration and associated assets."""
+    branding_service.delete_branding(db, institution_id)
+    
+    return {
+        "message": "Branding deleted successfully"
+    }
+
+
+@router.get("/branding/current")
+async def get_current_branding(request: Request):
+    """
+    Get current branding based on domain/subdomain.
+    This is a public endpoint that can be called without authentication.
+    """
+    branding_context = get_branding_context(request)
+    
+    if not branding_context:
+        return {
+            "branding": None,
+            "message": "No custom branding configured for this domain"
+        }
+    
+    return {
+        "branding": branding_context
+    }
