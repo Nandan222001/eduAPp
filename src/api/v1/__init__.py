@@ -60,7 +60,8 @@ from src.api.v1 import (
     institution_health,
     credentials,
     career,
-    parent_teacher_collab
+    parent_teacher_collab,
+    peer_tutoring
 )
 from src.api import ml
 
@@ -129,3 +130,4 @@ api_router.include_router(credentials.router, tags=["credentials"])
 api_router.include_router(credentials.employer_router, tags=["employer-verification"])
 api_router.include_router(career.router, prefix="/career", tags=["career"])
 api_router.include_router(parent_teacher_collab.router, prefix="/parent-teacher-collab", tags=["parent-teacher-collaboration"])
+api_router.include_router(peer_tutoring.router, prefix="/peer-tutoring", tags=["peer-tutoring"])

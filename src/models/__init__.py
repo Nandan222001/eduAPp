@@ -90,6 +90,13 @@ from src.models.career import (
     CareerInterestCategory, PersonalityType, EducationLevel, IndustryType,
     SkillLevel, RecommendationStatus, MentorshipStatus
 )
+from src.models.peer_tutoring import (
+    TutorProfile, TutoringSession, SessionParticipant, TutorReview, TutorEndorsement,
+    TutorBadge, TutorIncentive, TutorPointHistory, SessionModerationLog,
+    TutorLeaderboard, MatchingPreference,
+    TutorStatus, SessionStatus, SessionType, ReviewStatus, EndorsementType,
+    IncentiveType, BadgeCategory, ModerationActionType
+)
 
 __all__ = [
     "Institution",
@@ -341,4 +348,23 @@ __all__ = [
     "SkillLevel",
     "RecommendationStatus",
     "MentorshipStatus",
+    "TutorProfile",
+    "TutoringSession",
+    "SessionParticipant",
+    "TutorReview",
+    "TutorEndorsement",
+    "TutorBadge",
+    "TutorIncentive",
+    "TutorPointHistory",
+    "SessionModerationLog",
+    "TutorLeaderboard",
+    "MatchingPreference",
+    "TutorStatus",
+    "SessionStatus",
+    "SessionType",
+    "ReviewStatus",
+    "EndorsementType",
+    "IncentiveType",
+    "BadgeCategory",
+    "ModerationActionType",
 ]
