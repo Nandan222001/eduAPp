@@ -1,3 +1,33 @@
+/**
+ * @fileoverview Demo Data for Testing and Development
+ *
+ * This file contains comprehensive demo data for all user roles and features in the platform.
+ * It provides realistic, pre-populated data for testing purposes without requiring a backend connection.
+ *
+ * @module dummyData
+ *
+ * Demo User Credentials:
+ * - Student: student@demo.com (or demo@example.com) / Demo@123
+ * - Teacher: teacher@demo.com / Demo@123
+ * - Parent: parent@demo.com / Demo@123
+ * - Admin: admin@demo.com / Demo@123
+ * - SuperAdmin: superadmin@demo.com / Demo@123
+ *
+ * Data Structure:
+ * - Authentication data (users, tokens, credentials)
+ * - Student data (profiles, attendance, assignments, exams)
+ * - Teacher data (classes, students, grading, schedules)
+ * - Parent data (children, monitoring, communication)
+ * - Admin data (institution overview, statistics, management)
+ * - SuperAdmin data (platform metrics, institutions, subscriptions)
+ * - Gamification data (badges, points, leaderboards)
+ * - Study tools data (flashcards, quizzes, pomodoro)
+ * - Communication data (messages, announcements, notifications)
+ * - Study materials (previous papers, library books)
+ *
+ * @see frontend/src/data/DEMO_USERS.md for detailed documentation
+ */
+
 import { AuthUser, AuthTokens, AuthResponse, UserRole } from '@/types/auth';
 import { Assignment, AssignmentStatus, Submission, SubmissionStatus } from '@/types/assignment';
 import {
@@ -50,31 +80,55 @@ import {
   ConnectedDevice,
 } from '@/types/settings';
 
+/**
+ * Demo credentials for student user
+ * @type {{email: string, password: string}}
+ */
 export const DEMO_CREDENTIALS = {
   email: 'demo@example.com',
   password: 'Demo@123',
 };
 
+/**
+ * Demo credentials for teacher user
+ * @type {{email: string, password: string}}
+ */
 export const TEACHER_CREDENTIALS = {
   email: 'teacher@demo.com',
   password: 'Demo@123',
 };
 
+/**
+ * Demo credentials for parent user
+ * @type {{email: string, password: string}}
+ */
 export const PARENT_CREDENTIALS = {
   email: 'parent@demo.com',
   password: 'Demo@123',
 };
 
+/**
+ * Demo credentials for institution admin user
+ * @type {{email: string, password: string}}
+ */
 export const ADMIN_CREDENTIALS = {
   email: 'admin@demo.com',
   password: 'Demo@123',
 };
 
+/**
+ * Demo credentials for super admin user
+ * @type {{email: string, password: string}}
+ */
 export const SUPERADMIN_CREDENTIALS = {
   email: 'superadmin@demo.com',
   password: 'Demo@123',
 };
 
+/**
+ * Demo authentication tokens for simulating JWT-based authentication
+ * @type {AuthTokens}
+ */
 export const demoAuthTokens: AuthTokens = {
   accessToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.demo_access_token',
   refreshToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.demo_refresh_token',
@@ -82,6 +136,11 @@ export const demoAuthTokens: AuthTokens = {
   tokenType: 'Bearer',
 };
 
+/**
+ * Demo student user profile (Alex Johnson - 10th Grade)
+ * Primary demo account for student role testing
+ * @type {AuthUser}
+ */
 export const demoAuthUser: AuthUser = {
   id: '1001',
   email: DEMO_CREDENTIALS.email,
@@ -98,6 +157,11 @@ export const demoAuthUser: AuthUser = {
   updatedAt: '2024-01-15T10:30:00Z',
 };
 
+/**
+ * Demo teacher user profile (Dr. Emily Carter - Mathematics Teacher)
+ * Primary demo account for teacher role testing
+ * @type {AuthUser}
+ */
 export const teacherAuthUser: AuthUser = {
   id: '2001',
   email: TEACHER_CREDENTIALS.email,
@@ -114,6 +178,11 @@ export const teacherAuthUser: AuthUser = {
   updatedAt: '2024-01-15T10:30:00Z',
 };
 
+/**
+ * Demo parent user profile (Robert Williams)
+ * Primary demo account for parent role testing
+ * @type {AuthUser}
+ */
 export const parentAuthUser: AuthUser = {
   id: '5001',
   email: PARENT_CREDENTIALS.email,
@@ -130,6 +199,11 @@ export const parentAuthUser: AuthUser = {
   updatedAt: '2024-01-15T10:30:00Z',
 };
 
+/**
+ * Demo institution admin user profile (Michael Anderson)
+ * Primary demo account for institution admin role testing
+ * @type {AuthUser}
+ */
 export const adminAuthUser: AuthUser = {
   id: '3001',
   email: ADMIN_CREDENTIALS.email,
@@ -146,6 +220,11 @@ export const adminAuthUser: AuthUser = {
   updatedAt: '2024-01-15T10:30:00Z',
 };
 
+/**
+ * Demo super admin user profile (Sarah Thompson)
+ * Primary demo account for super admin role testing - has platform-wide access
+ * @type {AuthUser}
+ */
 export const superadminAuthUser: AuthUser = {
   id: '9001',
   email: SUPERADMIN_CREDENTIALS.email,
@@ -187,6 +266,11 @@ export const superadminAuthResponse: AuthResponse = {
   tokens: demoAuthTokens,
 };
 
+/**
+ * Demo parent information for student Alex Johnson
+ * Contains contact details for both parents
+ * @type {ParentInfo[]}
+ */
 export const demoParentInfo: ParentInfo[] = [
   {
     id: 501,
@@ -208,6 +292,11 @@ export const demoParentInfo: ParentInfo[] = [
   },
 ];
 
+/**
+ * Demo attendance summary for student Alex Johnson
+ * Shows overall attendance statistics
+ * @type {AttendanceSummary}
+ */
 export const demoAttendanceSummary: AttendanceSummary = {
   total_days: 150,
   present_days: 120,
@@ -217,6 +306,11 @@ export const demoAttendanceSummary: AttendanceSummary = {
   attendance_percentage: 80.0,
 };
 
+/**
+ * Demo monthly attendance records for January 2024
+ * Shows day-by-day attendance status (Present/Absent/Late/Half Day)
+ * @type {MonthlyAttendanceData[]}
+ */
 export const demoMonthlyAttendance: MonthlyAttendanceData[] = [
   { date: '2024-01-02', status: AttendanceStatus.PRESENT },
   { date: '2024-01-03', status: AttendanceStatus.PRESENT },
@@ -242,6 +336,11 @@ export const demoMonthlyAttendance: MonthlyAttendanceData[] = [
   { date: '2024-01-31', status: AttendanceStatus.PRESENT },
 ];
 
+/**
+ * Demo student profile for Alex Johnson
+ * Complete student information including personal details, section, parents, and academic stats
+ * @type {StudentProfile}
+ */
 export const demoStudentProfile: StudentProfile = {
   id: 1001,
   institution_id: 1,
@@ -289,6 +388,11 @@ export const demoStudentProfile: StudentProfile = {
   pending_assignments: 5,
 };
 
+/**
+ * Demo subjects for 10th grade
+ * List of all subjects taught in the curriculum
+ * @type {Subject[]}
+ */
 export const demoSubjects: Subject[] = [
   { id: 1, name: 'Mathematics', code: 'MATH10', is_primary: true },
   { id: 2, name: 'Physics', code: 'PHY10', is_primary: false },
@@ -297,6 +401,11 @@ export const demoSubjects: Subject[] = [
   { id: 5, name: 'History', code: 'HIST10', is_primary: false },
 ];
 
+/**
+ * Demo teachers database
+ * Contains profiles for all teachers teaching 10th grade subjects
+ * @type {Teacher[]}
+ */
 export const demoTeachers: Teacher[] = [
   {
     id: 201,
@@ -395,6 +504,11 @@ export const demoTeachers: Teacher[] = [
   },
 ];
 
+/**
+ * Demo assignments for 10th grade across all subjects
+ * Includes published assignments with various due dates and statuses
+ * @type {Assignment[]}
+ */
 export const demoAssignments: Assignment[] = [
   {
     id: 1,
@@ -512,6 +626,11 @@ export const demoAssignments: Assignment[] = [
   },
 ];
 
+/**
+ * Demo assignment submissions for student Alex Johnson
+ * Shows various submission states: graded, submitted, and not submitted
+ * @type {Submission[]}
+ */
 export const demoSubmissions: Submission[] = [
   {
     id: 101,
@@ -584,6 +703,11 @@ export const demoSubmissions: Submission[] = [
   },
 ];
 
+/**
+ * Demo exam results for student Alex Johnson
+ * Contains detailed exam results with subject-wise breakdown across multiple exams
+ * @type {ExamResult[]}
+ */
 export const demoExamResults: ExamResult[] = [
   {
     id: 301,
@@ -799,6 +923,11 @@ export const demoExamResults: ExamResult[] = [
   },
 ];
 
+/**
+ * Demo gamification badges available to earn
+ * Different badge types (attendance, assignment, exam, streak, goal) with various rarities
+ * @type {Badge[]}
+ */
 export const demoBadges: Badge[] = [
   {
     id: 1,
@@ -877,6 +1006,11 @@ export const demoBadges: Badge[] = [
   },
 ];
 
+/**
+ * Demo badges earned by student Alex Johnson
+ * Shows earned badges with points awarded and metadata
+ * @type {UserBadge[]}
+ */
 export const demoUserBadges: UserBadge[] = [
   {
     id: 1001,
@@ -924,6 +1058,11 @@ export const demoUserBadges: UserBadge[] = [
   },
 ];
 
+/**
+ * Demo user points and level data for student Alex Johnson
+ * Tracks total points, level, experience, and login streaks
+ * @type {UserPoints}
+ */
 export const demoUserPoints: UserPoints = {
   id: 1,
   institution_id: 1,
@@ -939,6 +1078,11 @@ export const demoUserPoints: UserPoints = {
   updated_at: '2024-02-15T08:30:00Z',
 };
 
+/**
+ * Demo point earning history for student Alex Johnson
+ * Shows how points were earned through various activities (assignments, badges, streaks)
+ * @type {PointHistory[]}
+ */
 export const demoPointHistory: PointHistory[] = [
   {
     id: 1,
@@ -1002,6 +1146,11 @@ export const demoPointHistory: PointHistory[] = [
   },
 ];
 
+/**
+ * Demo leaderboard entries showing top students by points
+ * Alex Johnson is ranked 3rd with 2,450 points
+ * @type {LeaderboardEntry[]}
+ */
 export const demoLeaderboardEntries: LeaderboardEntry[] = [
   {
     id: 1,
@@ -1100,6 +1249,11 @@ export const demoLeaderboardEntries: LeaderboardEntry[] = [
   },
 ];
 
+/**
+ * Demo goals for student Alex Johnson
+ * SMART goals for academic performance, attendance, and skill development with progress tracking
+ * @type {Goal[]}
+ */
 export const demoGoals: Goal[] = [
   {
     id: '1',
@@ -1463,6 +1617,11 @@ export const demoPerformanceAnalytics = {
   })),
 };
 
+/**
+ * Demo flashcard decks for study
+ * Includes private, institution, and public decks across different subjects
+ * @type {FlashcardDeck[]}
+ */
 export const demoFlashcardDecks: FlashcardDeck[] = [
   {
     id: 1,
@@ -1564,6 +1723,11 @@ export const demoFlashcardDeckStats: FlashcardDeckStats = {
   cards_due_today: 5,
 };
 
+/**
+ * Demo quizzes available for students
+ * Includes practice, graded, and competitive quizzes across subjects
+ * @type {Quiz[]}
+ */
 export const demoQuizzes: Quiz[] = [
   {
     id: 1,
@@ -3278,6 +3442,11 @@ export const demoData = {
   studyMaterials: demoStudyMaterialsData,
 };
 
+/**
+ * Demo teacher dashboard data for Dr. Emily Carter
+ * Contains all data displayed on the teacher dashboard including classes, schedule, grading, and analytics
+ * @type {TeacherMyDashboardData}
+ */
 export const teacherDashboardData: TeacherMyDashboardData = {
   teacher_id: 201,
   teacher_name: 'Dr. Emily Carter',
@@ -3471,6 +3640,12 @@ export const teacherDashboardData: TeacherMyDashboardData = {
   },
 };
 
+/**
+ * Demo parent dashboard data for Robert Williams
+ * Contains all data for monitoring children's academic performance, attendance, and communication
+ * Includes data for two children: Emma Williams (8th grade) and Noah Williams (6th grade)
+ * @type {ParentDashboard}
+ */
 export const parentDashboardData: ParentDashboard = {
   parent_info: {
     id: 5001,
@@ -4165,6 +4340,11 @@ export const parentCommunicationData = {
   ],
 };
 
+/**
+ * Demo institution admin dashboard data
+ * Contains institution-wide metrics, statistics, and pending tasks for admin management
+ * @type {InstitutionAdminDashboard}
+ */
 export const adminDashboardData: InstitutionAdminDashboard = {
   overview: {
     student_count: 1250,
@@ -4317,6 +4497,11 @@ export const adminDashboardData: InstitutionAdminDashboard = {
   ],
 };
 
+/**
+ * Demo super admin dashboard data
+ * Platform-wide analytics including all institutions, subscriptions, revenue, and usage metrics
+ * @type {SuperAdminDashboardResponse}
+ */
 export const superadminDashboardData: SuperAdminDashboardResponse = {
   metrics_summary: {
     total_institutions: 125,
@@ -4463,4 +4648,28 @@ export const superadminDashboardData: SuperAdminDashboardResponse = {
   },
 };
 
+/**
+ * Main demo data export
+ * Comprehensive collection of all demo data organized by feature/module
+ * This is the primary export used throughout the application for testing and demo purposes
+ *
+ * @type {Object}
+ * @property {Object} credentials - Demo login credentials
+ * @property {Object} auth - Authentication data (users, tokens, responses)
+ * @property {Object} student - Student-specific data (profile, attendance, parents)
+ * @property {Object} academics - Academic data (subjects, teachers, assignments, exams)
+ * @property {Object} teacher - Teacher-specific data (classes, submissions, messages)
+ * @property {Object} gamification - Gamification data (badges, points, leaderboards)
+ * @property {Array} goals - Student goals and progress tracking
+ * @property {Object} aiPrediction - AI prediction and recommendation data
+ * @property {Object} analytics - Performance analytics
+ * @property {Object} flashcards - Flashcard decks and study data
+ * @property {Object} quizzes - Quiz data (quizzes, questions, attempts)
+ * @property {Object} pomodoro - Pomodoro timer settings and analytics
+ * @property {Object} settings - User settings and preferences
+ * @property {Object} parent - Parent dashboard and monitoring data
+ * @property {Object} communications - Messages, announcements, notifications
+ * @property {Object} search - Search data for students, teachers, assignments
+ * @property {Object} studyMaterials - Previous papers and library books
+ */
 export default demoData;
