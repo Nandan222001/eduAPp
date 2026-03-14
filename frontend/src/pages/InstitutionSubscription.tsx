@@ -45,6 +45,7 @@ import superAdminApi, {
   SubscriptionUpdate,
   BillingHistoryItem,
 } from '@/api/superAdmin';
+import { isDemoUser, demoDataApi } from '@/api/demoDataApi';
 
 export default function InstitutionSubscription() {
   const theme = useTheme();
@@ -69,10 +70,18 @@ export default function InstitutionSubscription() {
     try {
       setLoading(true);
       setError(null);
-      const [details, billing] = await Promise.all([
-        superAdminApi.getInstitutionDetails(Number(id)),
-        superAdminApi.getBillingHistory(Number(id)),
-      ]);
+
+      // Use demo data API if user is demo user, otherwise use real API
+      const [details, billing] = isDemoUser()
+        ? await Promise.all([
+            demoDataApi.superAdmin.getInstitutionDetails(Number(id)),
+            demoDataApi.superAdmin.getBillingHistory(Number(id)),
+          ])
+        : await Promise.all([
+            superAdminApi.getInstitutionDetails(Number(id)),
+            superAdminApi.getBillingHistory(Number(id)),
+          ]);
+
       setInstitutionData(details);
       setBillingHistory(billing.billing_history);
 
@@ -95,7 +104,14 @@ export default function InstitutionSubscription() {
   const handleUpdateSubscription = async () => {
     try {
       setSaving(true);
-      await superAdminApi.updateSubscription(Number(id), subscriptionFormData);
+
+      // Use demo data API if user is demo user, otherwise use real API
+      if (isDemoUser()) {
+        await demoDataApi.superAdmin.updateSubscription(Number(id), subscriptionFormData);
+      } else {
+        await superAdminApi.updateSubscription(Number(id), subscriptionFormData);
+      }
+
       setEditDialogOpen(false);
       fetchData();
     } catch (err) {

@@ -25,6 +25,7 @@ import {
   VisibilityOff as VisibilityOffIcon,
 } from '@mui/icons-material';
 import superAdminApi, { InstitutionCreate } from '@/api/superAdmin';
+import { isDemoUser, demoDataApi } from '@/api/demoDataApi';
 
 const steps = ['Basic Information', 'Admin User', 'Subscription Plan'];
 
@@ -103,7 +104,11 @@ export default function InstitutionCreateWizard() {
         submitData.subscription = undefined;
       }
 
-      const response = await superAdminApi.createInstitution(submitData);
+      // Use demo data API if user is demo user, otherwise use real API
+      const response = isDemoUser()
+        ? await demoDataApi.superAdmin.createInstitution(submitData)
+        : await superAdminApi.createInstitution(submitData);
+
       navigate(`/super-admin/institutions/${response.id}`);
     } catch (err: unknown) {
       const errorMessage =

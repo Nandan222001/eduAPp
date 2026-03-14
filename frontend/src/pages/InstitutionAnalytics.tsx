@@ -42,6 +42,7 @@ import {
   Filler,
 } from 'chart.js';
 import superAdminApi, { InstitutionAnalytics } from '@/api/superAdmin';
+import { isDemoUser, demoDataApi } from '@/api/demoDataApi';
 
 ChartJS.register(
   CategoryScale,
@@ -75,7 +76,12 @@ export default function InstitutionAnalyticsPage() {
     try {
       setLoading(true);
       setError(null);
-      const data = await superAdminApi.getInstitutionAnalytics(Number(id), timeRange);
+
+      // Use demo data API if user is demo user, otherwise use real API
+      const data = isDemoUser()
+        ? await demoDataApi.superAdmin.getInstitutionAnalytics(Number(id), timeRange)
+        : await superAdminApi.getInstitutionAnalytics(Number(id), timeRange);
+
       setAnalytics(data);
     } catch (err) {
       setError('Failed to load analytics data. Please try again.');

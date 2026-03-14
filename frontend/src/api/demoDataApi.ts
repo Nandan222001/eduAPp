@@ -2453,6 +2453,241 @@ export const demoSuperAdminApi = {
   getDashboard: async (): Promise<SuperAdminDashboardResponse> => {
     return Promise.resolve(superadminDashboardData);
   },
+
+  listInstitutions: async (params: {
+    page?: number;
+    page_size?: number;
+    search?: string;
+    status?: string;
+    plan?: string;
+    sort_by?: string;
+    sort_order?: string;
+  }) => {
+    // Get institutions from dashboard data
+    let institutions = superadminDashboardData.institution_performance.map((inst) => ({
+      id: inst.id,
+      name: inst.name,
+      slug: inst.name.toLowerCase().replace(/\s+/g, '-'),
+      domain: `${inst.name.toLowerCase().replace(/\s+/g, '')}.edu` || null,
+      is_active: inst.subscription_status === 'active',
+      max_users: inst.total_users + 100,
+      created_at: '2023-01-15T09:00:00Z',
+      subscription_status: inst.subscription_status,
+      subscription_plan: inst.subscription_status === 'active' ? 'Professional' : null,
+      total_users: inst.total_users,
+      active_users: inst.active_users,
+      total_revenue: inst.revenue,
+    }));
+
+    // Apply filters
+    if (params.search) {
+      const searchLower = params.search.toLowerCase();
+      institutions = institutions.filter(
+        (inst) =>
+          inst.name.toLowerCase().includes(searchLower) ||
+          inst.slug.toLowerCase().includes(searchLower)
+      );
+    }
+
+    if (params.status && params.status !== 'all') {
+      institutions = institutions.filter((inst) =>
+        params.status === 'active' ? inst.is_active : !inst.is_active
+      );
+    }
+
+    if (params.plan && params.plan !== 'all') {
+      institutions = institutions.filter((inst) => inst.subscription_plan === params.plan);
+    }
+
+    // Apply sorting
+    if (params.sort_by) {
+      institutions.sort((a, b) => {
+        const aVal = a[params.sort_by as keyof typeof a];
+        const bVal = b[params.sort_by as keyof typeof b];
+        const order = params.sort_order === 'desc' ? -1 : 1;
+
+        if (typeof aVal === 'string' && typeof bVal === 'string') {
+          return order * aVal.localeCompare(bVal);
+        }
+        return order * ((aVal as number) - (bVal as number));
+      });
+    }
+
+    const page = params.page || 1;
+    const pageSize = params.page_size || 20;
+    const start = (page - 1) * pageSize;
+    const end = start + pageSize;
+
+    return Promise.resolve({
+      items: institutions.slice(start, end),
+      total: institutions.length,
+      page,
+      page_size: pageSize,
+      total_pages: Math.ceil(institutions.length / pageSize),
+    });
+  },
+
+  getInstitutionDetails: async (institutionId: number) => {
+    const inst = superadminDashboardData.institution_performance.find(
+      (i) => i.id === institutionId
+    );
+
+    if (!inst) {
+      return Promise.reject(new Error('Institution not found'));
+    }
+
+    return Promise.resolve({
+      institution: {
+        id: inst.id,
+        name: inst.name,
+        slug: inst.name.toLowerCase().replace(/\s+/g, '-'),
+        domain: `${inst.name.toLowerCase().replace(/\s+/g, '')}.edu`,
+        description: `${inst.name} is a leading educational institution.`,
+        is_active: inst.subscription_status === 'active',
+        max_users: inst.total_users + 100,
+        created_at: '2023-01-15T09:00:00Z',
+        updated_at: '2024-02-15T10:30:00Z',
+      },
+      subscription:
+        inst.subscription_status === 'active'
+          ? {
+              id: 1,
+              plan_name: 'Professional',
+              status: 'active',
+              billing_cycle: 'monthly',
+              price: inst.revenue,
+              start_date: '2024-01-01T00:00:00Z',
+              end_date: '2024-12-31T23:59:59Z',
+              trial_end_date: '2024-01-15T23:59:59Z',
+            }
+          : null,
+      stats: {
+        total_users: inst.total_users,
+        active_users: inst.active_users,
+        student_count: Math.floor(inst.total_users * 0.85),
+        teacher_count: Math.floor(inst.total_users * 0.15),
+        total_revenue: inst.revenue,
+      },
+      recent_usage: [
+        {
+          metric_name: 'daily_active_users',
+          metric_value: Math.floor(inst.active_users * 0.6),
+          recorded_at: '2024-02-15T00:00:00Z',
+        },
+        {
+          metric_name: 'assignments_created',
+          metric_value: 45,
+          recorded_at: '2024-02-15T00:00:00Z',
+        },
+      ],
+    });
+  },
+
+  createInstitution: async (data: Record<string, unknown>) => {
+    return Promise.resolve({
+      id: 999,
+      name: data.name as string,
+      slug: data.slug as string,
+      message: 'Institution created successfully (demo mode)',
+    });
+  },
+
+  updateInstitution: async (institutionId: number, data: Record<string, unknown>) => {
+    return Promise.resolve({
+      id: institutionId,
+      name: data.name as string,
+      message: 'Institution updated successfully (demo mode)',
+    });
+  },
+
+  updateSubscription: async (institutionId: number, data: Record<string, unknown>) => {
+    return Promise.resolve({
+      id: institutionId,
+      plan_name: data.plan_name as string,
+      status: 'active',
+      message: 'Subscription updated successfully (demo mode)',
+    });
+  },
+
+  getBillingHistory: async (_institutionId: number) => {
+    return Promise.resolve({
+      billing_history: [
+        {
+          id: 1,
+          invoice_number: 'INV-2024-001',
+          payment_id: 12345,
+          amount: 2500,
+          status: 'paid',
+          payment_method: 'Credit Card',
+          paid_at: '2024-02-01T10:00:00Z',
+          created_at: '2024-02-01T09:00:00Z',
+        },
+        {
+          id: 2,
+          invoice_number: 'INV-2024-002',
+          payment_id: 12346,
+          amount: 2500,
+          status: 'paid',
+          payment_method: 'Credit Card',
+          paid_at: '2024-01-01T10:00:00Z',
+          created_at: '2024-01-01T09:00:00Z',
+        },
+        {
+          id: 3,
+          payment_id: 12347,
+          amount: 2500,
+          status: 'pending',
+          created_at: '2024-03-01T09:00:00Z',
+        },
+      ],
+    });
+  },
+
+  getInstitutionAnalytics: async (institutionId: number, days: number = 30) => {
+    const inst = superadminDashboardData.institution_performance.find(
+      (i) => i.id === institutionId
+    );
+
+    if (!inst) {
+      return Promise.reject(new Error('Institution not found'));
+    }
+
+    // Generate usage trends data
+    const usageTrends = [];
+    const today = new Date();
+    for (let i = days - 1; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      usageTrends.push({
+        date: date.toISOString().split('T')[0],
+        active_users: Math.floor(inst.active_users * (0.7 + Math.random() * 0.3)),
+      });
+    }
+
+    return Promise.resolve({
+      institution_id: institutionId,
+      institution_name: inst.name,
+      user_metrics: {
+        total_users: inst.total_users,
+        active_users: inst.active_users,
+        new_users: Math.floor(inst.total_users * 0.05),
+        students: Math.floor(inst.total_users * 0.85),
+        teachers: Math.floor(inst.total_users * 0.15),
+      },
+      engagement_metrics: {
+        daily_active_users: Math.floor(inst.active_users * 0.6),
+        weekly_active_users: Math.floor(inst.active_users * 0.85),
+        monthly_active_users: inst.active_users,
+        engagement_rate: inst.engagement,
+      },
+      usage_trends: usageTrends,
+      revenue_metrics: {
+        total_revenue: inst.revenue,
+        recent_revenue: Math.floor(inst.revenue * 0.3),
+        currency: '₹',
+      },
+    });
+  },
 };
 
 export const demoFlashcardsApi = {

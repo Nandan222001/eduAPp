@@ -36,6 +36,7 @@ import {
   CheckCircle as CheckCircleIcon,
 } from '@mui/icons-material';
 import superAdminApi, { InstitutionDetails, InstitutionUpdate } from '@/api/superAdmin';
+import { isDemoUser, demoDataApi } from '@/api/demoDataApi';
 import UsageMetricsPanel from './UsageMetricsPanel';
 
 interface TabPanelProps {
@@ -77,7 +78,12 @@ export default function InstitutionDetail() {
     try {
       setLoading(true);
       setError(null);
-      const data = await superAdminApi.getInstitutionDetails(Number(id));
+
+      // Use demo data API if user is demo user, otherwise use real API
+      const data = isDemoUser()
+        ? await demoDataApi.superAdmin.getInstitutionDetails(Number(id))
+        : await superAdminApi.getInstitutionDetails(Number(id));
+
       setInstitutionData(data);
       setEditFormData({
         name: data.institution.name,
@@ -98,7 +104,14 @@ export default function InstitutionDetail() {
   const handleSaveEdit = async () => {
     try {
       setSaving(true);
-      await superAdminApi.updateInstitution(Number(id), editFormData);
+
+      // Use demo data API if user is demo user, otherwise use real API
+      if (isDemoUser()) {
+        await demoDataApi.superAdmin.updateInstitution(Number(id), editFormData);
+      } else {
+        await superAdminApi.updateInstitution(Number(id), editFormData);
+      }
+
       setEditDialogOpen(false);
       fetchInstitutionDetails();
     } catch (err) {

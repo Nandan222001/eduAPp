@@ -36,6 +36,7 @@ import {
   Warning as WarningIcon,
 } from '@mui/icons-material';
 import superAdminApi, { InstitutionListItem } from '@/api/superAdmin';
+import { isDemoUser, demoDataApi } from '@/api/demoDataApi';
 
 type SortField = 'name' | 'created_at' | 'total_users' | 'revenue';
 type SortOrder = 'asc' | 'desc';
@@ -63,15 +64,28 @@ export default function InstitutionsList() {
     try {
       setLoading(true);
       setError(null);
-      const response = await superAdminApi.listInstitutions({
-        page: page + 1,
-        page_size: rowsPerPage,
-        search: search || undefined,
-        status: statusFilter === 'all' ? undefined : statusFilter,
-        plan: planFilter === 'all' ? undefined : planFilter,
-        sort_by: sortBy,
-        sort_order: sortOrder,
-      });
+
+      // Use demo data API if user is demo user, otherwise use real API
+      const response = isDemoUser()
+        ? await demoDataApi.superAdmin.listInstitutions({
+            page: page + 1,
+            page_size: rowsPerPage,
+            search: search || undefined,
+            status: statusFilter === 'all' ? undefined : statusFilter,
+            plan: planFilter === 'all' ? undefined : planFilter,
+            sort_by: sortBy,
+            sort_order: sortOrder,
+          })
+        : await superAdminApi.listInstitutions({
+            page: page + 1,
+            page_size: rowsPerPage,
+            search: search || undefined,
+            status: statusFilter === 'all' ? undefined : statusFilter,
+            plan: planFilter === 'all' ? undefined : planFilter,
+            sort_by: sortBy,
+            sort_order: sortOrder,
+          });
+
       setInstitutions(response.items);
       setTotal(response.total);
     } catch (err) {
