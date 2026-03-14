@@ -83,6 +83,12 @@ from src.models.wellbeing import (
     StudentWellbeingProfile, AlertSeverity, AlertStatus, AlertType,
     SentimentCategory, ConsentStatus, DataAccessLevel
 )
+from src.models.career import (
+    CareerPathway, StudentCareerProfile, CareerRecommendation, SkillGapAnalysis,
+    PersonalizedLearningPath, LaborMarketData, IndustryMentor, IndustryMentorMatch,
+    CareerInterestCategory, PersonalityType, EducationLevel, IndustryType,
+    SkillLevel, RecommendationStatus, MentorshipStatus
+)
 
 __all__ = [
     "Institution",
@@ -314,4 +320,19 @@ __all__ = [
     "SentimentCategory",
     "ConsentStatus",
     "DataAccessLevel",
+    "CareerPathway",
+    "StudentCareerProfile",
+    "CareerRecommendation",
+    "SkillGapAnalysis",
+    "PersonalizedLearningPath",
+    "LaborMarketData",
+    "IndustryMentor",
+    "IndustryMentorMatch",
+    "CareerInterestCategory",
+    "PersonalityType",
+    "EducationLevel",
+    "IndustryType",
+    "SkillLevel",
+    "RecommendationStatus",
+    "MentorshipStatus",
 ]
