@@ -55,6 +55,7 @@ import {
 } from 'chart.js';
 import teachersApi, { TeacherMyDashboardData } from '@/api/teachers';
 import { useAuth } from '@/hooks/useAuth';
+import { isDemoUser, demoDataApi } from '@/api/demoDataApi';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Title, Tooltip, Legend);
 
@@ -123,7 +124,12 @@ export default function TeacherDashboard() {
     const fetchDashboard = async () => {
       try {
         setLoading(true);
-        const data = await teachersApi.getMyDashboard();
+
+        // Use demo data API if user is demo user, otherwise use real API
+        const data = isDemoUser()
+          ? await demoDataApi.teachers.getTeacherDashboard(user?.id ? parseInt(user.id, 10) : 1)
+          : await teachersApi.getMyDashboard();
+
         setDashboardData(data);
         setError(null);
       } catch (err: unknown) {

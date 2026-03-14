@@ -47,6 +47,7 @@ import {
 } from 'chart.js';
 import institutionAdminApi, { DashboardResponse } from '@/api/institutionAdmin';
 import { useAuth } from '@/hooks/useAuth';
+import { isDemoUser, demoDataApi } from '@/api/demoDataApi';
 
 ChartJS.register(
   CategoryScale,
@@ -123,7 +124,12 @@ export default function InstitutionAdminDashboard() {
     const fetchDashboard = async () => {
       try {
         setLoading(true);
-        const data = await institutionAdminApi.getDashboard();
+
+        // Use demo data API if user is demo user, otherwise use real API
+        const data = isDemoUser()
+          ? await demoDataApi.institutionAdmin.getDashboard()
+          : await institutionAdminApi.getDashboard();
+
         setDashboardData(data);
         setError(null);
       } catch (err: unknown) {

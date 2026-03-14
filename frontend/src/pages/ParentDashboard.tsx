@@ -14,6 +14,7 @@ import {
 } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
 import { parentsApi } from '@/api/parents';
+import { isDemoUser, demoDataApi } from '@/api/demoDataApi';
 import { ChildOverviewCard } from '@/components/parent/ChildOverviewCard';
 import { TodayAttendanceCard } from '@/components/parent/TodayAttendanceCard';
 import { RecentGradesTable } from '@/components/parent/RecentGradesTable';
@@ -32,7 +33,10 @@ export const ParentDashboard: React.FC = () => {
     error,
   } = useQuery({
     queryKey: ['parent-dashboard', selectedChildId],
-    queryFn: () => parentsApi.getDashboard(selectedChildId),
+    queryFn: () =>
+      isDemoUser()
+        ? demoDataApi.parents.getDashboard(selectedChildId)
+        : parentsApi.getDashboard(selectedChildId),
   });
 
   const handleChildChange = (event: SelectChangeEvent<number>) => {

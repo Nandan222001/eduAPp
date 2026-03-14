@@ -49,6 +49,7 @@ import {
   Event as EventIcon,
 } from '@mui/icons-material';
 import superAdminApi, { SuperAdminDashboardResponse } from '@/api/superAdmin';
+import { isDemoUser, demoDataApi } from '@/api/demoDataApi';
 
 interface MetricCardProps {
   title: string;
@@ -148,7 +149,12 @@ export default function SuperAdminDashboard() {
     try {
       setLoading(true);
       setError(null);
-      const data = await superAdminApi.getDashboard();
+
+      // Use demo data API if user is demo user, otherwise use real API
+      const data = isDemoUser()
+        ? await demoDataApi.superAdmin.getDashboard()
+        : await superAdminApi.getDashboard();
+
       setDashboardData(data);
     } catch (err) {
       setError('Failed to load dashboard data. Please try again.');
