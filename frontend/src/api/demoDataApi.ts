@@ -133,7 +133,7 @@ const lastNames = [
   'Young',
 ];
 
-const generateDemoStudents = (count: number) => {
+export const generateDemoStudents = (count: number) => {
   const students = [];
   const grades = [6, 7, 8, 9, 10, 11, 12];
   const sections = [101, 102, 103, 104, 105];
@@ -188,7 +188,7 @@ const generateDemoStudents = (count: number) => {
   return students;
 };
 
-const generateDemoTeachers = (count: number) => {
+export const generateDemoTeachers = (count: number) => {
   const teachers = [];
   const subjects = demoData.academics.subjects;
 
@@ -224,7 +224,7 @@ const generateDemoTeachers = (count: number) => {
   return teachers;
 };
 
-const generateDemoExams = (count: number) => {
+export const generateDemoExams = (count: number) => {
   const exams = [];
   const examTypes = ['Mid-Term', 'Final', 'Unit Test', 'Monthly Test', 'Quiz'];
   const grades = [6, 7, 8, 9, 10, 11, 12];

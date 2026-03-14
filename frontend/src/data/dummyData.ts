@@ -2993,19 +2993,7 @@ export const demoCommunicationData = {
 };
 
 export const demoSearchData = {
-  students: [
-    ...generateDemoStudents(25).map((s) => ({
-      id: s.id,
-      first_name: s.first_name,
-      last_name: s.last_name,
-      email: s.email || '',
-      admission_number: s.admission_number,
-      grade: s.section?.grade?.name || '',
-      section: s.section?.name || '',
-      photo_url: s.photo_url,
-      type: 'student' as const,
-    })),
-  ],
+  students: [],
   teachers: demoTeachers,
   assignments: demoAssignments,
   announcements: demoCommunicationData.announcements,

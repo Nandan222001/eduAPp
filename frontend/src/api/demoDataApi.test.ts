@@ -12,14 +12,21 @@ import {
   demoAnalyticsApi,
 } from './demoDataApi';
 import { useAuthStore } from '@/store/useAuthStore';
-import { DEMO_CREDENTIALS, demoData } from '@/data/dummyData';
+import {
+  DEMO_CREDENTIALS,
+  TEACHER_CREDENTIALS,
+  PARENT_CREDENTIALS,
+  ADMIN_CREDENTIALS,
+  SUPERADMIN_CREDENTIALS,
+  demoData,
+} from '@/data/dummyData';
 
 describe('isDemoUser', () => {
   beforeEach(() => {
     useAuthStore.setState({ user: null, isAuthenticated: false });
   });
 
-  it('should return true when user email matches demo credentials', () => {
+  it('should return true when user email matches demo student credentials', () => {
     useAuthStore.setState({
       user: {
         id: '1001',
@@ -40,7 +47,91 @@ describe('isDemoUser', () => {
     expect(isDemoUser()).toBe(true);
   });
 
-  it('should return false when user email does not match demo credentials', () => {
+  it('should return true when user email matches demo teacher credentials', () => {
+    useAuthStore.setState({
+      user: {
+        id: '2001',
+        email: TEACHER_CREDENTIALS.email,
+        firstName: 'Teacher',
+        lastName: 'User',
+        fullName: 'Teacher User',
+        role: 'teacher',
+        isActive: true,
+        emailVerified: true,
+        isSuperuser: false,
+        createdAt: '2024-01-01T00:00:00Z',
+        updatedAt: '2024-01-01T00:00:00Z',
+      },
+      isAuthenticated: true,
+    });
+
+    expect(isDemoUser()).toBe(true);
+  });
+
+  it('should return true when user email matches demo parent credentials', () => {
+    useAuthStore.setState({
+      user: {
+        id: '5001',
+        email: PARENT_CREDENTIALS.email,
+        firstName: 'Parent',
+        lastName: 'User',
+        fullName: 'Parent User',
+        role: 'parent',
+        isActive: true,
+        emailVerified: true,
+        isSuperuser: false,
+        createdAt: '2024-01-01T00:00:00Z',
+        updatedAt: '2024-01-01T00:00:00Z',
+      },
+      isAuthenticated: true,
+    });
+
+    expect(isDemoUser()).toBe(true);
+  });
+
+  it('should return true when user email matches demo admin credentials', () => {
+    useAuthStore.setState({
+      user: {
+        id: '3001',
+        email: ADMIN_CREDENTIALS.email,
+        firstName: 'Admin',
+        lastName: 'User',
+        fullName: 'Admin User',
+        role: 'admin',
+        isActive: true,
+        emailVerified: true,
+        isSuperuser: false,
+        createdAt: '2024-01-01T00:00:00Z',
+        updatedAt: '2024-01-01T00:00:00Z',
+      },
+      isAuthenticated: true,
+    });
+
+    expect(isDemoUser()).toBe(true);
+  });
+
+  it('should return true when user email matches demo superadmin credentials', () => {
+    useAuthStore.setState({
+      user: {
+        id: '9001',
+        email: SUPERADMIN_CREDENTIALS.email,
+        firstName: 'SuperAdmin',
+        lastName: 'User',
+        fullName: 'SuperAdmin User',
+        role: 'superadmin',
+        isActive: true,
+        emailVerified: true,
+        isSuperuser: true,
+        createdAt: '2024-01-01T00:00:00Z',
+        updatedAt: '2024-01-01T00:00:00Z',
+      },
+      isAuthenticated: true,
+    });
+
+    expect(isDemoUser()).toBe(true);
+  });
+
+  it('should return false when user email does not match any demo credentials', () => {
     useAuthStore.setState({
       user: {
         id: '2001',
@@ -64,6 +155,15 @@ describe('isDemoUser', () => {
   it('should return false when user is null', () => {
     useAuthStore.setState({ user: null, isAuthenticated: false });
     expect(isDemoUser()).toBe(false);
+  });
+
+  it('should work with email parameter', () => {
+    expect(isDemoUser(DEMO_CREDENTIALS.email)).toBe(true);
+    expect(isDemoUser(TEACHER_CREDENTIALS.email)).toBe(true);
+    expect(isDemoUser(PARENT_CREDENTIALS.email)).toBe(true);
+    expect(isDemoUser(ADMIN_CREDENTIALS.email)).toBe(true);
+    expect(isDemoUser(SUPERADMIN_CREDENTIALS.email)).toBe(true);
+    expect(isDemoUser('other@example.com')).toBe(false);
   });
 });
 
@@ -151,6 +251,17 @@ describe('demoAssignmentsApi', () => {
       expect(result).toBeDefined();
       expect(result.skip).toBe(0);
       expect(result.limit).toBe(50);
+    });
+
+    it('should return items with proper Assignment type', async () => {
+      const result = await demoAssignmentsApi.list();
+
+      expect(result.items.length).toBeGreaterThan(0);
+      const assignment = result.items[0];
+      expect(typeof assignment.id).toBe('number');
+      expect(typeof assignment.title).toBe('string');
+      expect(typeof assignment.max_marks).toBe('number');
+      expect(typeof assignment.is_active).toBe('boolean');
     });
   });
 
@@ -247,6 +358,15 @@ describe('demoSubmissionsApi', () => {
       expect(result).toBeDefined();
       expect(result).toEqual(demoData.academics.submissions[0]);
     });
+
+    it('should return properly typed submission data', async () => {
+      const result = await demoSubmissionsApi.get(101);
+
+      expect(typeof result.id).toBe('number');
+      expect(typeof result.assignment_id).toBe('number');
+      expect(typeof result.student_id).toBe('number');
+      expect(typeof result.status).toBe('string');
+    });
   });
 
   describe('grade', () => {
@@ -263,6 +383,20 @@ describe('demoSubmissionsApi', () => {
       expect(result.marks_obtained).toBe(95);
       expect(result.grade).toBe('A+');
       expect(result.feedback).toBe('Excellent work!');
+    });
+
+    it('should return submission with proper typed data', async () => {
+      const gradeData = {
+        marks_obtained: 85,
+        grade: 'A',
+        feedback: 'Good job!',
+      };
+
+      const result = await demoSubmissionsApi.grade(101, gradeData);
+
+      expect(typeof result.marks_obtained).toBe('number');
+      expect(typeof result.grade).toBe('string');
+      expect(typeof result.feedback).toBe('string');
     });
   });
 });
@@ -494,6 +628,15 @@ describe('demoGamificationApi', () => {
       expect(typeof result.level).toBe('number');
       expect(typeof result.current_streak).toBe('number');
     });
+
+    it('should return properly typed UserPoints object', async () => {
+      const result = await demoGamificationApi.getUserPoints(1001, 1);
+
+      expect(typeof result.total_points).toBe('number');
+      expect(typeof result.level).toBe('number');
+      expect(typeof result.current_streak).toBe('number');
+      expect(typeof result.longest_streak).toBe('number');
+    });
   });
 
   describe('getPointHistory', () => {
@@ -526,6 +669,16 @@ describe('demoGamificationApi', () => {
       expect(result[0]).toHaveProperty('badge');
       expect(result[0]).toHaveProperty('earned_at');
       expect(result[0]).toHaveProperty('points_awarded');
+    });
+
+    it('should return properly typed UserBadge array', async () => {
+      const result = await demoGamificationApi.getUserBadges(1001, 1);
+
+      expect(result.length).toBeGreaterThan(0);
+      const badge = result[0];
+      expect(badge).toHaveProperty('badge');
+      expect(typeof badge.earned_at).toBe('string');
+      expect(typeof badge.points_awarded).toBe('number');
     });
   });
 
@@ -600,6 +753,15 @@ describe('demoGamificationApi', () => {
 
       expect(result).toBeDefined();
       expect(result.length).toBeLessThanOrEqual(3);
+    });
+
+    it('should return properly typed LeaderboardEntry array', async () => {
+      const result = await demoGamificationApi.getDynamicLeaderboard(1, {});
+
+      expect(result.length).toBeGreaterThan(0);
+      const entry = result[0];
+      expect(typeof entry.rank).toBe('number');
+      expect(typeof entry.score).toBe('number');
     });
   });
 
@@ -697,6 +859,16 @@ describe('demoGoalsApi', () => {
       expect(result[0]).toHaveProperty('type');
       expect(result[0]).toHaveProperty('status');
     });
+
+    it('should return properly typed Goal array', async () => {
+      const result = await demoGoalsApi.getGoals();
+
+      expect(result.length).toBeGreaterThan(0);
+      const goal = result[0];
+      expect(typeof goal.id).toBe('string');
+      expect(typeof goal.title).toBe('string');
+      expect(typeof goal.progress).toBe('number');
+    });
   });
 
   describe('getGoal', () => {
@@ -781,6 +953,15 @@ describe('demoGoalsApi', () => {
       expect(result.goalsByType).toBeDefined();
       expect(result.goalsByStatus).toBeDefined();
       expect(typeof result.completionRate).toBe('number');
+    });
+
+    it('should return properly typed GoalAnalytics', async () => {
+      const result = await demoGoalsApi.getAnalytics();
+
+      expect(typeof result.totalGoals).toBe('number');
+      expect(typeof result.completedGoals).toBe('number');
+      expect(typeof result.completionRate).toBe('number');
+      expect(typeof result.averageProgress).toBe('number');
     });
   });
 });
@@ -885,6 +1066,16 @@ describe('demoAnalyticsApi', () => {
       expect(Array.isArray(result.attendance_calendar)).toBe(true);
       expect(result.overall_performance).toBeDefined();
       expect(typeof result.overall_performance.averageScore).toBe('number');
+    });
+
+    it('should return properly typed StudentPerformanceAnalytics', async () => {
+      const result = await demoAnalyticsApi.getStudentPerformanceAnalytics(1001);
+
+      expect(typeof result.student_id).toBe('number');
+      expect(typeof result.student_name).toBe('string');
+      expect(typeof result.grade).toBe('string');
+      expect(result.assignment_stats).toBeDefined();
+      expect(typeof result.assignment_stats.total_assigned).toBe('number');
     });
   });
 
