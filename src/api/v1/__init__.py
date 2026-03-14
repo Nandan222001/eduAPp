@@ -41,6 +41,7 @@ from src.api.v1 import (
     analytics,
     super_admin,
     super_admin_analytics,
+    super_admin_reports,
     institution_admin,
     ai_prediction_dashboard,
     study_materials,
@@ -109,6 +110,7 @@ api_router.include_router(weakness_detection.router, prefix="", tags=["weakness-
 api_router.include_router(analytics.router, prefix="", tags=["analytics"])
 api_router.include_router(super_admin.router, prefix="", tags=["super-admin"])
 api_router.include_router(super_admin_analytics.router, prefix="", tags=["super-admin-analytics"])
+api_router.include_router(super_admin_reports.router, prefix="", tags=["super-admin-reports"])
 api_router.include_router(institution_admin.router, prefix="/institution-admin", tags=["institution-admin"])
 api_router.include_router(ai_prediction_dashboard.router, prefix="", tags=["ai-prediction-dashboard"])
 api_router.include_router(study_materials.router, prefix="", tags=["study-materials"])

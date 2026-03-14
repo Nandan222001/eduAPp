@@ -8,7 +8,8 @@ celery_app = Celery(
     include=[
         "src.tasks.notification_tasks",
         "src.tasks.analytics_tasks",
-        "src.tasks.ml_training_tasks"
+        "src.tasks.ml_training_tasks",
+        "src.tasks.super_admin_report_tasks"
     ]
 )
 
@@ -59,5 +60,13 @@ celery_app.conf.beat_schedule = {
     "clean-analytics-cache": {
         "task": "analytics.clean_expired_cache",
         "schedule": 3600.0,
+    },
+    "check-scheduled-reports": {
+        "task": "super_admin_reports.check_scheduled_reports",
+        "schedule": 300.0,  # Every 5 minutes
+    },
+    "check-retention-policies": {
+        "task": "super_admin_reports.check_retention_policies",
+        "schedule": 3600.0,  # Every hour
     },
 }
