@@ -147,7 +147,12 @@ function App() {
               </Route>
 
               <Route
-                element={<ProtectedRoute allowedRoles={['admin']} requireEmailVerified={true} />}
+                element={
+                  <ProtectedRoute
+                    allowedRoles={['admin', 'institution_admin']}
+                    requireEmailVerified={true}
+                  />
+                }
               >
                 <Route path="/admin" element={<AdminLayout />}>
                   <Route index element={<InstitutionAdminDashboard />} />
@@ -225,7 +230,10 @@ function App() {
 
               <Route
                 element={
-                  <ProtectedRoute allowedRoles={['teacher', 'admin']} requireEmailVerified={true} />
+                  <ProtectedRoute
+                    allowedRoles={['teacher', 'admin', 'institution_admin']}
+                    requireEmailVerified={true}
+                  />
                 }
               >
                 <Route path="/teacher" element={<AdminLayout />}>
