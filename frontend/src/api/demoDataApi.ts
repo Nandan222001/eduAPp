@@ -64,14 +64,7 @@ import type {
   PomodoroAnalytics,
   Subject as PomodoroSubject,
 } from '@/types/pomodoro';
-import type {
-  UserProfile,
-  NotificationPreferences,
-  ThemeSettings,
-  PrivacySettings,
-  UserSettings,
-  ConnectedDevice,
-} from '@/types/settings';
+import type { UserSettings } from '@/types/settings';
 
 export const isDemoUser = (email?: string): boolean => {
   const userEmail = email || useAuthStore.getState().user?.email;
@@ -2449,6 +2442,315 @@ export const demoInstitutionAdminApi = {
   },
 };
 
+export const demoCommunicationsApi = {
+  getAnnouncements: async (params?: {
+    skip?: number;
+    limit?: number;
+    priority?: string;
+    is_published?: boolean;
+  }) => {
+    let announcements = [...demoData.communications.announcements];
+
+    if (params?.priority) {
+      announcements = announcements.filter((a) => a.priority === params.priority);
+    }
+
+    if (params?.is_published !== undefined) {
+      announcements = announcements.filter((a) => a.is_published === params.is_published);
+    }
+
+    const skip = params?.skip || 0;
+    const limit = params?.limit || 50;
+
+    return Promise.resolve({
+      items: announcements.slice(skip, skip + limit),
+      total: announcements.length,
+      skip,
+      limit,
+    });
+  },
+
+  getAnnouncement: async (id: number) => {
+    const announcement = demoData.communications.announcements.find((a) => a.id === id);
+    return Promise.resolve(announcement || demoData.communications.announcements[0]);
+  },
+
+  markAnnouncementAsRead: async (_announcementId: number) => {
+    return Promise.resolve({ message: 'Announcement marked as read' });
+  },
+
+  getMessages: async (params?: { skip?: number; limit?: number; is_read?: boolean }) => {
+    let messages = [...demoData.communications.messages];
+
+    if (params?.is_read !== undefined) {
+      messages = messages.filter((m) => m.is_read === params.is_read);
+    }
+
+    const skip = params?.skip || 0;
+    const limit = params?.limit || 50;
+
+    return Promise.resolve({
+      items: messages.slice(skip, skip + limit),
+      total: messages.length,
+      skip,
+      limit,
+      unread_count: demoData.communications.messages.filter((m) => !m.is_read).length,
+    });
+  },
+
+  getMessage: async (id: number) => {
+    const message = demoData.communications.messages.find((m) => m.id === id);
+    return Promise.resolve(message || demoData.communications.messages[0]);
+  },
+
+  sendMessage: async (data: { recipient_id: number; subject?: string; content: string }) => {
+    return Promise.resolve({
+      id: demoData.communications.messages.length + 1,
+      institution_id: 1,
+      sender_id: 1001,
+      recipient_id: data.recipient_id,
+      subject: data.subject,
+      content: data.content,
+      is_read: false,
+      is_deleted_by_sender: false,
+      is_deleted_by_recipient: false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    });
+  },
+
+  markMessageAsRead: async (_messageId: number) => {
+    return Promise.resolve({ message: 'Message marked as read' });
+  },
+
+  getConversations: async () => {
+    return Promise.resolve(demoData.communications.conversations);
+  },
+
+  getNotifications: async (params?: {
+    skip?: number;
+    limit?: number;
+    type?: string;
+    is_read?: boolean;
+  }) => {
+    let notifications = [...demoData.communications.notifications];
+
+    if (params?.type) {
+      notifications = notifications.filter((n) => n.notification_type === params.type);
+    }
+
+    if (params?.is_read !== undefined) {
+      notifications = notifications.filter((n) => (params.is_read ? !!n.read_at : !n.read_at));
+    }
+
+    const skip = params?.skip || 0;
+    const limit = params?.limit || 50;
+
+    return Promise.resolve({
+      items: notifications.slice(skip, skip + limit),
+      total: notifications.length,
+      skip,
+      limit,
+      unread_count: notifications.filter((n) => !n.read_at).length,
+    });
+  },
+
+  markNotificationAsRead: async (_notificationId: number) => {
+    return Promise.resolve({ message: 'Notification marked as read' });
+  },
+
+  markAllNotificationsAsRead: async () => {
+    return Promise.resolve({ message: 'All notifications marked as read' });
+  },
+};
+
+export const demoSearchApi = {
+  search: async (params: { query: string; types?: string[]; skip?: number; limit?: number }) => {
+    const query = params.query.toLowerCase();
+    const results = {
+      students: [] as typeof demoData.search.students,
+      teachers: [] as typeof demoData.search.teachers,
+      assignments: [] as typeof demoData.search.assignments,
+      announcements: [] as typeof demoData.search.announcements,
+      total: 0,
+    };
+
+    if (!params.types || params.types.includes('students')) {
+      results.students = demoData.search.students.filter(
+        (s) =>
+          s.first_name.toLowerCase().includes(query) ||
+          s.last_name.toLowerCase().includes(query) ||
+          s.admission_number.toLowerCase().includes(query) ||
+          s.email?.toLowerCase().includes(query)
+      );
+    }
+
+    if (!params.types || params.types.includes('teachers')) {
+      results.teachers = demoData.search.teachers.filter(
+        (t) =>
+          t.first_name.toLowerCase().includes(query) ||
+          t.last_name.toLowerCase().includes(query) ||
+          t.email.toLowerCase().includes(query) ||
+          t.subjects.some((s) => s.name.toLowerCase().includes(query))
+      );
+    }
+
+    if (!params.types || params.types.includes('assignments')) {
+      results.assignments = demoData.search.assignments.filter(
+        (a) => a.title.toLowerCase().includes(query) || a.description?.toLowerCase().includes(query)
+      );
+    }
+
+    if (!params.types || params.types.includes('announcements')) {
+      results.announcements = demoData.search.announcements.filter(
+        (a) => a.title.toLowerCase().includes(query) || a.content.toLowerCase().includes(query)
+      );
+    }
+
+    results.total =
+      results.students.length +
+      results.teachers.length +
+      results.assignments.length +
+      results.announcements.length;
+
+    return Promise.resolve(results);
+  },
+};
+
+export const demoSettingsApi = {
+  getUserSettings: async (_userId: number) => {
+    return Promise.resolve(demoData.settings.userSettings);
+  },
+
+  updateUserSettings: async (_userId: number, settings: Partial<UserSettings>) => {
+    return Promise.resolve({
+      ...demoData.settings.userSettings,
+      ...settings,
+    });
+  },
+
+  getConnectedDevices: async (_userId: number) => {
+    return Promise.resolve(demoData.settings.connectedDevices);
+  },
+
+  revokeDevice: async (_userId: number, _deviceId: string) => {
+    return Promise.resolve({ message: 'Device revoked successfully' });
+  },
+
+  changePassword: async (_userId: number, _oldPassword: string, _newPassword: string) => {
+    return Promise.resolve({ message: 'Password changed successfully' });
+  },
+
+  enable2FA: async (_userId: number) => {
+    return Promise.resolve({
+      secret: 'DEMO2FASECRET',
+      qr_code_url: 'https://example.com/qr-code.png',
+    });
+  },
+
+  verify2FA: async (_userId: number, _code: string) => {
+    return Promise.resolve({ message: '2FA enabled successfully' });
+  },
+
+  disable2FA: async (_userId: number, _code: string) => {
+    return Promise.resolve({ message: '2FA disabled successfully' });
+  },
+};
+
+export const demoStudyMaterialsApi = {
+  getPreviousYearPapers: async (params?: {
+    board?: string;
+    year?: number;
+    grade_id?: number;
+    subject_id?: number;
+    skip?: number;
+    limit?: number;
+  }) => {
+    let papers = [...demoData.studyMaterials.previousYearPapers];
+
+    if (params?.board) {
+      papers = papers.filter((p) => p.board === params.board);
+    }
+    if (params?.year) {
+      papers = papers.filter((p) => p.year === params.year);
+    }
+    if (params?.grade_id) {
+      papers = papers.filter((p) => p.grade_id === params.grade_id);
+    }
+    if (params?.subject_id) {
+      papers = papers.filter((p) => p.subject_id === params.subject_id);
+    }
+
+    const skip = params?.skip || 0;
+    const limit = params?.limit || 50;
+
+    return Promise.resolve({
+      items: papers.slice(skip, skip + limit),
+      total: papers.length,
+      skip,
+      limit,
+    });
+  },
+
+  getPreviousYearPaper: async (id: number) => {
+    const paper = demoData.studyMaterials.previousYearPapers.find((p) => p.id === id);
+    return Promise.resolve(paper || demoData.studyMaterials.previousYearPapers[0]);
+  },
+
+  incrementPaperView: async (_paperId: number) => {
+    return Promise.resolve({ message: 'View count incremented' });
+  },
+
+  incrementPaperDownload: async (_paperId: number) => {
+    return Promise.resolve({ message: 'Download count incremented' });
+  },
+
+  getLibraryBooks: async (params?: {
+    category_id?: number;
+    search?: string;
+    skip?: number;
+    limit?: number;
+  }) => {
+    let books = [...demoData.studyMaterials.libraryBooks];
+
+    if (params?.category_id) {
+      books = books.filter((b) => b.category_id === params.category_id);
+    }
+    if (params?.search) {
+      const searchLower = params.search.toLowerCase();
+      books = books.filter(
+        (b) =>
+          b.title.toLowerCase().includes(searchLower) ||
+          b.author?.toLowerCase().includes(searchLower) ||
+          b.isbn?.toLowerCase().includes(searchLower)
+      );
+    }
+
+    const skip = params?.skip || 0;
+    const limit = params?.limit || 50;
+
+    return Promise.resolve({
+      items: books.slice(skip, skip + limit),
+      total: books.length,
+      skip,
+      limit,
+    });
+  },
+
+  getLibraryBook: async (id: number) => {
+    const book = demoData.studyMaterials.libraryBooks.find((b) => b.id === id);
+    return Promise.resolve(book || demoData.studyMaterials.libraryBooks[0]);
+  },
+
+  getMyIssuedBooks: async (_studentId: number) => {
+    return Promise.resolve(demoData.studyMaterials.myIssuedBooks);
+  },
+
+  getBookCategories: async () => {
+    return Promise.resolve(demoData.studyMaterials.bookCategories);
+  },
+};
+
 export const demoSuperAdminApi = {
   getDashboard: async (): Promise<SuperAdminDashboardResponse> => {
     return Promise.resolve(superadminDashboardData);
@@ -3188,104 +3490,6 @@ export const demoPomodoroApi = {
         color: s.id === 1 ? '#3b82f6' : s.id === 2 ? '#8b5cf6' : '#10b981',
       }))
     );
-  },
-};
-
-export const demoSettingsApi = {
-  getProfile: async (): Promise<UserProfile> => {
-    return Promise.resolve(demoData.settings.profile);
-  },
-
-  updateProfile: async (data: Record<string, unknown>): Promise<UserProfile> => {
-    return Promise.resolve({
-      ...demoData.settings.profile,
-      ...data,
-      updatedAt: new Date().toISOString(),
-    } as UserProfile);
-  },
-
-  uploadAvatar: async (_file: File): Promise<{ avatarUrl: string }> => {
-    return Promise.resolve({
-      avatarUrl: 'https://i.pravatar.cc/150?img=12',
-    });
-  },
-
-  deleteAvatar: async (): Promise<void> => {
-    return Promise.resolve();
-  },
-
-  changePassword: async (_data: Record<string, unknown>): Promise<{ message: string }> => {
-    return Promise.resolve({
-      message: 'Password changed successfully',
-    });
-  },
-
-  getNotificationPreferences: async (): Promise<NotificationPreferences> => {
-    return Promise.resolve(demoData.settings.notifications);
-  },
-
-  updateNotificationPreferences: async (
-    preferences: NotificationPreferences
-  ): Promise<NotificationPreferences> => {
-    return Promise.resolve(preferences);
-  },
-
-  getThemeSettings: async (): Promise<ThemeSettings> => {
-    return Promise.resolve(demoData.settings.theme);
-  },
-
-  updateThemeSettings: async (settings: ThemeSettings): Promise<ThemeSettings> => {
-    return Promise.resolve(settings);
-  },
-
-  getPrivacySettings: async (): Promise<PrivacySettings> => {
-    return Promise.resolve(demoData.settings.privacy);
-  },
-
-  updatePrivacySettings: async (settings: PrivacySettings): Promise<PrivacySettings> => {
-    return Promise.resolve(settings);
-  },
-
-  getAllSettings: async (): Promise<UserSettings> => {
-    return Promise.resolve(demoData.settings.userSettings);
-  },
-
-  updateSettings: async (settings: Partial<UserSettings>): Promise<UserSettings> => {
-    return Promise.resolve({
-      ...demoData.settings.userSettings,
-      ...settings,
-    });
-  },
-
-  getConnectedDevices: async (): Promise<ConnectedDevice[]> => {
-    return Promise.resolve(demoData.settings.connectedDevices);
-  },
-
-  logoutDevice: async (_deviceId: string): Promise<{ message: string }> => {
-    return Promise.resolve({
-      message: 'Device logged out successfully',
-    });
-  },
-
-  logoutAllDevices: async (): Promise<{ message: string }> => {
-    return Promise.resolve({
-      message: 'All devices logged out successfully',
-    });
-  },
-
-  requestAccountDeletion: async (
-    _data: Record<string, unknown>
-  ): Promise<{ message: string; requestId: string }> => {
-    return Promise.resolve({
-      message: 'Account deletion request submitted',
-      requestId: '12345',
-    });
-  },
-
-  cancelAccountDeletion: async (): Promise<{ message: string }> => {
-    return Promise.resolve({
-      message: 'Account deletion request cancelled',
-    });
   },
 };
 
