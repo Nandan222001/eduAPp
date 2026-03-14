@@ -354,6 +354,132 @@ export interface UploadLogoResponse {
   field: string;
 }
 
+export interface InstitutionMetrics {
+  institution_id: number;
+  institution_name: string;
+  region: string;
+  subscription_plan: string;
+  institution_size: string;
+  total_students: number;
+  total_teachers: number;
+  average_attendance: number;
+  exam_pass_rate: number;
+  average_exam_score: number;
+  student_engagement_score: number;
+  teacher_effectiveness_score: number;
+  assignment_completion_rate: number;
+  average_grading_time_days: number;
+}
+
+export interface InstitutionBenchmark {
+  average_attendance: number;
+  median_attendance: number;
+  percentile_75_attendance: number;
+  percentile_90_attendance: number;
+  average_exam_pass_rate: number;
+  median_exam_pass_rate: number;
+  percentile_75_exam_pass_rate: number;
+  percentile_90_exam_pass_rate: number;
+  average_engagement_score: number;
+  median_engagement_score: number;
+  percentile_75_engagement_score: number;
+  percentile_90_engagement_score: number;
+  average_teacher_effectiveness: number;
+  median_teacher_effectiveness: number;
+  percentile_75_teacher_effectiveness: number;
+  percentile_90_teacher_effectiveness: number;
+}
+
+export interface InstitutionRanking {
+  institution_id: number;
+  institution_name: string;
+  composite_score: number;
+  attendance_rank: number;
+  exam_performance_rank: number;
+  engagement_rank: number;
+  teacher_effectiveness_rank: number;
+  overall_rank: number;
+  percentile: number;
+}
+
+export interface PerformanceMetricTrend {
+  period: string;
+  average_attendance: number;
+  average_exam_pass_rate: number;
+  average_engagement_score: number;
+  institution_count: number;
+}
+
+export interface TrendAnalysis {
+  monthly_trends: PerformanceMetricTrend[];
+  attendance_trend_percentage: number;
+  exam_performance_trend_percentage: number;
+  engagement_trend_percentage: number;
+  improving_institutions: number;
+  declining_institutions: number;
+}
+
+export interface AnomalyDetection {
+  institution_id: number;
+  institution_name: string;
+  metric_name: string;
+  expected_value: number;
+  actual_value: number;
+  deviation_percentage: number;
+  severity: string;
+  description: string;
+}
+
+export interface BestPractice {
+  category: string;
+  institution_id: number;
+  institution_name: string;
+  metric_value: number;
+  description: string;
+  recommendation: string;
+  impact_level: string;
+}
+
+export interface CohortAnalysisData {
+  by_plan: Array<{
+    cohort: string;
+    institution_count: number;
+    avg_attendance: number;
+    avg_exam_pass_rate: number;
+    avg_engagement: number;
+    avg_teacher_effectiveness: number;
+  }>;
+  by_size: Array<{
+    cohort: string;
+    institution_count: number;
+    avg_attendance: number;
+    avg_exam_pass_rate: number;
+    avg_engagement: number;
+    avg_teacher_effectiveness: number;
+  }>;
+  by_region: Array<{
+    cohort: string;
+    institution_count: number;
+    avg_attendance: number;
+    avg_exam_pass_rate: number;
+    avg_engagement: number;
+    avg_teacher_effectiveness: number;
+  }>;
+}
+
+export interface CrossInstitutionAnalyticsResponse {
+  institution_metrics: InstitutionMetrics[];
+  benchmarks: InstitutionBenchmark;
+  rankings: InstitutionRanking[];
+  trends: TrendAnalysis;
+  anomalies: AnomalyDetection[];
+  best_practices: BestPractice[];
+  cohort_analysis: CohortAnalysisData;
+  generated_at: string;
+  period_start: string;
+  period_end: string;
+}
+
 const superAdminApi = {
   getDashboard: async (): Promise<SuperAdminDashboardResponse> => {
     const response = await axios.get<SuperAdminDashboardResponse>('/api/v1/super-admin/dashboard');
@@ -537,6 +663,56 @@ const superAdminApi = {
   deleteBranding: async (institutionId: number): Promise<{ message: string }> => {
     const response = await axios.delete(`/api/v1/super-admin/institutions/${institutionId}/branding`);
     return response.data;
+  },
+
+  // Cross-Institution Analytics
+  getCrossInstitutionAnalytics: async (params: {
+    region?: string;
+    plan?: string;
+    size?: string;
+    start_date?: string;
+    end_date?: string;
+  }): Promise<CrossInstitutionAnalyticsResponse> => {
+    const queryParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        queryParams.append(key, value.toString());
+      }
+    });
+
+    const response = await axios.get<CrossInstitutionAnalyticsResponse>(
+      `/api/v1/super-admin/analytics/cross-institution?${queryParams.toString()}`
+    );
+    return response.data;
+  },
+
+  exportAnalyticsData: async (params: {
+    format: 'csv' | 'json' | 'excel';
+    region?: string;
+    plan?: string;
+    size?: string;
+    start_date?: string;
+    end_date?: string;
+  }): Promise<Blob | CrossInstitutionAnalyticsResponse> => {
+    const queryParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        queryParams.append(key, value.toString());
+      }
+    });
+
+    if (params.format === 'csv') {
+      const response = await axios.get(
+        `/api/v1/super-admin/analytics/export?${queryParams.toString()}`,
+        { responseType: 'blob' }
+      );
+      return response.data;
+    } else {
+      const response = await axios.get<CrossInstitutionAnalyticsResponse>(
+        `/api/v1/super-admin/analytics/export?${queryParams.toString()}`
+      );
+      return response.data;
+    }
   },
 };
 

@@ -14,6 +14,7 @@ import InstitutionsList from './pages/InstitutionsList';
 import InstitutionDetail from './pages/InstitutionDetail';
 import InstitutionCreate from './pages/InstitutionCreate';
 import InstitutionSubscription from './pages/InstitutionSubscription';
+import SuperAdminCrossInstitutionAnalytics from './pages/SuperAdminCrossInstitutionAnalytics';
 import InstitutionAnalytics from './pages/InstitutionAnalytics';
 import InstitutionAdminDashboard from './pages/InstitutionAdminDashboard';
 import TeacherList from './pages/TeacherList';
@@ -287,6 +288,7 @@ function App() {
               <Route element={<ProtectedRoute requireSuperAdmin={true} />}>
                 <Route path="/super-admin" element={<AdminLayout />}>
                   <Route index element={<SuperAdminDashboard />} />
+                  <Route path="analytics/cross-institution" element={<SuperAdminCrossInstitutionAnalytics />} />
                   <Route path="institutions" element={<InstitutionsList />} />
                   <Route path="institutions/create" element={<InstitutionCreate />} />
                   <Route path="institutions/:id" element={<InstitutionDetail />} />

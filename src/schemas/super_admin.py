@@ -174,3 +174,111 @@ class InstitutionAnalytics(BaseModel):
     engagement_metrics: dict
     usage_trends: List[dict]
     revenue_metrics: dict
+
+
+class InstitutionMetrics(BaseModel):
+    institution_id: int = Field(..., description="Institution ID")
+    institution_name: str = Field(..., description="Institution name")
+    region: str = Field(..., description="Geographic region")
+    subscription_plan: str = Field(..., description="Subscription plan name")
+    institution_size: str = Field(..., description="Institution size category (small, medium, large)")
+    total_students: int = Field(..., description="Total number of students")
+    total_teachers: int = Field(..., description="Total number of teachers")
+    average_attendance: float = Field(..., description="Average attendance rate percentage")
+    exam_pass_rate: float = Field(..., description="Exam pass rate percentage")
+    average_exam_score: float = Field(..., description="Average exam score percentage")
+    student_engagement_score: float = Field(..., description="Student engagement score (0-100)")
+    teacher_effectiveness_score: float = Field(..., description="Teacher effectiveness score (0-100)")
+    assignment_completion_rate: float = Field(..., description="Assignment completion rate percentage")
+    average_grading_time_days: float = Field(..., description="Average time to grade assignments in days")
+
+
+class InstitutionBenchmark(BaseModel):
+    average_attendance: float = Field(..., description="Average attendance across all institutions")
+    median_attendance: float = Field(..., description="Median attendance")
+    percentile_75_attendance: float = Field(..., description="75th percentile attendance")
+    percentile_90_attendance: float = Field(..., description="90th percentile attendance")
+    average_exam_pass_rate: float = Field(..., description="Average exam pass rate")
+    median_exam_pass_rate: float = Field(..., description="Median exam pass rate")
+    percentile_75_exam_pass_rate: float = Field(..., description="75th percentile exam pass rate")
+    percentile_90_exam_pass_rate: float = Field(..., description="90th percentile exam pass rate")
+    average_engagement_score: float = Field(..., description="Average engagement score")
+    median_engagement_score: float = Field(..., description="Median engagement score")
+    percentile_75_engagement_score: float = Field(..., description="75th percentile engagement")
+    percentile_90_engagement_score: float = Field(..., description="90th percentile engagement")
+    average_teacher_effectiveness: float = Field(..., description="Average teacher effectiveness")
+    median_teacher_effectiveness: float = Field(..., description="Median teacher effectiveness")
+    percentile_75_teacher_effectiveness: float = Field(..., description="75th percentile teacher effectiveness")
+    percentile_90_teacher_effectiveness: float = Field(..., description="90th percentile teacher effectiveness")
+
+
+class InstitutionRanking(BaseModel):
+    institution_id: int = Field(..., description="Institution ID")
+    institution_name: str = Field(..., description="Institution name")
+    composite_score: float = Field(..., description="Composite performance score")
+    attendance_rank: int = Field(..., description="Rank by attendance")
+    exam_performance_rank: int = Field(..., description="Rank by exam performance")
+    engagement_rank: int = Field(..., description="Rank by engagement")
+    teacher_effectiveness_rank: int = Field(..., description="Rank by teacher effectiveness")
+    overall_rank: int = Field(..., description="Overall rank")
+    percentile: float = Field(..., description="Percentile placement (0-100)")
+
+
+class PerformanceMetricTrend(BaseModel):
+    period: str = Field(..., description="Time period (e.g., '2024-01')")
+    average_attendance: float = Field(..., description="Average attendance for period")
+    average_exam_pass_rate: float = Field(..., description="Average exam pass rate for period")
+    average_engagement_score: float = Field(..., description="Average engagement score for period")
+    institution_count: int = Field(..., description="Number of institutions in analysis")
+
+
+class TrendAnalysis(BaseModel):
+    monthly_trends: List[PerformanceMetricTrend] = Field(..., description="Monthly trend data")
+    attendance_trend_percentage: float = Field(..., description="Attendance trend change percentage")
+    exam_performance_trend_percentage: float = Field(..., description="Exam performance trend change percentage")
+    engagement_trend_percentage: float = Field(..., description="Engagement trend change percentage")
+    improving_institutions: int = Field(..., description="Number of institutions showing improvement")
+    declining_institutions: int = Field(..., description="Number of institutions showing decline")
+
+
+class AnomalyDetection(BaseModel):
+    institution_id: int = Field(..., description="Institution ID")
+    institution_name: str = Field(..., description="Institution name")
+    metric_name: str = Field(..., description="Name of the metric with anomaly")
+    expected_value: float = Field(..., description="Expected value based on benchmarks")
+    actual_value: float = Field(..., description="Actual value observed")
+    deviation_percentage: float = Field(..., description="Deviation from expected as percentage")
+    severity: str = Field(..., description="Severity level (low, medium, high)")
+    description: str = Field(..., description="Description of the anomaly")
+
+
+class BestPractice(BaseModel):
+    category: str = Field(..., description="Category (attendance, exam_performance, engagement, teacher_effectiveness)")
+    institution_id: int = Field(..., description="Institution ID")
+    institution_name: str = Field(..., description="Institution name")
+    metric_value: float = Field(..., description="Performance metric value")
+    description: str = Field(..., description="Description of the best practice")
+    recommendation: str = Field(..., description="Recommendation for other institutions")
+    impact_level: str = Field(..., description="Impact level (low, medium, high)")
+
+
+class CohortAnalysisData(BaseModel):
+    by_plan: List[dict] = Field(..., description="Analysis grouped by subscription plan")
+    by_size: List[dict] = Field(..., description="Analysis grouped by institution size")
+    by_region: List[dict] = Field(..., description="Analysis grouped by region")
+
+
+class CrossInstitutionAnalyticsResponse(BaseModel):
+    institution_metrics: List[InstitutionMetrics] = Field(..., description="Metrics for all institutions")
+    benchmarks: InstitutionBenchmark = Field(..., description="Benchmark statistics")
+    rankings: List[InstitutionRanking] = Field(..., description="Institution rankings")
+    trends: TrendAnalysis = Field(..., description="Trend analysis")
+    anomalies: List[AnomalyDetection] = Field(..., description="Detected anomalies")
+    best_practices: List[BestPractice] = Field(..., description="Identified best practices")
+    cohort_analysis: CohortAnalysisData = Field(..., description="Cohort analysis data")
+    generated_at: datetime = Field(..., description="Timestamp of report generation")
+    period_start: datetime = Field(..., description="Analysis period start")
+    period_end: datetime = Field(..., description="Analysis period end")
+    
+    class Config:
+        from_attributes = True

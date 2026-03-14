@@ -37,6 +37,20 @@ export const navigationConfig: NavigationItem[] = [
     roles: ['superadmin'],
   },
   {
+    id: 'superadmin-analytics',
+    title: 'Analytics',
+    icon: <AnalyticsIcon />,
+    roles: ['superadmin'],
+    children: [
+      {
+        id: 'superadmin-analytics-cross-institution',
+        title: 'Cross-Institution Analytics',
+        path: '/super-admin/analytics/cross-institution',
+        icon: <AnalyticsIcon />,
+      },
+    ],
+  },
+  {
     id: 'superadmin-institutions',
     title: 'Institutions',
     icon: <BusinessIcon />,
