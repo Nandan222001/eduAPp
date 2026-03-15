@@ -72,6 +72,11 @@ class Settings(BaseSettings):
 
     printful_api_key: str = Field(default="", alias="PRINTFUL_API_KEY")
 
+    zoom_api_key: str = Field(default="", alias="ZOOM_API_KEY")
+    zoom_api_secret: str = Field(default="", alias="ZOOM_API_SECRET")
+    
+    google_meet_credentials: str = Field(default="", alias="GOOGLE_MEET_CREDENTIALS")
+
     @property
     def database_url(self) -> str:
         return f"postgresql://{self.database_user}:{self.database_password}@{self.database_host}:{self.database_port}/{self.database_name}"

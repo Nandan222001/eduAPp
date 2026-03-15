@@ -9,7 +9,8 @@ celery_app = Celery(
         "src.tasks.notification_tasks",
         "src.tasks.analytics_tasks",
         "src.tasks.ml_training_tasks",
-        "src.tasks.super_admin_report_tasks"
+        "src.tasks.super_admin_report_tasks",
+        "src.tasks.conference_tasks"
     ]
 )
 
@@ -68,5 +69,17 @@ celery_app.conf.beat_schedule = {
     "check-retention-policies": {
         "task": "super_admin_reports.check_retention_policies",
         "schedule": 3600.0,  # Every hour
+    },
+    "send-conference-reminders": {
+        "task": "src.tasks.conference_tasks.send_conference_reminders",
+        "schedule": 900.0,  # Every 15 minutes
+    },
+    "auto-complete-conferences": {
+        "task": "src.tasks.conference_tasks.auto_complete_conferences",
+        "schedule": 3600.0,  # Every hour
+    },
+    "send-survey-requests": {
+        "task": "src.tasks.conference_tasks.send_survey_requests",
+        "schedule": 1800.0,  # Every 30 minutes
     },
 }

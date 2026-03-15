@@ -64,7 +64,8 @@ from src.api.v1 import (
     parent_teacher_collab,
     peer_tutoring,
     merchandise,
-    onboarding
+    onboarding,
+    conferences
 )
 from src.api import ml
 
@@ -137,3 +138,4 @@ api_router.include_router(parent_teacher_collab.router, prefix="/parent-teacher-
 api_router.include_router(peer_tutoring.router, prefix="/peer-tutoring", tags=["peer-tutoring"])
 api_router.include_router(merchandise.router, prefix="/merchandise", tags=["merchandise"])
 api_router.include_router(onboarding.router, prefix="/onboarding", tags=["onboarding"])
+api_router.include_router(conferences.router, prefix="/conferences", tags=["conferences"])
