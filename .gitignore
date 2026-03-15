@@ -119,6 +119,7 @@ metrics_cache/
 
 # ML/AI models and artifacts
 models/
+!src/models/
 ml_models/
 *.pkl
 *.joblib

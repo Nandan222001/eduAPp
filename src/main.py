@@ -58,7 +58,7 @@ async def root():
 @app.get("/health")
 async def health_check():
     from src.database import SessionLocal
-    from src.redis_client import get_redis_client
+    from src.redis_client import get_redis
     
     health_status = {
         "status": "healthy",
@@ -76,7 +76,7 @@ async def health_check():
         health_status["status"] = "unhealthy"
     
     try:
-        redis = await get_redis_client()
+        redis = await get_redis()
         await redis.ping()
         health_status["redis"] = "connected"
     except Exception as e:
