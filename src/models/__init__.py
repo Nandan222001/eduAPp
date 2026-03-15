@@ -128,6 +128,12 @@ from src.models.entrepreneurship import (
     MentorshipRelationship, VentureFundingRequest,
     VentureStatus, CompetitionStatus, MentorshipStatus, FundingStatus
 )
+from src.models.learning_styles import (
+    LearningStyleProfile, LearningStyleAssessment, ContentTag,
+    AdaptiveContentRecommendation, PersonalizedContentFeed, AdaptiveLearningSession,
+    LearningStyleEffectiveness, ContentDeliveryFormat, ProcessingStyle,
+    SocialPreference, AssessmentStatus
+)
 
 __all__ = [
     "Institution",
@@ -465,4 +471,15 @@ __all__ = [
     "CompetitionStatus",
     "MentorshipStatus",
     "FundingStatus",
+    "LearningStyleProfile",
+    "LearningStyleAssessment",
+    "ContentTag",
+    "AdaptiveContentRecommendation",
+    "PersonalizedContentFeed",
+    "AdaptiveLearningSession",
+    "LearningStyleEffectiveness",
+    "ContentDeliveryFormat",
+    "ProcessingStyle",
+    "SocialPreference",
+    "AssessmentStatus",
 ]

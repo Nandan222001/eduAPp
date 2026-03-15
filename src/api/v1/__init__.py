@@ -73,7 +73,8 @@ from src.api.v1 import (
     finance_education,
     community_service,
     entrepreneurship,
-    peer_recognition
+    peer_recognition,
+    learning_styles
 )
 from src.api import ml
 
@@ -155,3 +156,4 @@ api_router.include_router(finance_education.router, prefix="/finance-education",
 api_router.include_router(community_service.router, prefix="/community-service", tags=["community-service"])
 api_router.include_router(entrepreneurship.router, prefix="/entrepreneurship", tags=["entrepreneurship"])
 api_router.include_router(peer_recognition.router, prefix="/peer-recognition", tags=["peer-recognition"])
+api_router.include_router(learning_styles.router, prefix="", tags=["learning-styles"])
