@@ -37,7 +37,7 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '@/hooks';
 import { tokenManager } from '@/lib/tokenManager';
-import { api } from '../../api/client';
+import axios from '@/lib/axios';
 import { format } from 'date-fns';
 
 interface ImpersonationData {
@@ -146,7 +146,7 @@ const ImpersonationToolbar: React.FC = () => {
 
   const fetchActivities = async () => {
     try {
-      const response = await api.get('/super-admin/activity-logs', {
+      const response = await axios.get('/super-admin/activity-logs', {
         params: {
           user_id: impersonationData?.impersonatedUser?.id,
           page: 1,
@@ -163,7 +163,7 @@ const ImpersonationToolbar: React.FC = () => {
     if (!impersonationData?.impersonationLogId) return;
 
     try {
-      await api.post('/super-admin/end-impersonation', {
+      await axios.post('/super-admin/end-impersonation', {
         impersonation_log_id: impersonationData.impersonationLogId,
       });
 
