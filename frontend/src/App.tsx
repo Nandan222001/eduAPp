@@ -26,6 +26,7 @@ import TeacherPerformanceDashboard from './pages/TeacherPerformanceDashboard';
 import TeacherRoleAssignment from './pages/TeacherRoleAssignment';
 import TeacherDashboard from './pages/TeacherDashboard';
 import StudentDashboard from './pages/StudentDashboard';
+import StudentList from './pages/StudentList';
 import AttendanceOverviewPage from './pages/AttendanceOverviewPage';
 import AttendanceMarkingPage from './pages/AttendanceMarkingPage';
 import AttendanceSheetPage from './pages/AttendanceSheetPage';
@@ -178,7 +179,7 @@ function App() {
                 <Route path="/admin" element={<AdminLayout />}>
                   <Route index element={<InstitutionAdminDashboard />} />
                   <Route path="dashboard" element={<InstitutionAdminDashboard />} />
-                  <Route path="users/students" element={<div>Students</div>} />
+                  <Route path="users/students" element={<StudentList />} />
                   <Route path="users/teachers" element={<TeacherList />} />
                   <Route path="users/teachers/new" element={<TeacherForm />} />
                   <Route path="users/teachers/:id" element={<TeacherProfile />} />
