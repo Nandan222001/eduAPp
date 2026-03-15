@@ -32,11 +32,11 @@ import {
   Business as BusinessIcon,
   AccessTime as AccessTimeIcon,
   ExitToApp as ExitToAppIcon,
-  SwapHoriz as SwapHorizIcon,
   Timeline as TimelineIcon,
   Visibility as VisibilityIcon,
 } from '@mui/icons-material';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '@/hooks';
+import { tokenManager } from '@/lib/tokenManager';
 import { api } from '../../api/client';
 import { format } from 'date-fns';
 
@@ -70,7 +70,8 @@ interface ActivityItem {
 }
 
 const ImpersonationToolbar: React.FC = () => {
-  const { user, token } = useAuth();
+  const { user } = useAuth();
+  const token = tokenManager.getAccessToken();
   const [impersonationData, setImpersonationData] = useState<ImpersonationData | null>(null);
   const [expanded, setExpanded] = useState(true);
   const [showTimeline, setShowTimeline] = useState(false);
@@ -165,7 +166,7 @@ const ImpersonationToolbar: React.FC = () => {
       await api.post('/super-admin/end-impersonation', {
         impersonation_log_id: impersonationData.impersonationLogId,
       });
-      
+
       window.location.href = '/super-admin';
     } catch (error) {
       console.error('Error ending impersonation:', error);
@@ -262,11 +263,7 @@ const ImpersonationToolbar: React.FC = () => {
               Exit Impersonation
             </Button>
 
-            <IconButton
-              size="small"
-              onClick={() => setExpanded(!expanded)}
-              sx={{ color: 'white' }}
-            >
+            <IconButton size="small" onClick={() => setExpanded(!expanded)} sx={{ color: 'white' }}>
               {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
             </IconButton>
           </Stack>
@@ -323,12 +320,7 @@ const ImpersonationToolbar: React.FC = () => {
         </Collapse>
       </Paper>
 
-      <Dialog
-        open={showTimeline}
-        onClose={() => setShowTimeline(false)}
-        maxWidth="md"
-        fullWidth
-      >
+      <Dialog open={showTimeline} onClose={() => setShowTimeline(false)} maxWidth="md" fullWidth>
         <DialogTitle>
           <Stack direction="row" alignItems="center" justifyContent="space-between">
             <Typography variant="h6">Activity Timeline</Typography>
@@ -357,8 +349,8 @@ const ImpersonationToolbar: React.FC = () => {
                         activity.statusCode && activity.statusCode >= 400
                           ? 'error'
                           : activity.statusCode && activity.statusCode >= 200
-                          ? 'success'
-                          : 'grey'
+                            ? 'success'
+                            : 'grey'
                       }
                     />
                     {index < activities.length - 1 && <TimelineConnector />}
