@@ -141,6 +141,9 @@ from src.models.research import (
     DataCollectionStatus, MilestoneStatus, TeamMemberRole, DocumentVisibility,
     FeedbackStatus, ReviewDecision
 )
+from src.models.study_buddy import (
+    StudyBuddySession, StudyBuddyInsight, StudyBuddyPreference, InsightType
+)
 
 __all__ = [
     "Institution",
@@ -507,4 +510,8 @@ __all__ = [
     "DocumentVisibility",
     "FeedbackStatus",
     "ReviewDecision",
+    "StudyBuddySession",
+    "StudyBuddyInsight",
+    "StudyBuddyPreference",
+    "InsightType",
 ]

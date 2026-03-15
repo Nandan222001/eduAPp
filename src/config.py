@@ -84,6 +84,8 @@ class Settings(BaseSettings):
     youtube_api_key: str = Field(default="", alias="YOUTUBE_API_KEY")
     vimeo_access_token: str = Field(default="", alias="VIMEO_ACCESS_TOKEN")
 
+    openai_api_key: str = Field(default="", alias="OPENAI_API_KEY")
+
     @property
     def database_url(self) -> str:
         return f"postgresql://{self.database_user}:{self.database_password}@{self.database_host}:{self.database_port}/{self.database_name}"
