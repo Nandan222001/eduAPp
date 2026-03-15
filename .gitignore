@@ -82,6 +82,11 @@ question_images/
 *.pdf
 temp_uploads/
 
+# Homework scanner
+homework_scans/
+ocr_temp/
+tesseract_cache/
+
 # Podcast uploads - audio files
 *.mp3
 *.wav

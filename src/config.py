@@ -12,6 +12,7 @@ class Settings(BaseSettings):
 
     app_name: str = Field(default="FastAPI App", alias="APP_NAME")
     app_env: str = Field(default="development", alias="APP_ENV")
+    app_url: str = Field(default="http://localhost:8000", alias="APP_URL")
     debug: bool = Field(default=True, alias="DEBUG")
 
     host: str = Field(default="0.0.0.0", alias="HOST")

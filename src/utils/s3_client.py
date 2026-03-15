@@ -1,9 +1,10 @@
 import boto3
-from typing import Optional, BinaryIO
+from typing import Optional, BinaryIO, Union
 from botocore.exceptions import ClientError
 from src.config import settings
 import uuid
 from datetime import datetime
+from io import BytesIO
 
 
 class S3Client:
@@ -20,22 +21,22 @@ class S3Client:
 
     def upload_file(
         self,
-        file_obj: BinaryIO,
-        file_name: str,
-        folder: str = "uploads",
+        file_content: Union[bytes, BinaryIO],
+        s3_key: str,
         content_type: Optional[str] = None
-    ) -> tuple[str, str]:
+    ) -> str:
         if not self.s3_client or not self.bucket_name:
             raise ValueError("S3 is not configured properly")
-
-        timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
-        unique_id = str(uuid.uuid4())[:8]
-        s3_key = f"{folder}/{timestamp}_{unique_id}_{file_name}"
 
         try:
             extra_args = {}
             if content_type:
                 extra_args['ContentType'] = content_type
+
+            if isinstance(file_content, bytes):
+                file_obj = BytesIO(file_content)
+            else:
+                file_obj = file_content
 
             self.s3_client.upload_fileobj(
                 file_obj,
@@ -45,10 +46,20 @@ class S3Client:
             )
 
             file_url = f"https://{self.bucket_name}.s3.{settings.aws_region}.amazonaws.com/{s3_key}"
-            return file_url, s3_key
+            return file_url
 
         except ClientError as e:
             raise Exception(f"Failed to upload file to S3: {str(e)}")
+    
+    def download_file(self, s3_key: str) -> bytes:
+        if not self.s3_client or not self.bucket_name:
+            raise ValueError("S3 is not configured properly")
+
+        try:
+            response = self.s3_client.get_object(Bucket=self.bucket_name, Key=s3_key)
+            return response['Body'].read()
+        except ClientError as e:
+            raise Exception(f"Failed to download file from S3: {str(e)}")
 
     def delete_file(self, s3_key: str) -> bool:
         if not self.s3_client or not self.bucket_name:

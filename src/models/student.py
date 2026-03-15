@@ -106,6 +106,7 @@ class Student(Base):
     content_reviews = relationship("ContentReview", foreign_keys="ContentReview.reviewer_student_id", back_populates="reviewer", cascade="all, delete-orphan")
     content_purchases = relationship("ContentPurchase", foreign_keys="ContentPurchase.buyer_student_id", back_populates="buyer", cascade="all, delete-orphan")
     credits_balance = relationship("StudentCreditsBalance", back_populates="student", uselist=False, cascade="all, delete-orphan")
+    homework_scans = relationship("HomeworkScan", back_populates="student", cascade="all, delete-orphan")
     
     __table_args__ = (
         UniqueConstraint('institution_id', 'email', name='uq_institution_student_email'),

@@ -128,6 +128,7 @@ class Subject(Base):
     previous_year_papers = relationship("PreviousYearPaper", back_populates="subject", cascade="all, delete-orphan")
     questions_bank = relationship("QuestionBank", back_populates="subject", cascade="all, delete-orphan")
     study_materials = relationship("StudyMaterial", back_populates="subject", cascade="all, delete-orphan")
+    homework_scans = relationship("HomeworkScan", back_populates="subject", cascade="all, delete-orphan")
     
     __table_args__ = (
         UniqueConstraint('institution_id', 'name', name='uq_institution_subject_name'),
