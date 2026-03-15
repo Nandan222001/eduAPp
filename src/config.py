@@ -81,6 +81,9 @@ class Settings(BaseSettings):
     document_vault_presigned_url_expiry: int = Field(default=3600, alias="DOCUMENT_VAULT_PRESIGNED_URL_EXPIRY")
     document_vault_retention_years: int = Field(default=7, alias="DOCUMENT_VAULT_RETENTION_YEARS")
 
+    youtube_api_key: str = Field(default="", alias="YOUTUBE_API_KEY")
+    vimeo_access_token: str = Field(default="", alias="VIMEO_ACCESS_TOKEN")
+
     @property
     def database_url(self) -> str:
         return f"postgresql://{self.database_user}:{self.database_password}@{self.database_host}:{self.database_port}/{self.database_name}"
