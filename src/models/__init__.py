@@ -134,6 +134,13 @@ from src.models.learning_styles import (
     LearningStyleEffectiveness, ContentDeliveryFormat, ProcessingStyle,
     SocialPreference, AssessmentStatus
 )
+from src.models.research import (
+    ResearchProject, ResearchTeamMember, ResearchMilestone, LiteratureReference,
+    ResearchDocument, DocumentVersion, ExperimentLog, ResearchDataFile,
+    AdvisorFeedback, PeerReview, ProjectType, PublicationStatus,
+    DataCollectionStatus, MilestoneStatus, TeamMemberRole, DocumentVisibility,
+    FeedbackStatus, ReviewDecision
+)
 
 __all__ = [
     "Institution",
@@ -482,4 +489,22 @@ __all__ = [
     "ProcessingStyle",
     "SocialPreference",
     "AssessmentStatus",
+    "ResearchProject",
+    "ResearchTeamMember",
+    "ResearchMilestone",
+    "LiteratureReference",
+    "ResearchDocument",
+    "DocumentVersion",
+    "ExperimentLog",
+    "ResearchDataFile",
+    "AdvisorFeedback",
+    "PeerReview",
+    "ProjectType",
+    "PublicationStatus",
+    "DataCollectionStatus",
+    "MilestoneStatus",
+    "TeamMemberRole",
+    "DocumentVisibility",
+    "FeedbackStatus",
+    "ReviewDecision",
 ]

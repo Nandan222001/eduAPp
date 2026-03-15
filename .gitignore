@@ -82,6 +82,16 @@ question_images/
 *.pdf
 temp_uploads/
 
+# Podcast uploads - audio files
+*.mp3
+*.wav
+*.ogg
+*.aac
+*.m4a
+*.flac
+uploads/podcasts/
+podcasts/audio/
+
 # Document Vault - encrypted documents and keys
 documents/
 encrypted_documents/
