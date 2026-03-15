@@ -112,6 +112,11 @@ from src.models.journalism import (
     NewspaperEdition, Article, ArticleReview, JournalismMember, ArticleAnalytics,
     PublicationStatus, ArticleType, ReviewStatus, JournalismRole
 )
+from src.models.elections import (
+    Election, Candidate, Vote, VoterRegistry, ElectionResult, CampaignActivity,
+    ElectionAnalytics, ElectionPosition, EligibleVoters, ElectionStatus,
+    CandidateStatus, VoteStatus
+)
 
 __all__ = [
     "Institution",
@@ -413,4 +418,16 @@ __all__ = [
     "ArticleType",
     "ReviewStatus",
     "JournalismRole",
+    "Election",
+    "Candidate",
+    "Vote",
+    "VoterRegistry",
+    "ElectionResult",
+    "CampaignActivity",
+    "ElectionAnalytics",
+    "ElectionPosition",
+    "EligibleVoters",
+    "ElectionStatus",
+    "CandidateStatus",
+    "VoteStatus",
 ]
