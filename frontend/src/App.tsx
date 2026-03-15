@@ -177,8 +177,6 @@ function App() {
                 <Route path="/admin" element={<AdminLayout />}>
                   <Route index element={<InstitutionAdminDashboard />} />
                   <Route path="dashboard" element={<InstitutionAdminDashboard />} />
-                  <Route path="institutions" element={<div>Institutions</div>} />
-                  <Route path="institutions/add" element={<div>Add Institution</div>} />
                   <Route path="users/students" element={<div>Students</div>} />
                   <Route path="users/teachers" element={<TeacherList />} />
                   <Route path="users/teachers/new" element={<TeacherForm />} />
