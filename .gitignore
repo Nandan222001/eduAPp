@@ -82,6 +82,13 @@ question_images/
 *.pdf
 temp_uploads/
 
+# Document Vault - encrypted documents and keys
+documents/
+encrypted_documents/
+document_uploads/
+*.encrypted
+encryption_keys/
+
 # Analytics reports
 reports/
 

@@ -76,6 +76,10 @@ class Settings(BaseSettings):
     zoom_api_secret: str = Field(default="", alias="ZOOM_API_SECRET")
     
     google_meet_credentials: str = Field(default="", alias="GOOGLE_MEET_CREDENTIALS")
+    
+    document_vault_max_file_size: int = Field(default=52428800, alias="DOCUMENT_VAULT_MAX_FILE_SIZE")
+    document_vault_presigned_url_expiry: int = Field(default=3600, alias="DOCUMENT_VAULT_PRESIGNED_URL_EXPIRY")
+    document_vault_retention_years: int = Field(default=7, alias="DOCUMENT_VAULT_RETENTION_YEARS")
 
     @property
     def database_url(self) -> str:

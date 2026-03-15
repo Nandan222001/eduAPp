@@ -65,7 +65,8 @@ from src.api.v1 import (
     peer_tutoring,
     merchandise,
     onboarding,
-    conferences
+    conferences,
+    document_vault
 )
 from src.api import ml
 
@@ -139,3 +140,4 @@ api_router.include_router(peer_tutoring.router, prefix="/peer-tutoring", tags=["
 api_router.include_router(merchandise.router, prefix="/merchandise", tags=["merchandise"])
 api_router.include_router(onboarding.router, prefix="/onboarding", tags=["onboarding"])
 api_router.include_router(conferences.router, prefix="/conferences", tags=["conferences"])
+api_router.include_router(document_vault.router, prefix="/document-vault", tags=["document-vault"])
