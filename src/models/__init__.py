@@ -104,6 +104,10 @@ from src.models.onboarding import (
     OnboardingFlow, OnboardingStep, OnboardingProgress, OnboardingStepProgress,
     OnboardingDocument, OnboardingSignature, StepType, UserRole
 )
+from src.models.carpools import (
+    CarpoolGroup, CarpoolRequest, CarpoolRide, EmergencyNotification, CarpoolMatch,
+    CarpoolRequestType, CarpoolRequestStatus, CarpoolGroupStatus, RideStatus, EmergencyType
+)
 
 __all__ = [
     "Institution",
@@ -386,4 +390,14 @@ __all__ = [
     "OnboardingSignature",
     "StepType",
     "UserRole",
+    "CarpoolGroup",
+    "CarpoolRequest",
+    "CarpoolRide",
+    "EmergencyNotification",
+    "CarpoolMatch",
+    "CarpoolRequestType",
+    "CarpoolRequestStatus",
+    "CarpoolGroupStatus",
+    "RideStatus",
+    "EmergencyType",
 ]

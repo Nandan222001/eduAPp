@@ -66,7 +66,8 @@ from src.api.v1 import (
     merchandise,
     onboarding,
     conferences,
-    document_vault
+    document_vault,
+    carpools
 )
 from src.api import ml
 
@@ -141,3 +142,4 @@ api_router.include_router(merchandise.router, prefix="/merchandise", tags=["merc
 api_router.include_router(onboarding.router, prefix="/onboarding", tags=["onboarding"])
 api_router.include_router(conferences.router, prefix="/conferences", tags=["conferences"])
 api_router.include_router(document_vault.router, prefix="/document-vault", tags=["document-vault"])
+api_router.include_router(carpools.router, prefix="/carpools", tags=["carpools"])
