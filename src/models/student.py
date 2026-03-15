@@ -102,6 +102,10 @@ class Student(Base):
     submissions = relationship("Submission", back_populates="student", cascade="all, delete-orphan")
     study_plans = relationship("StudyPlan", back_populates="student", cascade="all, delete-orphan")
     weak_areas = relationship("WeakArea", back_populates="student", cascade="all, delete-orphan")
+    created_contents = relationship("StudentContent", foreign_keys="StudentContent.creator_student_id", back_populates="creator", cascade="all, delete-orphan")
+    content_reviews = relationship("ContentReview", foreign_keys="ContentReview.reviewer_student_id", back_populates="reviewer", cascade="all, delete-orphan")
+    content_purchases = relationship("ContentPurchase", foreign_keys="ContentPurchase.buyer_student_id", back_populates="buyer", cascade="all, delete-orphan")
+    credits_balance = relationship("StudentCreditsBalance", back_populates="student", uselist=False, cascade="all, delete-orphan")
     
     __table_args__ = (
         UniqueConstraint('institution_id', 'email', name='uq_institution_student_email'),
