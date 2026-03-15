@@ -33,6 +33,7 @@ class PointEventType(str, Enum):
     DAILY_LOGIN = "daily_login"
     STREAK = "streak"
     BADGE_EARN = "badge_earn"
+    SOCIAL = "social"
 
 
 class AchievementType(str, Enum):
