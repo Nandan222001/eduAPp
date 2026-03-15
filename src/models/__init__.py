@@ -123,6 +123,11 @@ from src.models.finance_education import (
     FinancialLiteracyAssessment, ChallengeLeaderboard,
     ModuleName, ChallengeType, ChallengeStatus, TransactionType, InvestmentType
 )
+from src.models.entrepreneurship import (
+    StudentVenture, PitchCompetition, PitchSubmission, EntrepreneurshipMentor,
+    MentorshipRelationship, VentureFundingRequest,
+    VentureStatus, CompetitionStatus, MentorshipStatus, FundingStatus
+)
 
 __all__ = [
     "Institution",
@@ -450,4 +455,14 @@ __all__ = [
     "ChallengeStatus",
     "TransactionType",
     "InvestmentType",
+    "StudentVenture",
+    "PitchCompetition",
+    "PitchSubmission",
+    "EntrepreneurshipMentor",
+    "MentorshipRelationship",
+    "VentureFundingRequest",
+    "VentureStatus",
+    "CompetitionStatus",
+    "MentorshipStatus",
+    "FundingStatus",
 ]
