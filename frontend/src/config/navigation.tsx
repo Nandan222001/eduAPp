@@ -26,6 +26,8 @@ import {
   CloudUpload as ImportIcon,
   Timer as TimerIcon,
   Store as StoreIcon,
+  EmojiEvents as TrophyIcon,
+  Favorite as HeartIcon,
 } from '@mui/icons-material';
 import { NavigationItem } from '@/types/navigation';
 
@@ -311,6 +313,42 @@ export const navigationConfig: NavigationItem[] = [
         icon: <AnalyticsIcon />,
       },
     ],
+  },
+  {
+    id: 'peer-recognition',
+    title: 'Peer Recognition',
+    icon: <TrophyIcon />,
+    roles: ['student', 'teacher'],
+    children: [
+      {
+        id: 'peer-recognition-send',
+        title: 'My Recognitions',
+        path: '/student/peer-recognition',
+        icon: <TrophyIcon />,
+        roles: ['student'],
+      },
+      {
+        id: 'appreciation-wall',
+        title: 'Appreciation Wall',
+        path: '/student/appreciation-wall',
+        icon: <HeartIcon />,
+        roles: ['student', 'teacher'],
+      },
+      {
+        id: 'recognition-moderation',
+        title: 'Moderation',
+        path: '/teacher/recognition/moderation',
+        icon: <WarningIcon />,
+        roles: ['teacher'],
+      },
+    ],
+  },
+  {
+    id: 'school-culture-analytics',
+    title: 'School Culture Analytics',
+    path: '/admin/recognition/analytics',
+    icon: <HeartIcon />,
+    roles: ['admin', 'institution_admin'],
   },
   {
     id: 'communication',

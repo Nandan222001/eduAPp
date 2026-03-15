@@ -77,6 +77,11 @@ import ParentVolunteerHours from './pages/ParentVolunteerHours';
 import TeacherVolunteerVerification from './pages/TeacherVolunteerVerification';
 import VolunteerLeaderboard from './pages/VolunteerLeaderboard';
 import AdminVolunteerAnalytics from './pages/AdminVolunteerAnalytics';
+import PeerRecognition from './pages/PeerRecognition';
+import AppreciationWall from './pages/AppreciationWall';
+import TeacherRecognitionModeration from './pages/TeacherRecognitionModeration';
+import SchoolCultureAnalyticsDashboard from './pages/SchoolCultureAnalyticsDashboard';
+import RecognitionSettings from './pages/RecognitionSettings';
 
 import {
   LoginPage,
@@ -241,6 +246,10 @@ function App() {
                   <Route path="onboarding-designer" element={<AdminOnboardingDesigner />} />
                   <Route path="volunteer/analytics" element={<AdminVolunteerAnalytics />} />
                   <Route path="volunteer/leaderboard" element={<VolunteerLeaderboard />} />
+                  <Route
+                    path="recognition/analytics"
+                    element={<SchoolCultureAnalyticsDashboard />}
+                  />
                   <Route path="settings" element={<SettingsPage />} />
                   <Route path="profile" element={<SettingsPage />} />
                 </Route>
@@ -272,6 +281,8 @@ function App() {
                   <Route path="merchandise/orders" element={<MerchandiseOrderTracking />} />
                   <Route path="volunteer/verification" element={<TeacherVolunteerVerification />} />
                   <Route path="volunteer/leaderboard" element={<VolunteerLeaderboard />} />
+                  <Route path="recognition/moderation" element={<TeacherRecognitionModeration />} />
+                  <Route path="appreciation-wall" element={<AppreciationWall />} />
                   <Route path="settings" element={<SettingsPage />} />
                 </Route>
               </Route>
@@ -303,6 +314,9 @@ function App() {
                   <Route path="volunteer/leaderboard" element={<VolunteerLeaderboard />} />
                   <Route path="merchandise/store" element={<SchoolMerchandiseStore />} />
                   <Route path="merchandise/orders" element={<MerchandiseOrderTracking />} />
+                  <Route path="peer-recognition" element={<PeerRecognition />} />
+                  <Route path="appreciation-wall" element={<AppreciationWall />} />
+                  <Route path="recognition/settings" element={<RecognitionSettings />} />
                   <Route path="settings" element={<SettingsPage />} />
                 </Route>
               </Route>

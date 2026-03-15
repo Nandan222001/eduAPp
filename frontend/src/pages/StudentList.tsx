@@ -128,6 +128,7 @@ export default function StudentList() {
 
   useEffect(() => {
     fetchStudents();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     page,
     rowsPerPage,
@@ -141,7 +142,6 @@ export default function StudentList() {
 
   useEffect(() => {
     fetchStatistics();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleChangePage = (_event: unknown, newPage: number) => {
