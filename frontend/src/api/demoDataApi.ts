@@ -41,6 +41,11 @@ import type {
   WeeklyProgress,
   PerformanceComparison,
   GoalProgress,
+  BulkFeePaymentRequest,
+  BulkEventRSVPRequest,
+  SharedFamilyInfo,
+  SiblingLinkRequest,
+  PrivacySettings,
 } from '@/types/parent';
 import type { DashboardResponse as InstitutionAdminDashboardResponse } from './institutionAdmin';
 import type { SuperAdminDashboardResponse } from './superAdmin';
@@ -1793,6 +1798,248 @@ export const demoParentsApi = {
       total: goals.length,
       active: goals.filter((g) => g.status === 'in_progress').length,
       completed: goals.filter((g) => g.status === 'completed').length,
+    });
+  },
+
+  getFamilyOverviewMetrics: async () => {
+    const children = parentDashboardData.children as ChildOverview[];
+    return Promise.resolve({
+      total_children: children.length,
+      total_assignments_due: 5,
+      upcoming_events_count: 3,
+      average_attendance:
+        children.reduce((sum, c) => sum + (c.attendance_percentage || 0), 0) / children.length,
+      children_metrics: children.map((c) => ({
+        child_id: c.id,
+        child_name: `${c.first_name} ${c.last_name}`,
+        assignments_due: c.id === 1101 ? 2 : 3,
+        attendance_percentage: c.attendance_percentage || 0,
+        average_score: c.average_score || 0,
+      })),
+    });
+  },
+
+  getFamilyCalendarEvents: async (_startDate: string, _endDate: string, childIds?: number[]) => {
+    const events = [
+      {
+        id: 1,
+        child_id: 1101,
+        child_name: 'Emma Williams',
+        title: 'Math Assignment Due',
+        event_type: 'assignment' as const,
+        start_date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+        end_date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+        description: 'Chapter 5 problems',
+        color: '#1976d2',
+      },
+      {
+        id: 2,
+        child_id: 1102,
+        child_name: 'Noah Williams',
+        title: 'Science Project Due',
+        event_type: 'assignment' as const,
+        start_date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+        end_date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+        description: 'Solar system model',
+        color: '#9c27b0',
+      },
+      {
+        id: 3,
+        child_id: 1101,
+        child_name: 'Emma Williams',
+        title: 'Parent-Teacher Conference',
+        event_type: 'meeting' as const,
+        start_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        end_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        location: 'Room 204',
+        color: '#1976d2',
+      },
+      {
+        id: 4,
+        child_id: 1102,
+        child_name: 'Noah Williams',
+        title: 'Mid-term Exam',
+        event_type: 'exam' as const,
+        start_date: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(),
+        end_date: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(),
+        description: 'English Literature',
+        color: '#9c27b0',
+      },
+    ];
+
+    return Promise.resolve(
+      events.filter((e) => !childIds || childIds.length === 0 || childIds.includes(e.child_id))
+    );
+  },
+
+  getComparativePerformance: async () => {
+    return Promise.resolve([
+      {
+        child_id: 1101,
+        child_name: 'Emma Williams',
+        subjects: [
+          {
+            subject_name: 'Mathematics',
+            average_score: 88,
+            assignments_completed: 15,
+            attendance_percentage: 95,
+          },
+          {
+            subject_name: 'Science',
+            average_score: 92,
+            assignments_completed: 12,
+            attendance_percentage: 94,
+          },
+          {
+            subject_name: 'English',
+            average_score: 85,
+            assignments_completed: 14,
+            attendance_percentage: 96,
+          },
+          {
+            subject_name: 'History',
+            average_score: 90,
+            assignments_completed: 10,
+            attendance_percentage: 93,
+          },
+        ],
+      },
+      {
+        child_id: 1102,
+        child_name: 'Noah Williams',
+        subjects: [
+          {
+            subject_name: 'Mathematics',
+            average_score: 68,
+            assignments_completed: 10,
+            attendance_percentage: 78,
+          },
+          {
+            subject_name: 'Science',
+            average_score: 72,
+            assignments_completed: 9,
+            attendance_percentage: 80,
+          },
+          {
+            subject_name: 'English',
+            average_score: 75,
+            assignments_completed: 11,
+            attendance_percentage: 76,
+          },
+          {
+            subject_name: 'History',
+            average_score: 70,
+            assignments_completed: 8,
+            attendance_percentage: 79,
+          },
+        ],
+      },
+    ]);
+  },
+
+  getFamilyNotificationDigest: async () => {
+    return Promise.resolve({
+      date: new Date().toISOString(),
+      notifications: [
+        {
+          id: 1,
+          child_id: 1101,
+          child_name: 'Emma Williams',
+          notification_type: 'assignment',
+          title: 'New Assignment Posted',
+          message: 'Math homework for Chapter 5 has been posted',
+          priority: 'medium',
+          created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+          is_read: false,
+        },
+        {
+          id: 2,
+          child_id: 1102,
+          child_name: 'Noah Williams',
+          notification_type: 'attendance',
+          title: 'Absence Alert',
+          message: 'Noah was absent from school today',
+          priority: 'high',
+          created_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+          is_read: false,
+        },
+        {
+          id: 3,
+          child_id: 1101,
+          child_name: 'Emma Williams',
+          notification_type: 'grade',
+          title: 'Grade Updated',
+          message: 'Science test grade has been posted: 92%',
+          priority: 'low',
+          created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+          is_read: true,
+        },
+      ],
+      summary: {
+        total_count: 3,
+        by_child: { 1101: 2, 1102: 1 },
+        by_type: { assignment: 1, attendance: 1, grade: 1 },
+        unread_count: 2,
+      },
+    });
+  },
+
+  bulkPayFees: async (request: BulkFeePaymentRequest) => {
+    return Promise.resolve({
+      successful_payments: request.student_ids,
+      failed_payments: [],
+      total_amount: request.amount * request.student_ids.length,
+      transaction_ids: request.student_ids.map((id: number) => `TXN${id}${Date.now()}`),
+    });
+  },
+
+  bulkDownloadReportCards: async (_studentIds: number[]) => {
+    return Promise.resolve(new Blob(['Demo report cards data'], { type: 'application/zip' }));
+  },
+
+  bulkRSVPEvents: async (_request: BulkEventRSVPRequest) => {
+    return Promise.resolve();
+  },
+
+  updateSharedFamilyInfo: async (info: SharedFamilyInfo) => {
+    return Promise.resolve(info);
+  },
+
+  getSharedFamilyInfo: async () => {
+    return Promise.resolve({
+      address: '123 Main Street',
+      city: 'Springfield',
+      state: 'IL',
+      postal_code: '62701',
+      country: 'USA',
+      emergency_contact_name: 'Jane Williams',
+      emergency_contact_phone: '+1-555-1234',
+      emergency_contact_relationship: 'Mother',
+    });
+  },
+
+  linkSiblings: async (_request: SiblingLinkRequest) => {
+    return Promise.resolve();
+  },
+
+  getPrivacySettings: async () => {
+    return Promise.resolve({
+      id: 1,
+      parent_id: 5001,
+      disable_sibling_comparisons: false,
+      hide_performance_rankings: false,
+      hide_attendance_from_siblings: false,
+      allow_data_sharing: true,
+      updated_at: new Date().toISOString(),
+    });
+  },
+
+  updatePrivacySettings: async (settings: Partial<PrivacySettings>) => {
+    return Promise.resolve({
+      id: 1,
+      parent_id: 5001,
+      ...settings,
+      updated_at: new Date().toISOString(),
     });
   },
 };
