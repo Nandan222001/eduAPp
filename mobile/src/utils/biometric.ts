@@ -1,0 +1,58 @@
+import * as LocalAuthentication from 'expo-local-authentication';
+
+export const biometricUtils = {
+  isAvailable: async (): Promise<boolean> => {
+    const compatible = await LocalAuthentication.hasHardwareAsync();
+    if (!compatible) return false;
+
+    const enrolled = await LocalAuthentication.isEnrolledAsync();
+    return enrolled;
+  },
+
+  getSupportedTypes: async (): Promise<LocalAuthentication.AuthenticationType[]> => {
+    return await LocalAuthentication.supportedAuthenticationTypesAsync();
+  },
+
+  authenticate: async (options?: {
+    promptMessage?: string;
+    cancelLabel?: string;
+    disableDeviceFallback?: boolean;
+  }): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: options?.promptMessage || 'Authenticate to continue',
+        cancelLabel: options?.cancelLabel || 'Cancel',
+        disableDeviceFallback: options?.disableDeviceFallback || false,
+        fallbackLabel: 'Use Passcode',
+      });
+
+      if (result.success) {
+        return { success: true };
+      } else {
+        return {
+          success: false,
+          error: result.error || 'Authentication failed',
+        };
+      }
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Authentication error',
+      };
+    }
+  },
+
+  getBiometricType: async (): Promise<string> => {
+    const types = await LocalAuthentication.supportedAuthenticationTypesAsync();
+
+    if (types.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION)) {
+      return 'Face ID';
+    } else if (types.includes(LocalAuthentication.AuthenticationType.FINGERPRINT)) {
+      return 'Touch ID';
+    } else if (types.includes(LocalAuthentication.AuthenticationType.IRIS)) {
+      return 'Iris';
+    }
+
+    return 'Biometric';
+  },
+};

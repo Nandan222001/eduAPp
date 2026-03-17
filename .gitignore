@@ -124,6 +124,17 @@ frontend/.env.local
 frontend/.vite/
 frontend/coverage/
 
+# Mobile (React Native/Expo)
+mobile/node_modules/
+mobile/.expo/
+mobile/.expo-shared/
+mobile/dist/
+mobile/web-build/
+mobile/.env
+mobile/.env.local
+mobile/android/
+mobile/ios/
+
 # Test artifacts
 .pytest_cache/
 htmlcov/
