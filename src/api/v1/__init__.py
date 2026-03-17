@@ -87,7 +87,9 @@ from src.api.v1 import (
     olympics,
     mistake_analysis,
     reverse_classroom,
-    subject_rpg
+    subject_rpg,
+    wellbeing,
+    parent_roi
 )
 from src.api import ml
 
@@ -183,3 +185,5 @@ api_router.include_router(olympics.router, prefix="/olympics", tags=["olympics"]
 api_router.include_router(mistake_analysis.router, prefix="", tags=["mistake-analysis"])
 api_router.include_router(reverse_classroom.router, prefix="", tags=["reverse-classroom"])
 api_router.include_router(subject_rpg.router, prefix="/subject-rpg", tags=["subject-rpg"])
+api_router.include_router(wellbeing.router, prefix="/wellbeing", tags=["wellbeing"])
+api_router.include_router(parent_roi.router, prefix="/parent-roi", tags=["parent-roi"])

@@ -17,6 +17,7 @@ from src.models.wellbeing import (
     WellbeingDataAccess,
     CounselorProfile,
     StudentWellbeingProfile,
+    StressLevel,
     AlertSeverity,
     AlertStatus,
     AlertType,
@@ -889,3 +890,195 @@ class WellbeingService:
         self.db.flush()
         
         return access_log
+    
+    def calculate_stress_score(
+        self,
+        student_id: int,
+        institution_id: int,
+        study_hours_continuous: float,
+        sleep_hours: float,
+        exam_proximity: int,
+        activity_level: float,
+        break_frequency: float,
+        date_str: str
+    ) -> StressLevel:
+        """Calculate real-time stress score from various factors"""
+        # Normalize inputs to 0-1 scale and calculate weighted stress
+        
+        # Study hours continuous (0-8 hours) - more continuous hours = more stress
+        study_stress = min(study_hours_continuous / 8.0, 1.0) * 0.25
+        
+        # Sleep hours (0-10 hours) - less sleep = more stress
+        optimal_sleep = 8.0
+        sleep_deficit = max(0, optimal_sleep - sleep_hours)
+        sleep_stress = min(sleep_deficit / optimal_sleep, 1.0) * 0.25
+        
+        # Exam proximity (in days) - closer exams = more stress
+        # 0 days = max stress, 30+ days = minimal stress
+        exam_stress = max(0, (30 - exam_proximity) / 30.0) * 0.20
+        
+        # Activity level (0-10 scale) - less activity = more stress
+        activity_stress = max(0, (10 - activity_level) / 10.0) * 0.15
+        
+        # Break frequency (breaks per 2 hours) - fewer breaks = more stress
+        # Ideal: 1 break per 2 hours
+        break_deficit = max(0, 1.0 - break_frequency)
+        break_stress = min(break_deficit, 1.0) * 0.15
+        
+        # Calculate total stress score (0-1 scale)
+        stress_score = study_stress + sleep_stress + exam_stress + activity_stress + break_stress
+        stress_score = min(max(stress_score, 0.0), 1.0)
+        
+        # Categorize stress level
+        if stress_score >= 0.75:
+            stress_category = "critical"
+        elif stress_score >= 0.55:
+            stress_category = "high"
+        elif stress_score >= 0.35:
+            stress_category = "moderate"
+        else:
+            stress_category = "low"
+        
+        stress_level = StressLevel(
+            institution_id=institution_id,
+            student_id=student_id,
+            study_hours_continuous=study_hours_continuous,
+            sleep_hours=sleep_hours,
+            exam_proximity=exam_proximity,
+            activity_level=activity_level,
+            break_frequency=break_frequency,
+            stress_score=stress_score,
+            stress_category=stress_category,
+            date=date_str
+        )
+        
+        self.db.add(stress_level)
+        self.db.flush()
+        
+        return stress_level
+    
+    def calculate_burnout_risk(
+        self,
+        student_id: int,
+        institution_id: int,
+        days: int = 14
+    ) -> Dict[str, Any]:
+        """Calculate burnout risk based on stress levels, behavioral patterns, and sentiment"""
+        end_date = datetime.utcnow()
+        start_date = end_date - timedelta(days=days)
+        
+        # Get recent stress levels
+        recent_stress = self.db.query(StressLevel).filter(
+            and_(
+                StressLevel.student_id == student_id,
+                StressLevel.created_at >= start_date
+            )
+        ).order_by(StressLevel.created_at.desc()).all()
+        
+        # Get wellbeing profile
+        profile = self.db.query(StudentWellbeingProfile).filter(
+            StudentWellbeingProfile.student_id == student_id
+        ).first()
+        
+        # Get recent alerts
+        recent_alerts = self.db.query(WellbeingAlert).filter(
+            and_(
+                WellbeingAlert.student_id == student_id,
+                WellbeingAlert.detected_at >= start_date
+            )
+        ).all()
+        
+        # Calculate burnout risk factors
+        risk_factors = {
+            'stress_trend': 0.0,
+            'behavioral_decline': 0.0,
+            'sentiment_negativity': 0.0,
+            'alert_frequency': 0.0,
+            'overall_risk': 0.0
+        }
+        
+        # Stress trend factor (30% weight)
+        if recent_stress:
+            avg_stress = sum(s.stress_score for s in recent_stress) / len(recent_stress)
+            high_stress_days = sum(1 for s in recent_stress if s.stress_score >= 0.55)
+            stress_trend_score = (avg_stress * 0.6) + (high_stress_days / len(recent_stress) * 0.4)
+            risk_factors['stress_trend'] = stress_trend_score * 0.30
+        
+        # Behavioral decline factor (25% weight)
+        if profile:
+            decline_indicators = 0
+            if profile.attendance_trend < -0.15:
+                decline_indicators += 1
+            if profile.grade_trend < -0.10:
+                decline_indicators += 1
+            if profile.participation_trend < -0.20:
+                decline_indicators += 1
+            if profile.social_trend < -0.30:
+                decline_indicators += 1
+            
+            risk_factors['behavioral_decline'] = (decline_indicators / 4.0) * 0.25
+        
+        # Sentiment negativity factor (25% weight)
+        if profile and profile.sentiment_trend < 0:
+            sentiment_risk = min(abs(profile.sentiment_trend), 1.0)
+            risk_factors['sentiment_negativity'] = sentiment_risk * 0.25
+        
+        # Alert frequency factor (20% weight)
+        if recent_alerts:
+            high_severity_alerts = sum(
+                1 for a in recent_alerts 
+                if a.severity in [AlertSeverity.HIGH.value, AlertSeverity.CRITICAL.value]
+            )
+            alert_density = min(len(recent_alerts) / days, 1.0)
+            alert_risk = (alert_density * 0.5) + (min(high_severity_alerts / 5.0, 1.0) * 0.5)
+            risk_factors['alert_frequency'] = alert_risk * 0.20
+        
+        # Calculate overall burnout risk
+        risk_factors['overall_risk'] = sum([
+            risk_factors['stress_trend'],
+            risk_factors['behavioral_decline'],
+            risk_factors['sentiment_negativity'],
+            risk_factors['alert_frequency']
+        ])
+        
+        # Determine risk level
+        overall_risk = risk_factors['overall_risk']
+        if overall_risk >= 0.70:
+            risk_level = "critical"
+        elif overall_risk >= 0.50:
+            risk_level = "high"
+        elif overall_risk >= 0.30:
+            risk_level = "moderate"
+        else:
+            risk_level = "low"
+        
+        # Generate recommendations
+        recommendations = []
+        if risk_factors['stress_trend'] > 0.15:
+            recommendations.append("Implement stress management techniques and regular breaks")
+        if risk_factors['behavioral_decline'] > 0.12:
+            recommendations.append("Address declining academic engagement and attendance patterns")
+        if risk_factors['sentiment_negativity'] > 0.12:
+            recommendations.append("Consider counseling support for emotional wellbeing")
+        if risk_factors['alert_frequency'] > 0.10:
+            recommendations.append("Immediate intervention required due to multiple active alerts")
+        if overall_risk >= 0.50:
+            recommendations.append("URGENT: Schedule comprehensive wellbeing assessment")
+        
+        return {
+            'student_id': student_id,
+            'risk_level': risk_level,
+            'overall_risk_score': round(overall_risk, 3),
+            'risk_factors': {
+                'stress_trend': round(risk_factors['stress_trend'], 3),
+                'behavioral_decline': round(risk_factors['behavioral_decline'], 3),
+                'sentiment_negativity': round(risk_factors['sentiment_negativity'], 3),
+                'alert_frequency': round(risk_factors['alert_frequency'], 3)
+            },
+            'recent_stress_count': len(recent_stress),
+            'avg_stress_score': round(sum(s.stress_score for s in recent_stress) / len(recent_stress), 3) if recent_stress else 0.0,
+            'active_alerts_count': len(recent_alerts),
+            'recommendations': recommendations,
+            'assessment_period_days': days,
+            'assessed_at': datetime.utcnow().isoformat()
+        }

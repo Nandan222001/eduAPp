@@ -81,9 +81,14 @@ from src.models.plagiarism import (
 from src.models.wellbeing import (
     WellbeingAlert, AlertNote, WellbeingIntervention, SentimentAnalysis,
     BehavioralPattern, WellbeingConsent, WellbeingDataAccess, CounselorProfile,
-    StudentWellbeingProfile, AlertSeverity, AlertStatus, AlertType,
+    StudentWellbeingProfile, StressLevel, AlertSeverity, AlertStatus, AlertType,
     SentimentCategory, ConsentStatus, DataAccessLevel
 )
+from src.models.conferences import (
+    ConferenceSlot, ConferenceBooking, ConferenceSurvey, ConferenceReminder,
+    LocationType, AvailabilityStatus, BookingStatus, ConferenceType
+)
+from src.models.parent_roi import ParentROIReport
 from src.models.career import (
     CareerPathway, StudentCareerProfile, CareerRecommendation, SkillGapAnalysis,
     PersonalizedLearningPath, LaborMarketData, IndustryMentor, IndustryMentorMatch,
@@ -393,12 +398,22 @@ __all__ = [
     "WellbeingDataAccess",
     "CounselorProfile",
     "StudentWellbeingProfile",
+    "StressLevel",
     "AlertSeverity",
     "AlertStatus",
     "AlertType",
     "SentimentCategory",
     "ConsentStatus",
     "DataAccessLevel",
+    "ConferenceSlot",
+    "ConferenceBooking",
+    "ConferenceSurvey",
+    "ConferenceReminder",
+    "LocationType",
+    "AvailabilityStatus",
+    "BookingStatus",
+    "ConferenceType",
+    "ParentROIReport",
     "CareerPathway",
     "StudentCareerProfile",
     "CareerRecommendation",

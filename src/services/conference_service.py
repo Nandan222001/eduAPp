@@ -9,8 +9,10 @@ import json
 import requests
 from src.models.conferences import (
     ConferenceSlot, ConferenceBooking, ConferenceSurvey, ConferenceReminder,
-    AvailabilityStatus, BookingStatus, LocationType
+    AvailabilityStatus, BookingStatus, LocationType, ConferenceType
 )
+from src.models.attendance import Attendance, AttendanceStatus
+from src.models.assignment import Submission
 from src.schemas.conference import (
     ConferenceSlotCreate,
     ConferenceSlotUpdate,
@@ -537,6 +539,257 @@ class ConferenceSurveyService:
 
     def get_survey_by_booking(self, booking_id: int) -> Optional[ConferenceSurvey]:
         return self.survey_repo.get_by_booking(booking_id)
+
+
+class PTMSpeedDatingService:
+    def __init__(self, db: Session):
+        self.db = db
+        self.slot_repo = ConferenceSlotRepository(db)
+        self.booking_repo = ConferenceBookingRepository(db)
+        self.booking_service = ConferenceBookingService(db)
+    
+    def generate_ptm_speed_schedule(
+        self,
+        parent_id: int,
+        student_id: int,
+        institution_id: int,
+        target_date: date,
+        start_time: time,
+        notes: Optional[str] = None
+    ) -> List[ConferenceBooking]:
+        """
+        Auto-schedule sequential 5-minute PTM speed dating slots across all of a child's teachers
+        """
+        from src.models.teacher import TeacherSubject
+        from src.models.student import Student
+        from src.models.academic import Section
+        
+        # Get student and their section
+        student = self.db.query(Student).filter(Student.id == student_id).first()
+        if not student:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Student not found"
+            )
+        
+        if not student.section_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Student must be assigned to a section"
+            )
+        
+        # Get all teachers for the student's section through the section's grade
+        # First get the section's subjects, then get teachers for those subjects
+        from src.models.academic import Grade
+        
+        section = self.db.query(Section).filter(Section.id == student.section_id).first()
+        if not section:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Student's section not found"
+            )
+        
+        # Get all teacher-subject assignments for this institution
+        # In a real system, this would filter by grade/section
+        # For now, get all active teachers for the institution
+        teacher_subjects = self.db.query(TeacherSubject).filter(
+            TeacherSubject.institution_id == institution_id
+        ).all()
+        
+        if not teacher_subjects:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No teachers found for institution"
+            )
+        
+        # Get unique teacher IDs
+        teacher_ids = list(set([ts.teacher_id for ts in teacher_subjects]))
+        
+        # Create 5-minute slots for each teacher
+        bookings = []
+        current_time = start_time
+        slot_duration = 5  # minutes
+        
+        for teacher_id in teacher_ids:
+            # Create or get slot for this teacher
+            slot = self._get_or_create_speed_slot(
+                institution_id=institution_id,
+                teacher_id=teacher_id,
+                slot_date=target_date,
+                slot_time=current_time,
+                duration=slot_duration
+            )
+            
+            # Generate auto talking points for this teacher-student pair
+            auto_talking_points = self._generate_talking_points(
+                student_id=student_id,
+                teacher_id=teacher_id
+            )
+            
+            # Create booking
+            booking_data = ConferenceBookingCreate(
+                institution_id=institution_id,
+                slot_id=slot.id,
+                parent_id=parent_id,
+                student_id=student_id,
+                conference_type=ConferenceType.ACADEMIC.value,
+                topic=f"PTM Speed Round - {auto_talking_points.get('subject_name', 'General')}",
+                notes=notes
+            )
+            
+            booking = self.booking_service.create_booking(booking_data)
+            
+            # Update booking with speed round fields
+            booking.speed_round = True
+            booking.auto_talking_points = auto_talking_points
+            self.db.flush()
+            
+            bookings.append(booking)
+            
+            # Increment time for next slot (5 minutes + 1 minute buffer)
+            hours, minutes = divmod(current_time.hour * 60 + current_time.minute + 6, 60)
+            current_time = time(hour=hours % 24, minute=minutes)
+        
+        self.db.commit()
+        
+        for booking in bookings:
+            self.db.refresh(booking)
+        
+        return bookings
+    
+    def _get_or_create_speed_slot(
+        self,
+        institution_id: int,
+        teacher_id: int,
+        slot_date: date,
+        slot_time: time,
+        duration: int
+    ) -> ConferenceSlot:
+        """Get existing slot or create new one for speed dating"""
+        # Check if slot already exists
+        existing_slot = self.db.query(ConferenceSlot).filter(
+            and_(
+                ConferenceSlot.institution_id == institution_id,
+                ConferenceSlot.teacher_id == teacher_id,
+                ConferenceSlot.date == slot_date,
+                ConferenceSlot.time_slot == slot_time,
+                ConferenceSlot.is_active == True
+            )
+        ).first()
+        
+        if existing_slot:
+            return existing_slot
+        
+        # Create new slot
+        slot_data = ConferenceSlotCreate(
+            institution_id=institution_id,
+            teacher_id=teacher_id,
+            date=slot_date,
+            time_slot=slot_time,
+            duration_minutes=duration,
+            location=LocationType.IN_PERSON.value,
+            max_bookings=1,
+            notes="PTM Speed Dating Session"
+        )
+        
+        slot = self.slot_repo.create(**slot_data.model_dump())
+        self.db.flush()
+        return slot
+    
+    def _generate_talking_points(
+        self,
+        student_id: int,
+        teacher_id: int
+    ) -> Dict[str, Any]:
+        """Generate auto talking points for a teacher-student speed meeting"""
+        from src.models.teacher import TeacherSubject, Teacher
+        from src.models.academic import Subject
+        
+        # Get teacher and subject info
+        teacher = self.db.query(Teacher).filter(Teacher.id == teacher_id).first()
+        teacher_subject = self.db.query(TeacherSubject).filter(
+            TeacherSubject.teacher_id == teacher_id
+        ).first()
+        
+        subject_name = "General"
+        if teacher_subject:
+            subject = self.db.query(Subject).filter(
+                Subject.id == teacher_subject.subject_id
+            ).first()
+            if subject:
+                subject_name = subject.name
+        
+        # Get recent academic performance
+        recent_date = datetime.utcnow() - timedelta(days=30)
+        
+        # Recent submissions
+        recent_submissions = self.db.query(Submission).filter(
+            and_(
+                Submission.student_id == student_id,
+                Submission.submitted_at >= recent_date
+            )
+        ).all()
+        
+        avg_grade = 0.0
+        if recent_submissions:
+            graded = [s for s in recent_submissions if s.marks_obtained is not None]
+            if graded:
+                avg_grade = sum(float(s.marks_obtained) for s in graded) / len(graded)
+        
+        # Attendance rate
+        total_attendance = self.db.query(Attendance).filter(
+            and_(
+                Attendance.student_id == student_id,
+                Attendance.date >= recent_date.date()
+            )
+        ).count()
+        
+        present_count = self.db.query(Attendance).filter(
+            and_(
+                Attendance.student_id == student_id,
+                Attendance.date >= recent_date.date(),
+                Attendance.status == AttendanceStatus.PRESENT
+            )
+        ).count()
+        
+        attendance_rate = (present_count / total_attendance * 100) if total_attendance > 0 else 100.0
+        
+        # Generate talking points
+        talking_points = {
+            'teacher_name': f"{teacher.first_name} {teacher.last_name}" if teacher else "Teacher",
+            'subject_name': subject_name,
+            'points': [],
+            'performance_summary': {
+                'avg_grade': round(avg_grade, 2),
+                'attendance_rate': round(attendance_rate, 2),
+                'submissions_count': len(recent_submissions)
+            }
+        }
+        
+        # Add specific talking points based on performance
+        if avg_grade >= 80:
+            talking_points['points'].append(f"Excellent performance in {subject_name} (avg: {avg_grade:.1f}%)")
+        elif avg_grade >= 60:
+            talking_points['points'].append(f"Good progress in {subject_name}, room for improvement")
+        elif avg_grade > 0:
+            talking_points['points'].append(f"Needs support in {subject_name} (avg: {avg_grade:.1f}%)")
+        
+        if attendance_rate < 80:
+            talking_points['points'].append(f"Attendance concern: {attendance_rate:.1f}%")
+        elif attendance_rate >= 95:
+            talking_points['points'].append(f"Excellent attendance: {attendance_rate:.1f}%")
+        
+        if len(recent_submissions) < 5:
+            talking_points['points'].append("Low assignment submission rate")
+        
+        # Add generic discussion points
+        talking_points['points'].extend([
+            "Strengths and areas for improvement",
+            "Homework and study habits",
+            "Classroom participation"
+        ])
+        
+        return talking_points
 
 
 class ConferenceAnalyticsService:

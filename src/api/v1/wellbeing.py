@@ -1025,3 +1025,89 @@ def get_referrals(
     referrals = query.order_by(Referral.created_at.desc()).all()
     
     return referrals
+
+
+@router.post("/stress-levels")
+def calculate_stress_level(
+    student_id: int,
+    institution_id: int,
+    study_hours_continuous: float,
+    sleep_hours: float,
+    exam_proximity: int,
+    activity_level: float,
+    break_frequency: float,
+    date_str: str,
+    db: Session = Depends(get_db)
+):
+    wellbeing_service = WellbeingService(db)
+    stress_level = wellbeing_service.calculate_stress_score(
+        student_id=student_id,
+        institution_id=institution_id,
+        study_hours_continuous=study_hours_continuous,
+        sleep_hours=sleep_hours,
+        exam_proximity=exam_proximity,
+        activity_level=activity_level,
+        break_frequency=break_frequency,
+        date_str=date_str
+    )
+    db.commit()
+    db.refresh(stress_level)
+    
+    return {
+        "id": stress_level.id,
+        "student_id": stress_level.student_id,
+        "stress_score": stress_level.stress_score,
+        "stress_category": stress_level.stress_category,
+        "date": stress_level.date,
+        "factors": {
+            "study_hours_continuous": stress_level.study_hours_continuous,
+            "sleep_hours": stress_level.sleep_hours,
+            "exam_proximity": stress_level.exam_proximity,
+            "activity_level": stress_level.activity_level,
+            "break_frequency": stress_level.break_frequency
+        }
+    }
+
+
+@router.get("/stress-levels/student/{student_id}")
+def get_student_stress_levels(
+    student_id: int,
+    days: int = 30,
+    db: Session = Depends(get_db)
+):
+    from src.models.wellbeing import StressLevel
+    
+    start_date = datetime.utcnow() - timedelta(days=days)
+    stress_levels = db.query(StressLevel).filter(
+        StressLevel.student_id == student_id,
+        StressLevel.created_at >= start_date
+    ).order_by(StressLevel.created_at.desc()).all()
+    
+    return [
+        {
+            "id": sl.id,
+            "student_id": sl.student_id,
+            "stress_score": sl.stress_score,
+            "stress_category": sl.stress_category,
+            "date": sl.date,
+            "created_at": sl.created_at
+        }
+        for sl in stress_levels
+    ]
+
+
+@router.get("/burnout-risk/student/{student_id}")
+def get_burnout_risk(
+    student_id: int,
+    institution_id: int,
+    days: int = 14,
+    db: Session = Depends(get_db)
+):
+    wellbeing_service = WellbeingService(db)
+    burnout_risk = wellbeing_service.calculate_burnout_risk(
+        student_id=student_id,
+        institution_id=institution_id,
+        days=days
+    )
+    
+    return burnout_risk

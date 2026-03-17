@@ -29,7 +29,8 @@ from src.services.conference_service import (
     ConferenceSlotService,
     ConferenceBookingService,
     ConferenceSurveyService,
-    ConferenceAnalyticsService
+    ConferenceAnalyticsService,
+    PTMSpeedDatingService
 )
 
 router = APIRouter()
@@ -531,3 +532,85 @@ async def get_teacher_conference_statistics(
     service = ConferenceAnalyticsService(db)
     statistics = service.get_teacher_statistics(teacher_id=teacher_id)
     return statistics
+
+
+@router.post("/ptm-speed-dating/schedule", response_model=List[ConferenceBookingResponse], status_code=status.HTTP_201_CREATED)
+async def schedule_ptm_speed_dating(
+    parent_id: int,
+    student_id: int,
+    target_date: date,
+    start_time: str,
+    notes: Optional[str] = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Schedule PTM Speed Dating - auto-creates 5-minute sequential slots with all teachers
+    """
+    from datetime import time as dt_time
+    
+    # Parse time string (format: "HH:MM")
+    try:
+        hour, minute = map(int, start_time.split(':'))
+        start_time_obj = dt_time(hour=hour, minute=minute)
+    except:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid time format. Use HH:MM format (e.g., '14:30')"
+        )
+    
+    service = PTMSpeedDatingService(db)
+    
+    try:
+        bookings = service.generate_ptm_speed_schedule(
+            parent_id=parent_id,
+            student_id=student_id,
+            institution_id=current_user.institution_id,
+            target_date=target_date,
+            start_time=start_time_obj,
+            notes=notes
+        )
+        
+        return bookings
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to schedule PTM speed dating: {str(e)}"
+        )
+
+
+@router.get("/bookings/{booking_id}/talking-points")
+async def get_booking_talking_points(
+    booking_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Get auto-generated talking points for a speed dating booking"""
+    booking_service = ConferenceBookingService(db)
+    booking = booking_service.get_booking(booking_id)
+    
+    if not booking:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Conference booking not found"
+        )
+    
+    if booking.institution_id != current_user.institution_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to access this booking"
+        )
+    
+    if not booking.speed_round:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This is not a speed dating booking"
+        )
+    
+    return {
+        "booking_id": booking.id,
+        "speed_round": booking.speed_round,
+        "auto_talking_points": booking.auto_talking_points or {}
+    }

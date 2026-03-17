@@ -447,6 +447,37 @@ class WeeklySurvey(Base):
     )
 
 
+class StressLevel(Base):
+    __tablename__ = "stress_levels"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    institution_id = Column(Integer, ForeignKey('institutions.id', ondelete='CASCADE'), nullable=False, index=True)
+    student_id = Column(Integer, ForeignKey('students.id', ondelete='CASCADE'), nullable=False, index=True)
+    
+    study_hours_continuous = Column(Float, nullable=False)
+    sleep_hours = Column(Float, nullable=False)
+    exam_proximity = Column(Integer, nullable=False)
+    activity_level = Column(Float, nullable=False)
+    break_frequency = Column(Float, nullable=False)
+    
+    stress_score = Column(Float, nullable=False, index=True)
+    stress_category = Column(String(20), nullable=False, index=True)
+    
+    date = Column(String(10), nullable=False, index=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    
+    institution = relationship("Institution")
+    student = relationship("Student")
+    
+    __table_args__ = (
+        Index('idx_stress_level_institution', 'institution_id'),
+        Index('idx_stress_level_student', 'student_id'),
+        Index('idx_stress_level_date', 'date'),
+        Index('idx_stress_level_score', 'stress_score'),
+        Index('idx_stress_level_student_date', 'student_id', 'date'),
+    )
+
+
 class AnonymousReport(Base):
     __tablename__ = "anonymous_reports"
     
