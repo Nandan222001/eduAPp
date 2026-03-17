@@ -19,6 +19,7 @@ from src.models.notification import (
     NotificationGroup
 )
 from src.models.user import User
+from src.models.push_device import PushDevice, PushDeviceTopic
 from src.schemas.notification import (
     NotificationCreate,
     NotificationPreferenceCreate,
@@ -30,6 +31,7 @@ from src.schemas.notification import (
     NotificationEngagementCreate
 )
 from src.services.notification_providers import NotificationProviderFactory
+from src.services.expo_push_service import ExpoPushService
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +39,7 @@ logger = logging.getLogger(__name__)
 class NotificationService:
     def __init__(self, db: Session):
         self.db = db
+        self.expo_push_service = ExpoPushService()
 
     def create_notification(
         self,
@@ -408,22 +411,25 @@ class NotificationService:
             return False
         
         try:
-            provider = NotificationProviderFactory.get_provider(notification.channel)
-            
-            recipient = self._get_recipient(user, notification.channel)
-            if not recipient:
-                notification.status = NotificationStatus.FAILED.value
-                notification.error_message = f"No {notification.channel} contact information"
-                self.db.commit()
-                self._record_delivery(notification, False, f"No {notification.channel} contact information")
-                return False
-            
-            success = await provider.send(
-                recipient=recipient,
-                subject=notification.title,
-                content=notification.message,
-                data=notification.data
-            )
+            if notification.channel == "push":
+                success = await self._send_expo_push_notification(notification, user)
+            else:
+                provider = NotificationProviderFactory.get_provider(notification.channel)
+                
+                recipient = self._get_recipient(user, notification.channel)
+                if not recipient:
+                    notification.status = NotificationStatus.FAILED.value
+                    notification.error_message = f"No {notification.channel} contact information"
+                    self.db.commit()
+                    self._record_delivery(notification, False, f"No {notification.channel} contact information")
+                    return False
+                
+                success = await provider.send(
+                    recipient=recipient,
+                    subject=notification.title,
+                    content=notification.message,
+                    data=notification.data
+                )
             
             if success:
                 notification.status = NotificationStatus.SENT.value
@@ -454,7 +460,13 @@ class NotificationService:
         elif channel == "sms":
             return user.phone
         elif channel == "push":
-            return None
+            devices = self.db.query(PushDevice).filter(
+                and_(
+                    PushDevice.user_id == user.id,
+                    PushDevice.is_active == True
+                )
+            ).all()
+            return ",".join([device.token for device in devices]) if devices else None
         elif channel == "in_app":
             return str(user.id)
         return None
@@ -731,3 +743,117 @@ class NotificationService:
             })
         
         return summaries
+
+    async def _send_expo_push_notification(self, notification: Notification, user: User) -> bool:
+        devices = self.db.query(PushDevice).filter(
+            and_(
+                PushDevice.user_id == user.id,
+                PushDevice.is_active == True
+            )
+        ).all()
+        
+        if not devices:
+            logger.warning(f"No active push devices for user {user.id}")
+            return False
+        
+        tokens = [device.token for device in devices]
+        
+        priority_map = {
+            "low": "default",
+            "medium": "default",
+            "high": "high",
+            "urgent": "high",
+        }
+        
+        channel_id_map = {
+            "assignments": "assignments",
+            "grades": "grades",
+            "attendance": "attendance",
+            "announcements": "announcements",
+        }
+        
+        data = notification.data or {}
+        data["notification_id"] = notification.id
+        data["type"] = notification.notification_group
+        
+        if notification.data and "screen" not in data:
+            if notification.notification_group == "assignments":
+                data["screen"] = "Assignment"
+            elif notification.notification_group == "grades":
+                data["screen"] = "Grade"
+            elif notification.notification_group == "attendance":
+                data["screen"] = "Attendance"
+            elif notification.notification_group == "announcements":
+                data["screen"] = "Announcement"
+        
+        result = self.expo_push_service.send_push_notification(
+            tokens=tokens,
+            title=notification.title,
+            body=notification.message,
+            data=data,
+            priority=priority_map.get(notification.priority, "default"),
+            channel_id=channel_id_map.get(notification.notification_group),
+        )
+        
+        if result.get("invalid_tokens"):
+            for token in result["invalid_tokens"]:
+                device = self.db.query(PushDevice).filter(
+                    PushDevice.token == token
+                ).first()
+                if device:
+                    device.is_active = False
+            self.db.commit()
+        
+        return result.get("success", False)
+
+    def send_push_notification_to_topic(
+        self,
+        topic: str,
+        title: str,
+        message: str,
+        data: Optional[Dict[str, Any]] = None,
+        institution_id: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        query = self.db.query(PushDevice).join(
+            PushDeviceTopic,
+            PushDevice.id == PushDeviceTopic.device_id
+        ).filter(
+            and_(
+                PushDevice.is_active == True,
+                PushDeviceTopic.topic == topic
+            )
+        )
+        
+        if institution_id:
+            query = query.join(User).filter(User.institution_id == institution_id)
+        
+        devices = query.all()
+        
+        if not devices:
+            return {
+                "success": False,
+                "message": "No devices subscribed to this topic"
+            }
+        
+        tokens = [device.token for device in devices]
+        
+        notification_data = data or {}
+        notification_data["type"] = topic
+        
+        result = self.expo_push_service.send_push_notification(
+            tokens=tokens,
+            title=title,
+            body=message,
+            data=notification_data,
+        )
+        
+        if result.get("invalid_tokens"):
+            for token in result["invalid_tokens"]:
+                device = self.db.query(PushDevice).filter(
+                    PushDevice.token == token
+                ).first()
+                if device:
+                    device.is_active = False
+            self.db.commit()
+        
+        return result

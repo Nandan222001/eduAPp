@@ -29,6 +29,13 @@ from src.tasks.notification_tasks import (
     send_bulk_notifications,
     send_digest_notifications
 )
+from src.models.push_device import PushDevice, PushDeviceTopic
+from src.schemas.push_device import (
+    DeviceRegistrationRequest,
+    DeviceSubscriptionRequest,
+    PushDeviceResponse,
+)
+from src.services.expo_push_service import ExpoPushService
 
 router = APIRouter()
 
@@ -356,3 +363,187 @@ def test_quiet_hours(
         "in_quiet_hours": is_quiet,
         "user_id": current_user.id
     }
+
+
+@router.post("/register-device", response_model=PushDeviceResponse)
+def register_device(
+    device_data: DeviceRegistrationRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Register a device for push notifications"""
+    expo_service = ExpoPushService()
+    
+    if not expo_service.validate_token(device_data.token):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid Expo push token"
+        )
+    
+    existing_device = db.query(PushDevice).filter(
+        PushDevice.token == device_data.token
+    ).first()
+    
+    if existing_device:
+        existing_device.user_id = current_user.id
+        existing_device.platform = device_data.platform
+        existing_device.device_name = device_data.device_name
+        existing_device.os_version = device_data.os_version
+        existing_device.app_version = device_data.app_version
+        existing_device.is_active = True
+        existing_device.last_used_at = datetime.utcnow()
+        db.commit()
+        db.refresh(existing_device)
+        device = existing_device
+    else:
+        device = PushDevice(
+            user_id=current_user.id,
+            token=device_data.token,
+            platform=device_data.platform,
+            device_name=device_data.device_name,
+            os_version=device_data.os_version,
+            app_version=device_data.app_version,
+            is_active=True,
+        )
+        db.add(device)
+        db.commit()
+        db.refresh(device)
+    
+    if device_data.topics:
+        existing_topics = db.query(PushDeviceTopic).filter(
+            PushDeviceTopic.device_id == device.id
+        ).all()
+        existing_topic_names = {t.topic for t in existing_topics}
+        
+        for topic in device_data.topics:
+            if topic not in existing_topic_names:
+                device_topic = PushDeviceTopic(
+                    device_id=device.id,
+                    topic=topic
+                )
+                db.add(device_topic)
+        
+        db.commit()
+    
+    return device
+
+
+@router.delete("/register-device/{token}")
+def unregister_device(
+    token: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Unregister a device from push notifications"""
+    device = db.query(PushDevice).filter(
+        and_(
+            PushDevice.token == token,
+            PushDevice.user_id == current_user.id
+        )
+    ).first()
+    
+    if not device:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Device not found"
+        )
+    
+    device.is_active = False
+    db.commit()
+    
+    return {"message": "Device unregistered successfully"}
+
+
+@router.post("/subscribe")
+def subscribe_to_topic(
+    subscription: DeviceSubscriptionRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Subscribe a device to a notification topic"""
+    device = db.query(PushDevice).filter(
+        and_(
+            PushDevice.token == subscription.token,
+            PushDevice.user_id == current_user.id
+        )
+    ).first()
+    
+    if not device:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Device not found"
+        )
+    
+    existing_subscription = db.query(PushDeviceTopic).filter(
+        and_(
+            PushDeviceTopic.device_id == device.id,
+            PushDeviceTopic.topic == subscription.topic
+        )
+    ).first()
+    
+    if existing_subscription:
+        return {"message": "Already subscribed to topic"}
+    
+    device_topic = PushDeviceTopic(
+        device_id=device.id,
+        topic=subscription.topic
+    )
+    db.add(device_topic)
+    db.commit()
+    
+    return {"message": f"Subscribed to topic: {subscription.topic}"}
+
+
+@router.post("/unsubscribe")
+def unsubscribe_from_topic(
+    subscription: DeviceSubscriptionRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Unsubscribe a device from a notification topic"""
+    device = db.query(PushDevice).filter(
+        and_(
+            PushDevice.token == subscription.token,
+            PushDevice.user_id == current_user.id
+        )
+    ).first()
+    
+    if not device:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Device not found"
+        )
+    
+    device_topic = db.query(PushDeviceTopic).filter(
+        and_(
+            PushDeviceTopic.device_id == device.id,
+            PushDeviceTopic.topic == subscription.topic
+        )
+    ).first()
+    
+    if not device_topic:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Subscription not found"
+        )
+    
+    db.delete(device_topic)
+    db.commit()
+    
+    return {"message": f"Unsubscribed from topic: {subscription.topic}"}
+
+
+@router.get("/devices", response_model=List[PushDeviceResponse])
+def get_user_devices(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get all registered devices for current user"""
+    devices = db.query(PushDevice).filter(
+        and_(
+            PushDevice.user_id == current_user.id,
+            PushDevice.is_active == True
+        )
+    ).all()
+    
+    return devices
