@@ -148,6 +148,14 @@ from src.models.scholarship_essays import (
     EssayPrompt, StudentEssay, EssayPeerReview, EssayTemplate, EssayAnalytics,
     ReviewRubric, PromptType, EssayStatus, ReviewStatus, GrammarCheckStatus
 )
+from src.models.student_employment import (
+    StudentJobListing, WorkPermit, StudentEmployment, JobApplication,
+    JobType, PermitType, AuthorizationStatus
+)
+from src.models.mistake_analysis import (
+    MistakePattern, MistakeInsuranceToken, InsuranceReview,
+    MistakeType, RemediationStatus, EarnedVia
+)
 
 __all__ = [
     "Institution",
@@ -535,4 +543,10 @@ __all__ = [
     "JobType",
     "PermitType",
     "AuthorizationStatus",
+    "MistakePattern",
+    "MistakeInsuranceToken",
+    "InsuranceReview",
+    "MistakeType",
+    "RemediationStatus",
+    "EarnedVia",
 ]

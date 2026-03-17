@@ -260,6 +260,20 @@ from src.schemas.journalism import (
     JournalismMemberStats,
     WorkflowStatusUpdate,
 )
+from src.schemas.mistake_analysis import (
+    MistakePatternResponse,
+    MistakePatternUpdate,
+    MistakeInsuranceTokenResponse,
+    MistakeInsuranceTokenCreate,
+    InsuranceReviewResponse,
+    MistakeAnalysisRequest,
+    CorrectionPlanResponse,
+    InsuranceClaimRequest,
+    InsuranceClaimValidationResponse,
+    InsuranceClaimResponse,
+    StudentMistakeSummary,
+    SubjectMistakeAnalysis,
+)
 
 __all__ = [
     "InstitutionBase",
@@ -488,4 +502,16 @@ __all__ = [
     "EditionAnalyticsSummary",
     "JournalismMemberStats",
     "WorkflowStatusUpdate",
+    "MistakePatternResponse",
+    "MistakePatternUpdate",
+    "MistakeInsuranceTokenResponse",
+    "MistakeInsuranceTokenCreate",
+    "InsuranceReviewResponse",
+    "MistakeAnalysisRequest",
+    "CorrectionPlanResponse",
+    "InsuranceClaimRequest",
+    "InsuranceClaimValidationResponse",
+    "InsuranceClaimResponse",
+    "StudentMistakeSummary",
+    "SubjectMistakeAnalysis",
 ]

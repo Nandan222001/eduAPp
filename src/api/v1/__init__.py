@@ -84,7 +84,8 @@ from src.api.v1 import (
     scholarship_essays,
     homework_scanner,
     student_employment,
-    olympics
+    olympics,
+    mistake_analysis
 )
 from src.api import ml
 
@@ -177,3 +178,4 @@ api_router.include_router(scholarship_essays.router, prefix="/scholarship-essays
 api_router.include_router(homework_scanner.router, prefix="/homework-scanner", tags=["homework-scanner"])
 api_router.include_router(student_employment.router, prefix="/student-employment", tags=["student-employment"])
 api_router.include_router(olympics.router, prefix="/olympics", tags=["olympics"])
+api_router.include_router(mistake_analysis.router, prefix="", tags=["mistake-analysis"])
