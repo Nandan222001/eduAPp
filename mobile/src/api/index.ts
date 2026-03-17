@@ -4,3 +4,5 @@ export * from './student';
 export * from './assignments';
 export * from './schedule';
 export * from './grades';
+export * from './predictions';
+export * from './goals';
