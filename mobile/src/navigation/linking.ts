@@ -25,6 +25,8 @@ export const linking: LinkingOptions<RootStackParamList> = {
           ParentChildren: 'parent/children',
           ParentReports: 'parent/reports',
           ParentProfile: 'parent/profile',
+          AssignmentDetail: 'assignments/:assignmentId',
+          NotificationPreferences: 'settings/notifications',
         },
       },
     },

@@ -26,6 +26,7 @@ export type MainTabParamList = {
   StudyMaterialsScreen: undefined;
   SubjectMaterials: { subjectId: number; subjectName: string };
   MaterialDetail: { materialId: number };
+  NotificationPreferences: undefined;
 };
 
 export type DeepLinkConfig = {

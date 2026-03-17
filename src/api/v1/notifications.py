@@ -10,7 +10,9 @@ from src.schemas.notification import (
     NotificationPreferenceResponse,
     NotificationPreferenceUpdate,
     BulkNotificationRequest,
-    NotificationStats
+    NotificationStats,
+    DeviceRegistrationRequest,
+    DeviceRegistrationResponse
 )
 from src.services.notification_service import NotificationService
 from src.dependencies.auth import get_current_user
@@ -147,3 +149,89 @@ def send_bulk_notification(
         "task_id": task.id,
         "user_count": len(request.user_ids)
     }
+
+
+@router.post("/register-device", response_model=DeviceRegistrationResponse)
+def register_device(
+    request: DeviceRegistrationRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    from src.models.notification import UserDevice
+    from datetime import datetime
+    
+    existing_device = db.query(UserDevice).filter(
+        UserDevice.device_token == request.device_token
+    ).first()
+    
+    if existing_device:
+        if existing_device.user_id != current_user.id:
+            existing_device.user_id = current_user.id
+        
+        existing_device.device_type = request.device_type
+        existing_device.device_name = request.device_name
+        existing_device.app_version = request.app_version
+        existing_device.topics = request.topics
+        existing_device.is_active = True
+        existing_device.last_used_at = datetime.utcnow()
+        existing_device.updated_at = datetime.utcnow()
+        
+        db.commit()
+        db.refresh(existing_device)
+        return existing_device
+    
+    new_device = UserDevice(
+        user_id=current_user.id,
+        device_token=request.device_token,
+        device_type=request.device_type,
+        device_name=request.device_name,
+        app_version=request.app_version,
+        topics=request.topics,
+        is_active=True,
+        last_used_at=datetime.utcnow()
+    )
+    
+    db.add(new_device)
+    db.commit()
+    db.refresh(new_device)
+    
+    return new_device
+
+
+@router.get("/devices", response_model=List[DeviceRegistrationResponse])
+def get_user_devices(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    from src.models.notification import UserDevice
+    
+    devices = db.query(UserDevice).filter(
+        UserDevice.user_id == current_user.id
+    ).all()
+    
+    return devices
+
+
+@router.delete("/devices/{device_id}")
+def remove_device(
+    device_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    from src.models.notification import UserDevice
+    
+    device = db.query(UserDevice).filter(
+        UserDevice.id == device_id,
+        UserDevice.user_id == current_user.id
+    ).first()
+    
+    if not device:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Device not found"
+        )
+    
+    db.delete(device)
+    db.commit()
+    
+    return {"message": "Device removed successfully"}

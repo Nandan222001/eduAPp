@@ -13,6 +13,7 @@ import { CameraScreen } from '../screens/student/CameraScreen';
 import { StudyMaterialsScreen } from '../screens/student/StudyMaterialsScreen';
 import { SubjectMaterialsScreen } from '../screens/student/SubjectMaterialsScreen';
 import { MaterialDetailScreen } from '../screens/student/MaterialDetailScreen';
+import { NotificationPreferencesScreen } from '../screens/student/NotificationPreferencesScreen';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 const Stack = createNativeStackNavigator<MainTabParamList>();
@@ -148,6 +149,11 @@ const ProfileStack = () => {
         name="StudentProfile"
         component={StudentProfileScreen}
         options={{ headerTitle: 'Profile' }}
+      />
+      <Stack.Screen
+        name="NotificationPreferences"
+        component={NotificationPreferencesScreen}
+        options={{ headerTitle: 'Notification Settings' }}
       />
     </Stack.Navigator>
   );

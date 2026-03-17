@@ -41,6 +41,10 @@ yarn-debug.log*
 android/
 ios/
 
+# Firebase / Google Services
+google-services.json
+GoogleService-Info.plist
+
 # Temporary files
 *.swp
 *.swo

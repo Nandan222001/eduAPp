@@ -166,3 +166,27 @@ class NotificationTemplate(Base):
         Index('idx_template_institution_type', 'institution_id', 'notification_type'),
         Index('idx_template_type_channel', 'notification_type', 'channel'),
     )
+
+
+class UserDevice(Base):
+    __tablename__ = "user_devices"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
+    device_token = Column(String(500), nullable=False, unique=True, index=True)
+    device_type = Column(String(20), nullable=False)
+    device_name = Column(String(255), nullable=True)
+    app_version = Column(String(50), nullable=True)
+    is_active = Column(Boolean, default=True, nullable=False)
+    topics = Column(JSON, nullable=True)
+    last_used_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    user = relationship("User", back_populates="devices")
+
+    __table_args__ = (
+        Index('idx_device_user', 'user_id'),
+        Index('idx_device_token', 'device_token'),
+        Index('idx_device_active', 'is_active'),
+    )

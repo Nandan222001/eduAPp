@@ -201,3 +201,28 @@ class WebSocketMessage(BaseModel):
     type: str
     data: Dict[str, Any]
     timestamp: datetime = Field(default_factory=datetime.utcnow)
+
+
+class DeviceRegistrationRequest(BaseModel):
+    device_token: str = Field(..., max_length=500)
+    device_type: str = Field(..., pattern=r'^(ios|android)$')
+    device_name: Optional[str] = Field(None, max_length=255)
+    app_version: Optional[str] = Field(None, max_length=50)
+    topics: Dict[str, bool]
+
+
+class DeviceRegistrationResponse(BaseModel):
+    id: int
+    user_id: int
+    device_token: str
+    device_type: str
+    device_name: Optional[str]
+    app_version: Optional[str]
+    is_active: bool
+    topics: Optional[Dict[str, bool]]
+    last_used_at: datetime
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
