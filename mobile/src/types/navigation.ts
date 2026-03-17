@@ -27,6 +27,17 @@ export type MainTabParamList = {
   SubjectMaterials: { subjectId: number; subjectName: string };
   MaterialDetail: { materialId: number };
   NotificationPreferences: undefined;
+  ParentDashboard: undefined;
+  AttendanceMonitor: { childId: number };
+  GradesMonitor: { childId: number };
+  Communication: undefined;
+};
+
+export type ParentStackParamList = {
+  ParentHome: undefined;
+  AttendanceMonitor: { childId: number };
+  GradesMonitor: { childId: number };
+  Communication: undefined;
 };
 
 export type DeepLinkConfig = {
@@ -46,10 +57,13 @@ export type DeepLinkConfig = {
           StudentCourses: 'student/courses';
           StudentAssignments: 'student/assignments';
           StudentProfile: 'student/profile';
-          ParentHome: 'parent/home';
+          ParentDashboard: 'parent/dashboard';
           ParentChildren: 'parent/children';
           ParentReports: 'parent/reports';
           ParentProfile: 'parent/profile';
+          AttendanceMonitor: 'parent/attendance/:childId';
+          GradesMonitor: 'parent/grades/:childId';
+          Communication: 'parent/communication';
         };
       };
     };

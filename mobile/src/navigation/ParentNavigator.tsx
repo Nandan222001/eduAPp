@@ -1,13 +1,55 @@
 import React from 'react';
 import { Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { MainTabParamList } from '../types/navigation';
-import { ParentHomeScreen } from '../screens/parent/ParentHomeScreen';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { MainTabParamList, ParentStackParamList } from '../types/navigation';
+import { ParentDashboardScreen } from '../screens/parent/ParentDashboardScreen';
 import { ParentChildrenScreen } from '../screens/parent/ParentChildrenScreen';
 import { ParentReportsScreen } from '../screens/parent/ParentReportsScreen';
 import { ParentProfileScreen } from '../screens/parent/ParentProfileScreen';
+import { AttendanceMonitorScreen } from '../screens/parent/AttendanceMonitorScreen';
+import { GradesMonitorScreen } from '../screens/parent/GradesMonitorScreen';
+import { CommunicationScreen } from '../screens/parent/CommunicationScreen';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
+const Stack = createNativeStackNavigator<ParentStackParamList>();
+
+const DashboardStack = () => {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: '#5856D6',
+        },
+        headerTintColor: '#FFFFFF',
+        headerTitleStyle: {
+          fontWeight: 'bold',
+        },
+      }}
+    >
+      <Stack.Screen
+        name="ParentHome"
+        component={ParentDashboardScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="AttendanceMonitor"
+        component={AttendanceMonitorScreen}
+        options={{ title: 'Attendance Monitor' }}
+      />
+      <Stack.Screen
+        name="GradesMonitor"
+        component={GradesMonitorScreen}
+        options={{ title: 'Grades Monitor' }}
+      />
+      <Stack.Screen
+        name="Communication"
+        component={CommunicationScreen}
+        options={{ headerShown: false }}
+      />
+    </Stack.Navigator>
+  );
+};
 
 export const ParentNavigator: React.FC = () => {
   return (
@@ -32,12 +74,12 @@ export const ParentNavigator: React.FC = () => {
       }}
     >
       <Tab.Screen
-        name="ParentHome"
-        component={ParentHomeScreen}
+        name="ParentDashboard"
+        component={DashboardStack}
         options={{
-          tabBarLabel: 'Home',
+          tabBarLabel: 'Dashboard',
           tabBarIcon: ({ color }) => <TabIcon icon="🏠" color={color} />,
-          headerTitle: 'Home',
+          headerShown: false,
         }}
       />
       <Tab.Screen

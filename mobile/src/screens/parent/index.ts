@@ -1,10 +1,8 @@
-export { DashboardScreen } from './DashboardScreen';
-export { AttendanceScreen } from './AttendanceScreen';
-export { GradesScreen } from './GradesScreen';
-export { MessagesScreen } from './MessagesScreen';
-export { ChildrenScreen } from './ChildrenScreen';
-export { ChildDetailScreen } from './ChildDetailScreen';
+export { ParentHomeScreen } from './ParentHomeScreen';
+export { ParentChildrenScreen } from './ParentChildrenScreen';
+export { ParentReportsScreen } from './ParentReportsScreen';
+export { ParentProfileScreen } from './ParentProfileScreen';
+export { ParentDashboardScreen } from './ParentDashboardScreen';
+export { AttendanceMonitorScreen } from './AttendanceMonitorScreen';
+export { GradesMonitorScreen } from './GradesMonitorScreen';
 export { CommunicationScreen } from './CommunicationScreen';
-export { MessageDetailScreen } from './MessageDetailScreen';
-export { ProfileScreen } from './ProfileScreen';
-export { ReportsScreen } from './ReportsScreen';

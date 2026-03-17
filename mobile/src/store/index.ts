@@ -6,12 +6,13 @@ import profileReducer from './slices/profileSlice';
 import dashboardReducer from './slices/dashboardSlice';
 import assignmentsReducer from './slices/assignmentsSlice';
 import gradesReducer from './slices/gradesSlice';
+import parentReducer from './slices/parentSlice';
 
 const persistConfig = {
   key: 'root',
   version: 1,
   storage: AsyncStorage,
-  whitelist: ['auth', 'profile', 'dashboard', 'assignments', 'grades'],
+  whitelist: ['auth', 'profile', 'dashboard', 'assignments', 'grades', 'parent'],
 };
 
 const rootReducer = combineReducers({
@@ -20,6 +21,7 @@ const rootReducer = combineReducers({
   dashboard: dashboardReducer,
   assignments: assignmentsReducer,
   grades: gradesReducer,
+  parent: parentReducer,
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
