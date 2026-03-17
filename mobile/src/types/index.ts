@@ -20,6 +20,7 @@ export type {
 
 export * from './student';
 export * from './offline';
+export * from './parent';
 
 export interface User {
   id: number;
