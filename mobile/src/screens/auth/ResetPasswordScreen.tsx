@@ -9,14 +9,13 @@ import {
   Alert,
 } from 'react-native';
 import { Text, Input, Button, Icon } from '@rneui/themed';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { authApi } from '@api/auth';
 import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS } from '@constants';
-import { AuthStackScreenProps } from '@types';
 
-type Props = AuthStackScreenProps<'ResetPassword'>;
-
-export const ResetPasswordScreen: React.FC<Props> = ({ navigation, route }) => {
-  const { token } = route.params || {};
+export const ResetPasswordScreen: React.FC = () => {
+  const router = useRouter();
+  const { token } = useLocalSearchParams();
   
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -56,7 +55,7 @@ export const ResetPasswordScreen: React.FC<Props> = ({ navigation, route }) => {
     setIsLoading(true);
     try {
       await authApi.resetPassword({
-        token,
+        token: String(token),
         password,
         confirm_password: confirmPassword,
       });
@@ -67,7 +66,7 @@ export const ResetPasswordScreen: React.FC<Props> = ({ navigation, route }) => {
         [
           {
             text: 'OK',
-            onPress: () => navigation.navigate('Login'),
+            onPress: () => router.replace('/(auth)/login'),
           },
         ]
       );
@@ -230,7 +229,7 @@ export const ResetPasswordScreen: React.FC<Props> = ({ navigation, route }) => {
           <Button
             title="Back to Login"
             type="clear"
-            onPress={() => navigation.navigate('Login')}
+            onPress={() => router.replace('/(auth)/login')}
             titleStyle={styles.backButtonText}
             containerStyle={styles.backButton}
           />

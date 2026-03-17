@@ -51,6 +51,9 @@ dist/
 web-build/
 .expo-shared
 
+# Expo Router
+.expo-router/
+
 # Environment
 .env
 .env.local

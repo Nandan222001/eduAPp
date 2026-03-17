@@ -1,12 +1,10 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Text } from '@rneui/themed';
-import { MainStackScreenProps } from '@types';
+import { useLocalSearchParams } from 'expo-router';
 
-type Props = MainStackScreenProps<'ChildDetail'>;
-
-export const ChildDetailScreen: React.FC<Props> = ({ navigation, route }) => {
-  const { childId } = route.params;
+export const ChildDetailScreen: React.FC = () => {
+  const { id: childId } = useLocalSearchParams();
 
   return (
     <View style={styles.container}>

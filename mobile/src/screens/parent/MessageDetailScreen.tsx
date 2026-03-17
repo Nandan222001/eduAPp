@@ -1,12 +1,10 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Text } from '@rneui/themed';
-import { MainStackScreenProps } from '@types';
+import { useLocalSearchParams } from 'expo-router';
 
-type Props = MainStackScreenProps<'MessageDetail'>;
-
-export const MessageDetailScreen: React.FC<Props> = ({ navigation, route }) => {
-  const { messageId } = route.params;
+export const MessageDetailScreen: React.FC = () => {
+  const { id: messageId } = useLocalSearchParams();
 
   return (
     <View style={styles.container}>

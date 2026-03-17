@@ -1,12 +1,10 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Text } from '@rneui/themed';
-import { MainStackScreenProps } from '@types';
+import { useLocalSearchParams } from 'expo-router';
 
-type Props = MainStackScreenProps<'CourseDetail'>;
-
-export const CourseDetailScreen: React.FC<Props> = ({ navigation, route }) => {
-  const { courseId } = route.params;
+export const CourseDetailScreen: React.FC = () => {
+  const { id: courseId } = useLocalSearchParams();
 
   return (
     <View style={styles.container}>

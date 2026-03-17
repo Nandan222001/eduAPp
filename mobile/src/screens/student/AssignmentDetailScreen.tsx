@@ -16,10 +16,8 @@ import { format, isPast, parseISO } from 'date-fns';
 import * as DocumentPicker from 'expo-document-picker';
 import { Camera, CameraType } from 'expo-camera';
 import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS } from '@constants';
-import { MainStackScreenProps } from '@types';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { assignmentsApi, SubmitAssignmentData } from '../../api/assignments';
-
-type Props = MainStackScreenProps<'AssignmentDetail'>;
 
 interface AttachmentFile {
   uri: string;
@@ -29,8 +27,9 @@ interface AttachmentFile {
   base64?: string;
 }
 
-export const AssignmentDetailScreen: React.FC<Props> = ({ navigation, route }) => {
-  const { assignmentId } = route.params;
+export const AssignmentDetailScreen: React.FC = () => {
+  const router = useRouter();
+  const { id: assignmentId } = useLocalSearchParams();
   const queryClient = useQueryClient();
 
   const [comments, setComments] = useState('');
@@ -43,9 +42,10 @@ export const AssignmentDetailScreen: React.FC<Props> = ({ navigation, route }) =
   const { data: assignment, isLoading, isError, refetch } = useQuery({
     queryKey: ['assignment', assignmentId],
     queryFn: async () => {
-      const response = await assignmentsApi.getAssignmentDetail(assignmentId);
+      const response = await assignmentsApi.getAssignmentDetail(String(assignmentId));
       return response.data;
     },
+    enabled: !!assignmentId,
   });
 
   const submitMutation = useMutation({
@@ -156,7 +156,7 @@ export const AssignmentDetailScreen: React.FC<Props> = ({ navigation, route }) =
 
     try {
       const submitData: SubmitAssignmentData = {
-        assignmentId: parseInt(assignmentId),
+        assignmentId: parseInt(String(assignmentId)),
         comments: comments || undefined,
         attachments: await Promise.all(
           attachments.map(async (file) => {
@@ -446,7 +446,7 @@ export const AssignmentDetailScreen: React.FC<Props> = ({ navigation, route }) =
               title="Close"
               onPress={() => {
                 setShowSubmitModal(false);
-                navigation.goBack();
+                router.back();
               }}
               buttonStyle={styles.modalButton}
             />

@@ -1,4 +1,9 @@
+// Old navigation types (deprecated - use Expo Router hooks instead)
 export * from './navigation';
+
+// New Expo Router types
+export * from './routes';
+
 export * from './student';
 
 export interface User {

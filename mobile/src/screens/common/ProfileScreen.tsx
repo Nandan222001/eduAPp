@@ -1,11 +1,8 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Text } from '@rneui/themed';
-import { MainStackScreenProps } from '@types';
 
-type Props = MainStackScreenProps<'Profile'>;
-
-export const ProfileScreen: React.FC<Props> = ({ navigation }) => {
+export const ProfileScreen: React.FC = () => {
   return (
     <View style={styles.container}>
       <Text h3>Profile</Text>
