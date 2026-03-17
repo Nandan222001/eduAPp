@@ -160,6 +160,9 @@ from src.models.reverse_classroom import (
     TeachingSession, TeachingChallenge,
     ExplanationType, DifficultyLevel
 )
+from src.models.subject_rpg import (
+    StudentCharacter, SubjectWorld, BattleSession, SubjectPassport, QuestLog, QuestType
+)
 
 __all__ = [
     "Institution",
@@ -557,4 +560,10 @@ __all__ = [
     "TeachingChallenge",
     "ExplanationType",
     "DifficultyLevel",
+    "StudentCharacter",
+    "SubjectWorld",
+    "BattleSession",
+    "SubjectPassport",
+    "QuestLog",
+    "QuestType",
 ]

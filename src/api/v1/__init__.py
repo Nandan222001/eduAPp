@@ -86,7 +86,8 @@ from src.api.v1 import (
     student_employment,
     olympics,
     mistake_analysis,
-    reverse_classroom
+    reverse_classroom,
+    subject_rpg
 )
 from src.api import ml
 
@@ -181,3 +182,4 @@ api_router.include_router(student_employment.router, prefix="/student-employment
 api_router.include_router(olympics.router, prefix="/olympics", tags=["olympics"])
 api_router.include_router(mistake_analysis.router, prefix="", tags=["mistake-analysis"])
 api_router.include_router(reverse_classroom.router, prefix="", tags=["reverse-classroom"])
+api_router.include_router(subject_rpg.router, prefix="/subject-rpg", tags=["subject-rpg"])
