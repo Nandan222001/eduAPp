@@ -156,6 +156,10 @@ from src.models.mistake_analysis import (
     MistakePattern, MistakeInsuranceToken, InsuranceReview,
     MistakeType, RemediationStatus, EarnedVia
 )
+from src.models.reverse_classroom import (
+    TeachingSession, TeachingChallenge,
+    ExplanationType, DifficultyLevel
+)
 
 __all__ = [
     "Institution",
@@ -549,4 +553,8 @@ __all__ = [
     "MistakeType",
     "RemediationStatus",
     "EarnedVia",
+    "TeachingSession",
+    "TeachingChallenge",
+    "ExplanationType",
+    "DifficultyLevel",
 ]

@@ -85,7 +85,8 @@ from src.api.v1 import (
     homework_scanner,
     student_employment,
     olympics,
-    mistake_analysis
+    mistake_analysis,
+    reverse_classroom
 )
 from src.api import ml
 
@@ -179,3 +180,4 @@ api_router.include_router(homework_scanner.router, prefix="/homework-scanner", t
 api_router.include_router(student_employment.router, prefix="/student-employment", tags=["student-employment"])
 api_router.include_router(olympics.router, prefix="/olympics", tags=["olympics"])
 api_router.include_router(mistake_analysis.router, prefix="", tags=["mistake-analysis"])
+api_router.include_router(reverse_classroom.router, prefix="", tags=["reverse-classroom"])
