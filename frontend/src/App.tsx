@@ -78,6 +78,7 @@ import ParentVolunteerHours from './pages/ParentVolunteerHours';
 import TeacherVolunteerVerification from './pages/TeacherVolunteerVerification';
 import VolunteerLeaderboard from './pages/VolunteerLeaderboard';
 import AdminVolunteerAnalytics from './pages/AdminVolunteerAnalytics';
+import MessagingCenter from './pages/MessagingCenter';
 import PeerRecognition from './pages/PeerRecognition';
 import AppreciationWall from './pages/AppreciationWall';
 import TeacherRecognitionModeration from './pages/TeacherRecognitionModeration';
@@ -249,7 +250,7 @@ function App() {
                   <Route path="goals" element={<GoalsManagement />} />
                   <Route path="gamification" element={<GamificationDashboard />} />
                   <Route path="communication/announcements" element={<AnnouncementManagement />} />
-                  <Route path="communication/messages" element={<div>Messages</div>} />
+                  <Route path="communication/messages" element={<MessagingCenter />} />
                   <Route path="analytics" element={<InstitutionAnalyticsDashboard />} />
                   <Route path="analytics/class/:classId" element={<ClassPerformanceAnalytics />} />
                   <Route path="subscription" element={<SubscriptionBilling />} />
