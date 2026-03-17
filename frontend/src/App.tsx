@@ -87,6 +87,7 @@ import AIStudyBuddy from './pages/AIStudyBuddy';
 import HomeworkScanner from './pages/HomeworkScanner';
 import AdministratorsList from './pages/AdministratorsList';
 import ClassManagement from './pages/ClassManagement';
+import AssignmentManagement from './pages/AssignmentManagement';
 import VirtualOlympics from './pages/VirtualOlympics';
 import OlympicsDetailPage from './pages/OlympicsDetailPage';
 import OlympicsCompetitionPage from './pages/OlympicsCompetitionPage';
@@ -211,7 +212,7 @@ function App() {
                   <Route path="academic/classes" element={<ClassManagement />} />
                   <Route path="academic/subjects" element={<SubjectManagement />} />
                   <Route path="academic/syllabus" element={<SyllabusManagement />} />
-                  <Route path="assignments" element={<div>Assignments</div>} />
+                  <Route path="assignments" element={<AssignmentManagement />} />
                   <Route path="examinations/list" element={<ExamListPage />} />
                   <Route path="examinations/create" element={<ExamCreationWizard />} />
                   <Route path="examinations/:examId/marks-entry" element={<MarksEntryPage />} />
