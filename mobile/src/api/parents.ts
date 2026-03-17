@@ -82,6 +82,96 @@ export interface MessagePreview {
   isRead: boolean;
 }
 
+export interface AttendanceRecord {
+  date: string;
+  status: 'present' | 'absent' | 'late';
+  remarks?: string;
+  markedAt?: string;
+}
+
+export interface SubjectAttendance {
+  subject: string;
+  subjectCode: string;
+  totalClasses: number;
+  attended: number;
+  late: number;
+  percentage: number;
+}
+
+export interface AttendanceData {
+  records: AttendanceRecord[];
+  summary: {
+    totalDays: number;
+    present: number;
+    absent: number;
+    late: number;
+    percentage: number;
+  };
+  subjectWise: SubjectAttendance[];
+}
+
+export interface Grade {
+  id: number;
+  examId: number;
+  examName: string;
+  examType: string;
+  subject: string;
+  subjectCode: string;
+  totalMarks: number;
+  obtainedMarks: number;
+  percentage: number;
+  grade: string;
+  examDate: string;
+  publishedDate: string;
+  remarks?: string;
+  teacherName?: string;
+}
+
+export interface TermGrades {
+  term: string;
+  termName: string;
+  grades: Grade[];
+  averagePercentage: number;
+  totalMarks: number;
+  obtainedMarks: number;
+  rank?: number;
+  totalStudents?: number;
+}
+
+export interface SubjectPerformance {
+  subject: string;
+  subjectCode: string;
+  averagePercentage: number;
+  totalExams: number;
+  highestMarks: number;
+  lowestMarks: number;
+  trend: 'improving' | 'declining' | 'stable';
+}
+
+export interface ClassAverage {
+  subject: string;
+  studentAverage: number;
+  classAverage: number;
+  rank?: number;
+}
+
+export interface RankProgression {
+  term: string;
+  rank: number;
+  totalStudents: number;
+  percentage: number;
+}
+
+export interface GradesData {
+  termGrades: TermGrades[];
+  subjectPerformance: SubjectPerformance[];
+  classAverages: ClassAverage[];
+  rankProgression: RankProgression[];
+  overallAverage: number;
+  currentRank?: number;
+  totalStudents?: number;
+}
+
 export const parentsApi = {
   getDashboard: async () => {
     return apiClient.get<ParentDashboard>('/api/v1/parents/dashboard');
@@ -111,5 +201,20 @@ export const parentsApi = {
 
   getMessages: async () => {
     return apiClient.get<MessagePreview[]>('/api/v1/messages');
+  },
+
+  getAttendance: async (childId: number, startDate?: string, endDate?: string) => {
+    const params = new URLSearchParams();
+    if (startDate) params.append('start_date', startDate);
+    if (endDate) params.append('end_date', endDate);
+    const queryString = params.toString() ? `?${params.toString()}` : '';
+    return apiClient.get<AttendanceData>(
+      `/api/v1/parents/children/${childId}/attendance${queryString}`
+    );
+  },
+
+  getGrades: async (childId: number, term?: string) => {
+    const queryString = term ? `?term=${term}` : '';
+    return apiClient.get<GradesData>(`/api/v1/parents/children/${childId}/grades${queryString}`);
   },
 };
