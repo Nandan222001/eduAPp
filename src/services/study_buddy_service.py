@@ -1,735 +1,486 @@
+from typing import Optional, List, Dict, Any
 from datetime import datetime, date, timedelta
-from typing import List, Optional, Dict, Any
+from decimal import Decimal
 from sqlalchemy.orm import Session
-from sqlalchemy import func, and_, or_, desc
+from sqlalchemy import func, desc
 from openai import OpenAI
 import json
 
-from src.models.study_buddy import (
-    StudyBuddySession, StudyBuddyInsight, StudyBuddyPreference, InsightType
-)
+from src.models.study_buddy import StudyBuddySession, StudyBuddyMessage, StudyBuddyInsight
 from src.models.student import Student
-from src.models.attendance import Attendance, AttendanceStatus, AttendanceSummary
-from src.models.examination import ExamResult, ExamMarks, Exam, ExamSchedule
-from src.models.assignment import Assignment, Submission, SubmissionStatus
-from src.schemas.study_buddy import (
-    ChatRequest, ChatResponse, StudyBuddyPreferenceCreate, 
-    StudyBuddyPreferenceUpdate, DailyBriefingResponse, WeeklyReviewResponse
-)
+from src.models.study_planner import WeakArea, DailyStudyTask, ChapterPerformance
+from src.models.examination import ExamResult
+from src.models.assignment import Submission
 from src.config import settings
 
 
 class StudyBuddyService:
-    def __init__(self, db: Session, openai_api_key: Optional[str] = None):
+    def __init__(self, db: Session):
         self.db = db
-        self.openai_client = OpenAI(api_key=openai_api_key) if openai_api_key else None
+        self.openai_client = OpenAI(api_key=settings.openai_api_key) if settings.openai_api_key else None
     
-    def get_or_create_session(
-        self, 
-        student_id: int, 
-        institution_id: int
+    def create_session(
+        self,
+        institution_id: int,
+        student_id: int,
+        session_title: Optional[str] = None,
+        context: Optional[Dict[str, Any]] = None
     ) -> StudyBuddySession:
-        session = self.db.query(StudyBuddySession).filter(
-            StudyBuddySession.student_id == student_id,
-            StudyBuddySession.institution_id == institution_id
-        ).first()
-        
-        if not session:
-            session = StudyBuddySession(
-                student_id=student_id,
-                institution_id=institution_id,
-                conversation_history=[],
-                study_patterns={},
-                optimal_study_times=[],
-                streak_data={
-                    'current_streak': 0,
-                    'longest_streak': 0,
-                    'total_study_days': 0
-                },
-                mood_tracking=[]
-            )
-            self.db.add(session)
-            self.db.commit()
-            self.db.refresh(session)
-        
+        session = StudyBuddySession(
+            institution_id=institution_id,
+            student_id=student_id,
+            session_title=session_title,
+            context=context
+        )
+        self.db.add(session)
+        self.db.commit()
+        self.db.refresh(session)
         return session
     
+    def get_session(self, session_id: int) -> Optional[StudyBuddySession]:
+        return self.db.query(StudyBuddySession).filter(
+            StudyBuddySession.id == session_id
+        ).first()
+    
+    def end_session(self, session_id: int) -> Optional[StudyBuddySession]:
+        session = self.get_session(session_id)
+        if session:
+            session.is_active = False
+            session.ended_at = datetime.utcnow()
+            self.db.commit()
+            self.db.refresh(session)
+        return session
+    
+    def get_student_sessions(
+        self,
+        student_id: int,
+        is_active: Optional[bool] = None,
+        limit: int = 10
+    ) -> List[StudyBuddySession]:
+        query = self.db.query(StudyBuddySession).filter(
+            StudyBuddySession.student_id == student_id
+        )
+        if is_active is not None:
+            query = query.filter(StudyBuddySession.is_active == is_active)
+        return query.order_by(desc(StudyBuddySession.created_at)).limit(limit).all()
+    
+    def get_session_messages(self, session_id: int, limit: int = 50) -> List[StudyBuddyMessage]:
+        return self.db.query(StudyBuddyMessage).filter(
+            StudyBuddyMessage.session_id == session_id
+        ).order_by(StudyBuddyMessage.created_at).limit(limit).all()
+    
     def chat(
-        self, 
-        student_id: int, 
-        institution_id: int, 
-        chat_request: ChatRequest
-    ) -> ChatResponse:
-        session = self.get_or_create_session(student_id, institution_id)
-        preferences = self.get_preferences(student_id, institution_id)
+        self,
+        institution_id: int,
+        student_id: int,
+        message: str,
+        session_id: Optional[int] = None,
+        context: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        if not self.openai_client:
+            return {
+                "session_id": session_id,
+                "response": "AI service is not configured. Please contact administrator.",
+                "suggestions": [],
+                "related_topics": []
+            }
+        
+        if not session_id:
+            session = self.create_session(
+                institution_id=institution_id,
+                student_id=student_id,
+                session_title=message[:50] if len(message) > 50 else message,
+                context=context
+            )
+            session_id = session.id
+        else:
+            session = self.get_session(session_id)
+            if not session:
+                session = self.create_session(
+                    institution_id=institution_id,
+                    student_id=student_id,
+                    context=context
+                )
+                session_id = session.id
+        
+        user_message = StudyBuddyMessage(
+            session_id=session_id,
+            role="user",
+            content=message
+        )
+        self.db.add(user_message)
         
         student = self.db.query(Student).filter(Student.id == student_id).first()
+        student_context = self._get_student_context(student_id)
         
-        conversation_history = session.conversation_history or []
+        previous_messages = self.get_session_messages(session_id)
         
-        context_data = self._build_student_context(student_id, institution_id)
+        messages = [
+            {
+                "role": "system",
+                "content": f"""You are an AI Study Buddy helping a student named {student.first_name if student else 'Student'}. 
+                You are supportive, encouraging, and knowledgeable. Help them with their studies, 
+                provide explanations, suggest study strategies, and motivate them.
+                
+                Student Context:
+                - Weak Areas: {student_context.get('weak_areas', [])}
+                - Recent Performance: {student_context.get('recent_performance', 'No data')}
+                - Study Streak: {student_context.get('study_streak', 0)} days
+                
+                Be concise but thorough. If they ask about homework or problems, break down solutions step by step."""
+            }
+        ]
         
-        system_prompt = self._build_system_prompt(student, preferences, context_data)
+        for msg in previous_messages[-10:]:
+            messages.append({"role": msg.role, "content": msg.content})
         
-        messages = [{"role": "system", "content": system_prompt}]
+        messages.append({"role": "user", "content": message})
         
-        for msg in conversation_history[-10:]:
-            messages.append({
-                "role": msg.get("role", "user"),
-                "content": msg.get("content", "")
-            })
-        
-        messages.append({
-            "role": "user",
-            "content": chat_request.message
-        })
-        
-        if self.openai_client:
-            try:
-                response = self.openai_client.chat.completions.create(
-                    model="gpt-4",
-                    messages=messages,
-                    temperature=0.7,
-                    max_tokens=500
-                )
-                assistant_message = response.choices[0].message.content
-            except Exception as e:
-                assistant_message = f"I'm having trouble connecting right now. How can I help you with your studies?"
-        else:
-            assistant_message = "AI Study Buddy is not configured. Please set up OpenAI API key."
-        
-        conversation_history.append({
-            "role": "user",
-            "content": chat_request.message,
-            "timestamp": datetime.utcnow().isoformat()
-        })
-        conversation_history.append({
-            "role": "assistant",
-            "content": assistant_message,
-            "timestamp": datetime.utcnow().isoformat()
-        })
-        
-        session.conversation_history = conversation_history
-        session.last_interaction = datetime.utcnow()
-        self.db.commit()
-        
-        suggestions = self._generate_suggestions(context_data)
-        
-        return ChatResponse(
-            message=assistant_message,
-            suggestions=suggestions[:3] if suggestions else None
-        )
+        try:
+            response = self.openai_client.chat.completions.create(
+                model=settings.openai_model,
+                messages=messages,
+                temperature=0.7,
+                max_tokens=1000
+            )
+            
+            ai_response = response.choices[0].message.content
+            
+            assistant_message = StudyBuddyMessage(
+                session_id=session_id,
+                role="assistant",
+                content=ai_response
+            )
+            self.db.add(assistant_message)
+            
+            session.total_messages += 2
+            self.db.commit()
+            
+            suggestions = self._generate_suggestions(message, student_context)
+            related_topics = self._get_related_topics(message, student_id)
+            
+            return {
+                "session_id": session_id,
+                "response": ai_response,
+                "suggestions": suggestions,
+                "related_topics": related_topics
+            }
+        except Exception as e:
+            self.db.rollback()
+            return {
+                "session_id": session_id,
+                "response": f"I'm having trouble connecting to my knowledge base right now. Error: {str(e)}",
+                "suggestions": [],
+                "related_topics": []
+            }
     
-    def _build_system_prompt(
-        self, 
-        student: Student, 
-        preferences: Optional[StudyBuddyPreference],
-        context_data: Dict[str, Any]
-    ) -> str:
-        personality = preferences.ai_personality if preferences else 'friendly'
-        
-        personality_traits = {
-            'friendly': 'warm, encouraging, and supportive',
-            'professional': 'focused, direct, and goal-oriented',
-            'motivational': 'energetic, inspiring, and enthusiastic',
-            'calm': 'patient, reassuring, and thoughtful'
-        }
-        
-        trait = personality_traits.get(personality, 'warm and supportive')
-        
-        prompt = f"""You are an AI Study Buddy assistant for {student.first_name} {student.last_name}. 
-You are {trait} in your responses.
-
-Current Academic Context:
-- Attendance Rate: {context_data.get('attendance_rate', 'N/A')}%
-- Recent Exam Average: {context_data.get('recent_exam_average', 'N/A')}%
-- Pending Assignments: {context_data.get('pending_assignments', 0)}
-- Upcoming Exams: {context_data.get('upcoming_exams_count', 0)}
-
-Your role is to:
-1. Help with study planning and organization
-2. Provide motivation and encouragement
-3. Suggest study strategies based on their performance
-4. Help manage stress and workload
-5. Celebrate achievements and progress
-
-Keep responses concise (2-3 sentences), actionable, and personalized. Focus on one topic at a time.
-"""
-        
-        if context_data.get('weak_subjects'):
-            prompt += f"\nWeak Areas to Focus On: {', '.join(context_data['weak_subjects'])}"
-        
-        return prompt
-    
-    def _build_student_context(self, student_id: int, institution_id: int) -> Dict[str, Any]:
-        context = {}
-        
-        attendance_summary = self.db.query(AttendanceSummary).filter(
-            AttendanceSummary.student_id == student_id,
-            AttendanceSummary.institution_id == institution_id
-        ).order_by(desc(AttendanceSummary.updated_at)).first()
-        
-        if attendance_summary:
-            context['attendance_rate'] = float(attendance_summary.attendance_percentage)
+    def _get_student_context(self, student_id: int) -> Dict[str, Any]:
+        weak_areas = self.db.query(WeakArea).filter(
+            WeakArea.student_id == student_id,
+            WeakArea.is_resolved == False
+        ).order_by(desc(WeakArea.weakness_score)).limit(3).all()
         
         recent_results = self.db.query(ExamResult).filter(
+            ExamResult.student_id == student_id
+        ).order_by(desc(ExamResult.created_at)).limit(3).all()
+        
+        return {
+            "weak_areas": [
+                f"{wa.subject.name if wa.subject else 'Unknown'} - {wa.topic.name if wa.topic else 'General'}"
+                for wa in weak_areas
+            ],
+            "recent_performance": f"Average: {sum(float(r.percentage) for r in recent_results) / len(recent_results):.1f}%" if recent_results else "No data",
+            "study_streak": 0
+        }
+    
+    def _generate_suggestions(self, message: str, student_context: Dict[str, Any]) -> List[str]:
+        suggestions = []
+        message_lower = message.lower()
+        
+        if any(word in message_lower for word in ["homework", "problem", "solve", "help"]):
+            suggestions.append("Would you like me to break down this problem step by step?")
+            suggestions.append("Need clarification on any specific concept?")
+        elif any(word in message_lower for word in ["test", "exam", "prepare"]):
+            suggestions.append("Want me to create a study plan for your exam?")
+            suggestions.append("Should I suggest practice questions?")
+        elif any(word in message_lower for word in ["weak", "difficult", "struggling"]):
+            suggestions.append("Let's identify your weak areas and work on them")
+            suggestions.append("I can recommend targeted practice materials")
+        
+        return suggestions[:3]
+    
+    def _get_related_topics(self, message: str, student_id: int) -> List[Dict[str, Any]]:
+        weak_areas = self.db.query(WeakArea).filter(
+            WeakArea.student_id == student_id,
+            WeakArea.is_resolved == False
+        ).order_by(desc(WeakArea.weakness_score)).limit(3).all()
+        
+        return [
+            {
+                "subject": wa.subject.name if wa.subject else "Unknown",
+                "topic": wa.topic.name if wa.topic else "General",
+                "weakness_score": float(wa.weakness_score)
+            }
+            for wa in weak_areas
+        ]
+    
+    def analyze_study_patterns(self, student_id: int) -> Dict[str, Any]:
+        thirty_days_ago = date.today() - timedelta(days=30)
+        
+        exam_results = self.db.query(ExamResult).filter(
             ExamResult.student_id == student_id,
-            ExamResult.institution_id == institution_id
-        ).order_by(desc(ExamResult.generated_at)).limit(5).all()
+            ExamResult.created_at >= thirty_days_ago
+        ).order_by(ExamResult.created_at).all()
+        
+        chapter_performance = self.db.query(ChapterPerformance).filter(
+            ChapterPerformance.student_id == student_id
+        ).order_by(desc(ChapterPerformance.mastery_score)).all()
+        
+        daily_tasks = self.db.query(DailyStudyTask).filter(
+            DailyStudyTask.student_id == student_id,
+            DailyStudyTask.task_date >= thirty_days_ago
+        ).all()
+        
+        strong_subjects = []
+        weak_subjects = []
+        
+        for perf in chapter_performance[:5]:
+            if float(perf.mastery_score) >= 70:
+                strong_subjects.append({
+                    "subject": perf.subject.name if perf.subject else "Unknown",
+                    "chapter": perf.chapter.name if perf.chapter else "Unknown",
+                    "mastery_score": float(perf.mastery_score),
+                    "proficiency": perf.proficiency_level
+                })
+        
+        weak_areas = self.db.query(WeakArea).filter(
+            WeakArea.student_id == student_id,
+            WeakArea.is_resolved == False
+        ).order_by(desc(WeakArea.weakness_score)).limit(5).all()
+        
+        for wa in weak_areas:
+            weak_subjects.append({
+                "subject": wa.subject.name if wa.subject else "Unknown",
+                "topic": wa.topic.name if wa.topic else "General",
+                "weakness_score": float(wa.weakness_score),
+                "attempts": wa.attempts_count
+            })
+        
+        study_hours_trend = []
+        completed_tasks = [t for t in daily_tasks if t.status.value == "completed"]
+        total_hours = sum(float(t.actual_duration_minutes or 0) / 60 for t in completed_tasks)
+        avg_hours_per_day = total_hours / 30 if total_hours > 0 else 0
+        
+        performance_trend = []
+        for result in exam_results:
+            performance_trend.append({
+                "date": result.created_at.strftime("%Y-%m-%d"),
+                "percentage": float(result.percentage),
+                "subject": result.subject.name if result.subject else "Unknown"
+            })
+        
+        consistency_score = self._calculate_consistency_score(daily_tasks)
+        
+        recommendations = self._generate_study_recommendations(
+            strong_subjects, weak_subjects, consistency_score, avg_hours_per_day
+        )
+        
+        return {
+            "strong_subjects": strong_subjects,
+            "weak_subjects": weak_subjects,
+            "study_hours_trend": [
+                {"period": "Last 30 days", "hours": round(total_hours, 2), "avg_per_day": round(avg_hours_per_day, 2)}
+            ],
+            "performance_trend": performance_trend,
+            "consistency_score": consistency_score,
+            "recommendations": recommendations
+        }
+    
+    def _calculate_consistency_score(self, tasks: List[DailyStudyTask]) -> float:
+        if not tasks:
+            return 0.0
+        
+        completed = sum(1 for t in tasks if t.status.value == "completed")
+        total = len(tasks)
+        return round((completed / total) * 100, 2)
+    
+    def _generate_study_recommendations(
+        self,
+        strong_subjects: List[Dict],
+        weak_subjects: List[Dict],
+        consistency_score: float,
+        avg_hours: float
+    ) -> List[str]:
+        recommendations = []
+        
+        if consistency_score < 50:
+            recommendations.append("Try to maintain a more consistent study schedule. Aim for daily study sessions.")
+        
+        if avg_hours < 2:
+            recommendations.append("Consider increasing your daily study time to at least 2-3 hours.")
+        
+        if weak_subjects:
+            top_weak = weak_subjects[0]
+            recommendations.append(f"Focus on improving {top_weak['subject']} - {top_weak['topic']} with targeted practice.")
+        
+        if strong_subjects:
+            recommendations.append(f"Great work on {strong_subjects[0]['subject']}! Keep up the momentum.")
+        
+        recommendations.append("Take regular breaks using the Pomodoro technique (25 min study, 5 min break).")
+        
+        return recommendations
+    
+    def generate_daily_plan(self, student_id: int, target_date: date) -> Dict[str, Any]:
+        weak_areas = self.db.query(WeakArea).filter(
+            WeakArea.student_id == student_id,
+            WeakArea.is_resolved == False
+        ).order_by(desc(WeakArea.weakness_score)).limit(5).all()
+        
+        existing_tasks = self.db.query(DailyStudyTask).filter(
+            DailyStudyTask.student_id == student_id,
+            DailyStudyTask.task_date == target_date
+        ).all()
+        
+        tasks = []
+        total_hours = 0.0
+        
+        for task in existing_tasks:
+            tasks.append({
+                "id": task.id,
+                "title": task.title,
+                "subject": task.subject.name if task.subject else "Unknown",
+                "duration_minutes": task.estimated_duration_minutes,
+                "priority": task.priority.value,
+                "status": task.status.value
+            })
+            total_hours += task.estimated_duration_minutes / 60
+        
+        if not existing_tasks and weak_areas:
+            for idx, wa in enumerate(weak_areas[:3]):
+                duration = 60 if idx == 0 else 45
+                tasks.append({
+                    "title": f"Practice {wa.topic.name if wa.topic else 'General'}",
+                    "subject": wa.subject.name if wa.subject else "Unknown",
+                    "duration_minutes": duration,
+                    "priority": "high" if idx == 0 else "medium",
+                    "status": "pending",
+                    "description": f"Focus on improving weak area: {wa.topic.name if wa.topic else 'General'}"
+                })
+                total_hours += duration / 60
+        
+        break_intervals = [
+            {"time": "10:00 AM - 10:15 AM", "type": "short_break"},
+            {"time": "12:30 PM - 1:30 PM", "type": "lunch_break"},
+            {"time": "3:00 PM - 3:15 PM", "type": "short_break"},
+            {"time": "5:00 PM - 5:15 PM", "type": "short_break"}
+        ]
+        
+        priority_areas = [wa.topic.name if wa.topic else wa.subject.name for wa in weak_areas[:3]]
+        
+        motivational_tips = [
+            "Start with your most challenging task when your mind is fresh",
+            "Use active recall techniques instead of passive reading",
+            "Teach concepts to someone else to reinforce learning",
+            "Stay hydrated and take short breaks to maintain focus"
+        ]
+        
+        return {
+            "date": target_date.strftime("%Y-%m-%d"),
+            "total_study_hours": round(total_hours, 2),
+            "tasks": tasks,
+            "break_intervals": break_intervals,
+            "priority_areas": priority_areas,
+            "motivational_tips": motivational_tips
+        }
+    
+    def generate_motivational_message(self, student_id: int) -> Dict[str, Any]:
+        student = self.db.query(Student).filter(Student.id == student_id).first()
+        
+        recent_results = self.db.query(ExamResult).filter(
+            ExamResult.student_id == student_id
+        ).order_by(desc(ExamResult.created_at)).limit(3).all()
+        
+        completed_tasks_count = self.db.query(func.count(DailyStudyTask.id)).filter(
+            DailyStudyTask.student_id == student_id,
+            DailyStudyTask.status == "completed",
+            DailyStudyTask.task_date >= date.today() - timedelta(days=7)
+        ).scalar() or 0
+        
+        message_type = "encouragement"
+        message = f"Keep up the great work, {student.first_name if student else 'Student'}! "
+        tips = []
         
         if recent_results:
             avg_percentage = sum(float(r.percentage) for r in recent_results) / len(recent_results)
-            context['recent_exam_average'] = round(avg_percentage, 2)
-        
-        pending_assignments = self.db.query(Submission).join(Assignment).filter(
-            Submission.student_id == student_id,
-            Assignment.institution_id == institution_id,
-            or_(
-                Submission.status == SubmissionStatus.NOT_SUBMITTED,
-                Submission.status == SubmissionStatus.SUBMITTED
-            ),
-            Assignment.due_date >= datetime.utcnow()
-        ).count()
-        
-        context['pending_assignments'] = pending_assignments
-        
-        upcoming_exams = self.db.query(ExamSchedule).join(Exam).filter(
-            Exam.institution_id == institution_id,
-            ExamSchedule.exam_date >= date.today(),
-            ExamSchedule.exam_date <= date.today() + timedelta(days=14)
-        ).count()
-        
-        context['upcoming_exams_count'] = upcoming_exams
-        
-        weak_subjects = []
-        subject_marks = self.db.query(ExamMarks).filter(
-            ExamMarks.student_id == student_id,
-            ExamMarks.institution_id == institution_id
-        ).all()
-        
-        if subject_marks:
-            subject_performance = {}
-            for mark in subject_marks:
-                if mark.exam_subject and mark.exam_subject.subject:
-                    subject_name = mark.exam_subject.subject.name
-                    total_obtained = (mark.theory_marks_obtained or 0) + (mark.practical_marks_obtained or 0)
-                    total_max = (mark.exam_subject.theory_max_marks or 0) + (mark.exam_subject.practical_max_marks or 0)
-                    
-                    if total_max > 0:
-                        percentage = (float(total_obtained) / float(total_max)) * 100
-                        if subject_name not in subject_performance:
-                            subject_performance[subject_name] = []
-                        subject_performance[subject_name].append(percentage)
-            
-            for subject, percentages in subject_performance.items():
-                avg = sum(percentages) / len(percentages)
-                if avg < 60:
-                    weak_subjects.append(subject)
-        
-        context['weak_subjects'] = weak_subjects
-        
-        return context
-    
-    def _generate_suggestions(self, context_data: Dict[str, Any]) -> List[str]:
-        suggestions = []
-        
-        if context_data.get('pending_assignments', 0) > 0:
-            suggestions.append("Review pending assignments")
-        
-        if context_data.get('upcoming_exams_count', 0) > 0:
-            suggestions.append("Check upcoming exam schedule")
-        
-        if context_data.get('weak_subjects'):
-            suggestions.append(f"Focus on {context_data['weak_subjects'][0]}")
-        
-        if context_data.get('attendance_rate', 100) < 75:
-            suggestions.append("Improve attendance rate")
-        
-        suggestions.append("Set today's study goals")
-        suggestions.append("Track your mood")
-        
-        return suggestions
-    
-    def analyze_study_patterns(self, student_id: int, institution_id: int) -> Dict[str, Any]:
-        session = self.get_or_create_session(student_id, institution_id)
-        
-        conversation_history = session.conversation_history or []
-        
-        if len(conversation_history) < 5:
-            return {}
-        
-        interaction_times = []
-        for msg in conversation_history:
-            if msg.get('role') == 'user' and msg.get('timestamp'):
-                try:
-                    timestamp = datetime.fromisoformat(msg['timestamp'])
-                    interaction_times.append(timestamp)
-                except:
-                    pass
-        
-        if not interaction_times:
-            return {}
-        
-        hours = [dt.hour for dt in interaction_times]
-        hour_counts = {}
-        for hour in hours:
-            hour_counts[hour] = hour_counts.get(hour, 0) + 1
-        
-        most_active_hours = sorted(hour_counts.items(), key=lambda x: x[1], reverse=True)[:3]
-        
-        patterns = {
-            'most_active_hours': [h[0] for h in most_active_hours],
-            'total_interactions': len(conversation_history) // 2,
-            'average_session_duration': 15,
-            'study_frequency': {
-                'morning': sum(1 for h in hours if 6 <= h < 12),
-                'afternoon': sum(1 for h in hours if 12 <= h < 18),
-                'evening': sum(1 for h in hours if 18 <= h < 24),
-                'night': sum(1 for h in hours if h < 6)
-            }
-        }
-        
-        session.study_patterns = patterns
-        self.db.commit()
-        
-        return patterns
-    
-    def detect_optimal_study_times(self, student_id: int, institution_id: int) -> List[Dict[str, Any]]:
-        patterns = self.analyze_study_patterns(student_id, institution_id)
-        
-        if not patterns or not patterns.get('most_active_hours'):
-            return []
-        
-        optimal_times = []
-        
-        for hour in patterns['most_active_hours']:
-            time_slot = self._hour_to_time_slot(hour)
-            optimal_times.append({
-                'day_of_week': 'weekday',
-                'time_slot': time_slot,
-                'productivity_score': 0.8
-            })
-        
-        session = self.get_or_create_session(student_id, institution_id)
-        session.optimal_study_times = optimal_times
-        self.db.commit()
-        
-        return optimal_times
-    
-    def _hour_to_time_slot(self, hour: int) -> str:
-        if 6 <= hour < 12:
-            return f"Morning ({hour}:00 AM)"
-        elif 12 <= hour < 18:
-            if hour == 12:
-                return f"Afternoon (12:00 PM)"
+            if avg_percentage >= 80:
+                message += "Your recent performance has been excellent! 🌟"
+                message_type = "celebration"
+                tips.append("Maintain this momentum by consistent practice")
+            elif avg_percentage >= 60:
+                message += "You're making good progress! Keep pushing forward! 💪"
+                tips.append("Focus on your weak areas to reach even greater heights")
             else:
-                return f"Afternoon ({hour - 12}:00 PM)"
-        elif 18 <= hour < 24:
-            return f"Evening ({hour - 12}:00 PM)"
-        else:
-            return f"Night ({hour}:00 AM)"
-    
-    def generate_daily_plan(self, student_id: int, institution_id: int) -> DailyBriefingResponse:
-        context_data = self._build_student_context(student_id, institution_id)
-        session = self.get_or_create_session(student_id, institution_id)
-        preferences = self.get_preferences(student_id, institution_id)
+                message += "Remember, every expert was once a beginner. You've got this! 🚀"
+                tips.append("Break down complex topics into smaller, manageable chunks")
+                tips.append("Don't hesitate to ask for help when needed")
         
-        student = self.db.query(Student).filter(Student.id == student_id).first()
+        if completed_tasks_count >= 5:
+            message += f" You've completed {completed_tasks_count} tasks this week - that's amazing dedication!"
+            tips.append("Your consistency is paying off!")
         
-        time_of_day = datetime.now().hour
-        if time_of_day < 12:
-            greeting = f"Good morning, {student.first_name}! 🌅"
-        elif time_of_day < 18:
-            greeting = f"Good afternoon, {student.first_name}! ☀️"
-        else:
-            greeting = f"Good evening, {student.first_name}! 🌙"
+        encouragement = "Success is not final, failure is not fatal: it is the courage to continue that counts. Keep learning, keep growing!"
         
-        upcoming_tasks = []
-        
-        pending_submissions = self.db.query(Submission, Assignment).join(Assignment).filter(
-            Submission.student_id == student_id,
-            Assignment.institution_id == institution_id,
-            Submission.status == SubmissionStatus.NOT_SUBMITTED,
-            Assignment.due_date >= datetime.utcnow(),
-            Assignment.due_date <= datetime.utcnow() + timedelta(days=7)
-        ).order_by(Assignment.due_date).limit(5).all()
-        
-        for submission, assignment in pending_submissions:
-            upcoming_tasks.append({
-                'type': 'assignment',
-                'title': assignment.title,
-                'subject': assignment.subject.name if assignment.subject else 'General',
-                'due_date': assignment.due_date.isoformat() if assignment.due_date else None,
-                'priority': 'high' if assignment.due_date and assignment.due_date < datetime.utcnow() + timedelta(days=2) else 'medium'
-            })
-        
-        exam_reminders = []
-        upcoming_exam_schedules = self.db.query(ExamSchedule, Exam).join(Exam).filter(
-            Exam.institution_id == institution_id,
-            ExamSchedule.exam_date >= date.today(),
-            ExamSchedule.exam_date <= date.today() + timedelta(days=14)
-        ).order_by(ExamSchedule.exam_date).limit(5).all()
-        
-        for schedule, exam in upcoming_exam_schedules:
-            exam_reminders.append({
-                'exam_name': exam.name,
-                'subject': schedule.subject.name if schedule.subject else 'General',
-                'date': schedule.exam_date.isoformat(),
-                'time': schedule.start_time.isoformat() if schedule.start_time else None,
-                'days_until': (schedule.exam_date - date.today()).days
-            })
-        
-        weak_areas_focus = []
-        if context_data.get('weak_subjects'):
-            for subject in context_data['weak_subjects'][:3]:
-                weak_areas_focus.append({
-                    'subject': subject,
-                    'suggestion': f"Spend 30 minutes reviewing {subject}",
-                    'resources': []
-                })
-        
-        motivational_message = self.generate_motivational_message(student_id, institution_id, context_data)
-        
-        study_suggestions = [
-            "Start with your most challenging subject",
-            "Take a 10-minute break every hour",
-            "Review class notes from today"
-        ]
-        
-        if session.streak_data:
-            streak_info = session.streak_data
-        else:
-            streak_info = {
-                'current_streak': 0,
-                'longest_streak': 0,
-                'total_study_days': 0
-            }
-        
-        return DailyBriefingResponse(
-            greeting=greeting,
-            upcoming_tasks=upcoming_tasks,
-            exam_reminders=exam_reminders,
-            weak_areas_focus=weak_areas_focus,
-            motivational_message=motivational_message,
-            study_suggestions=study_suggestions,
-            streak_info=streak_info
-        )
-    
-    def generate_weekly_review(self, student_id: int, institution_id: int) -> WeeklyReviewResponse:
-        week_start = date.today() - timedelta(days=date.today().weekday())
-        week_end = week_start + timedelta(days=6)
-        
-        achievements = []
-        areas_for_improvement = []
-        
-        attendance_records = self.db.query(Attendance).filter(
-            Attendance.student_id == student_id,
-            Attendance.institution_id == institution_id,
-            Attendance.date >= week_start,
-            Attendance.date <= week_end
-        ).all()
-        
-        if attendance_records:
-            present_count = sum(1 for a in attendance_records if a.status == AttendanceStatus.PRESENT)
-            total_count = len(attendance_records)
-            attendance_rate = (present_count / total_count * 100) if total_count > 0 else 0
-            
-            attendance_summary = {
-                'total_days': total_count,
-                'present_days': present_count,
-                'attendance_rate': round(attendance_rate, 2)
-            }
-            
-            if attendance_rate >= 90:
-                achievements.append(f"Excellent attendance: {attendance_rate:.0f}%!")
-            elif attendance_rate < 75:
-                areas_for_improvement.append(f"Attendance needs improvement ({attendance_rate:.0f}%)")
-        else:
-            attendance_summary = None
-        
-        completed_submissions = self.db.query(Submission).filter(
-            Submission.student_id == student_id,
-            Submission.submitted_at >= datetime.combine(week_start, datetime.min.time()),
-            Submission.submitted_at <= datetime.combine(week_end, datetime.max.time())
-        ).all()
-        
-        if completed_submissions:
-            on_time = sum(1 for s in completed_submissions if not s.is_late)
-            assignment_completion = {
-                'total_submitted': len(completed_submissions),
-                'on_time': on_time,
-                'late': len(completed_submissions) - on_time
-            }
-            
-            if on_time == len(completed_submissions):
-                achievements.append(f"All {len(completed_submissions)} assignments submitted on time!")
-        else:
-            assignment_completion = None
-        
-        exam_performance = None
-        
-        patterns = self.analyze_study_patterns(student_id, institution_id)
-        
-        if patterns.get('total_interactions', 0) > 10:
-            achievements.append(f"Engaged with study buddy {patterns['total_interactions']} times this week!")
-        
-        if not achievements:
-            achievements.append("Keep pushing forward! Every step counts.")
-        
-        if not areas_for_improvement:
-            areas_for_improvement.append("You're doing great! Keep up the good work.")
-        
-        next_week_goals = [
-            "Maintain or improve attendance",
-            "Complete all assignments on time",
-            "Review weak subject areas daily"
-        ]
-        
-        motivational_message = "Great work this week! Remember, consistency is key to success. Keep up the momentum! 💪"
-        
-        summary = f"This week you attended {attendance_summary['present_days'] if attendance_summary else 0} days of class"
-        if assignment_completion:
-            summary += f" and submitted {assignment_completion['total_submitted']} assignments"
-        summary += ". Keep up the great work!"
-        
-        return WeeklyReviewResponse(
-            summary=summary,
-            achievements=achievements,
-            areas_for_improvement=areas_for_improvement,
-            attendance_summary=attendance_summary,
-            exam_performance=exam_performance,
-            assignment_completion=assignment_completion,
-            study_patterns=patterns,
-            next_week_goals=next_week_goals,
-            motivational_message=motivational_message
-        )
-    
-    def generate_motivational_message(
-        self, 
-        student_id: int, 
-        institution_id: int,
-        context_data: Optional[Dict[str, Any]] = None
-    ) -> str:
-        if not context_data:
-            context_data = self._build_student_context(student_id, institution_id)
-        
-        session = self.get_or_create_session(student_id, institution_id)
-        streak = session.streak_data.get('current_streak', 0) if session.streak_data else 0
-        
-        messages = []
-        
-        if streak >= 7:
-            messages.append(f"🔥 Amazing! You're on a {streak}-day streak! Keep it going!")
-        elif streak >= 3:
-            messages.append(f"⭐ Great job! {streak} days in a row!")
-        
-        if context_data.get('attendance_rate', 0) >= 90:
-            messages.append("👏 Your attendance is excellent!")
-        
-        if context_data.get('recent_exam_average', 0) >= 80:
-            messages.append("🎯 Your exam scores are impressive!")
-        
-        if context_data.get('pending_assignments', 0) == 0:
-            messages.append("✅ All caught up on assignments!")
-        
-        if not messages:
-            messages = [
-                "You're doing great! Keep pushing forward!",
-                "Every study session brings you closer to your goals!",
-                "Believe in yourself - you've got this!",
-                "Small progress is still progress. Keep going!",
-                "Your future self will thank you for the effort you put in today!"
-            ]
-            import random
-            return random.choice(messages)
-        
-        return " ".join(messages[:2])
+        return {
+            "message": message,
+            "type": message_type,
+            "tips": tips if tips else ["Stay focused", "Take breaks", "Believe in yourself"],
+            "encouragement": encouragement
+        }
     
     def create_insight(
         self,
-        student_id: int,
         institution_id: int,
-        insight_type: InsightType,
+        student_id: int,
+        insight_type: str,
+        title: str,
         content: str,
-        priority: int = 1
+        priority: int = 1,
+        metadata: Optional[Dict[str, Any]] = None
     ) -> StudyBuddyInsight:
-        session = self.get_or_create_session(student_id, institution_id)
-        
         insight = StudyBuddyInsight(
             institution_id=institution_id,
-            session_id=session.id,
             student_id=student_id,
             insight_type=insight_type,
+            title=title,
             content=content,
             priority=priority,
-            is_read=False
+            metadata=metadata
         )
-        
         self.db.add(insight)
         self.db.commit()
         self.db.refresh(insight)
-        
         return insight
     
-    def get_insights(
+    def get_student_insights(
         self,
         student_id: int,
-        institution_id: int,
-        unread_only: bool = False
+        is_read: Optional[bool] = None,
+        limit: int = 20
     ) -> List[StudyBuddyInsight]:
         query = self.db.query(StudyBuddyInsight).filter(
-            StudyBuddyInsight.student_id == student_id,
-            StudyBuddyInsight.institution_id == institution_id
+            StudyBuddyInsight.student_id == student_id
         )
-        
-        if unread_only:
-            query = query.filter(StudyBuddyInsight.is_read == False)
-        
-        return query.order_by(desc(StudyBuddyInsight.priority), desc(StudyBuddyInsight.delivered_at)).all()
+        if is_read is not None:
+            query = query.filter(StudyBuddyInsight.is_read == is_read)
+        return query.order_by(desc(StudyBuddyInsight.priority), desc(StudyBuddyInsight.created_at)).limit(limit).all()
     
     def mark_insight_read(self, insight_id: int) -> Optional[StudyBuddyInsight]:
         insight = self.db.query(StudyBuddyInsight).filter(
             StudyBuddyInsight.id == insight_id
         ).first()
-        
         if insight:
             insight.is_read = True
+            insight.read_at = datetime.utcnow()
             self.db.commit()
             self.db.refresh(insight)
-        
         return insight
-    
-    def get_preferences(self, student_id: int, institution_id: int) -> Optional[StudyBuddyPreference]:
-        return self.db.query(StudyBuddyPreference).filter(
-            StudyBuddyPreference.student_id == student_id,
-            StudyBuddyPreference.institution_id == institution_id
-        ).first()
-    
-    def create_preferences(
-        self,
-        student_id: int,
-        institution_id: int,
-        preferences_data: StudyBuddyPreferenceCreate
-    ) -> StudyBuddyPreference:
-        preferences = StudyBuddyPreference(
-            student_id=student_id,
-            institution_id=institution_id,
-            **preferences_data.model_dump()
-        )
-        
-        self.db.add(preferences)
-        self.db.commit()
-        self.db.refresh(preferences)
-        
-        return preferences
-    
-    def update_preferences(
-        self,
-        student_id: int,
-        institution_id: int,
-        preferences_data: StudyBuddyPreferenceUpdate
-    ) -> Optional[StudyBuddyPreference]:
-        preferences = self.get_preferences(student_id, institution_id)
-        
-        if not preferences:
-            create_data = StudyBuddyPreferenceCreate(**preferences_data.model_dump(exclude_unset=True))
-            return self.create_preferences(student_id, institution_id, create_data)
-        
-        update_data = preferences_data.model_dump(exclude_unset=True)
-        for field, value in update_data.items():
-            setattr(preferences, field, value)
-        
-        self.db.commit()
-        self.db.refresh(preferences)
-        
-        return preferences
-    
-    def track_mood(
-        self,
-        student_id: int,
-        institution_id: int,
-        mood: str,
-        energy_level: int,
-        stress_level: int,
-        notes: Optional[str] = None
-    ) -> StudyBuddySession:
-        session = self.get_or_create_session(student_id, institution_id)
-        
-        mood_tracking = session.mood_tracking or []
-        
-        mood_entry = {
-            'timestamp': datetime.utcnow().isoformat(),
-            'mood': mood,
-            'energy_level': energy_level,
-            'stress_level': stress_level,
-            'notes': notes
-        }
-        
-        mood_tracking.append(mood_entry)
-        session.mood_tracking = mood_tracking
-        
-        if stress_level >= 4:
-            self.create_insight(
-                student_id=student_id,
-                institution_id=institution_id,
-                insight_type=InsightType.STRESS_CHECK,
-                content=f"Your stress level seems high. Consider taking a break or talking to someone. Remember to practice self-care!",
-                priority=3
-            )
-        
-        self.db.commit()
-        self.db.refresh(session)
-        
-        return session
-    
-    def update_streak(self, student_id: int, institution_id: int) -> Dict[str, int]:
-        session = self.get_or_create_session(student_id, institution_id)
-        
-        streak_data = session.streak_data or {
-            'current_streak': 0,
-            'longest_streak': 0,
-            'total_study_days': 0,
-            'last_study_date': None
-        }
-        
-        today = date.today().isoformat()
-        last_date = streak_data.get('last_study_date')
-        
-        if last_date:
-            last_date_obj = date.fromisoformat(last_date)
-            days_diff = (date.today() - last_date_obj).days
-            
-            if days_diff == 0:
-                pass
-            elif days_diff == 1:
-                streak_data['current_streak'] += 1
-                streak_data['total_study_days'] += 1
-                streak_data['last_study_date'] = today
-                
-                if streak_data['current_streak'] > streak_data.get('longest_streak', 0):
-                    streak_data['longest_streak'] = streak_data['current_streak']
-            else:
-                streak_data['current_streak'] = 1
-                streak_data['total_study_days'] += 1
-                streak_data['last_study_date'] = today
-        else:
-            streak_data = {
-                'current_streak': 1,
-                'longest_streak': 1,
-                'total_study_days': 1,
-                'last_study_date': today
-            }
-        
-        session.streak_data = streak_data
-        self.db.commit()
-        
-        if streak_data['current_streak'] in [3, 7, 14, 30, 60, 100]:
-            self.create_insight(
-                student_id=student_id,
-                institution_id=institution_id,
-                insight_type=InsightType.CELEBRATION,
-                content=f"🎉 Congratulations! You've maintained a {streak_data['current_streak']}-day study streak!",
-                priority=2
-            )
-        
-        return streak_data

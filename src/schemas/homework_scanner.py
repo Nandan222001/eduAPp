@@ -1,89 +1,57 @@
 from datetime import datetime
 from typing import Optional, List, Dict, Any
-from decimal import Decimal
 from pydantic import BaseModel, Field, ConfigDict
-from src.models.homework_scanner import MistakeType
-
-
-class HomeworkFeedbackBase(BaseModel):
-    question_number: int
-    student_answer: Optional[str] = None
-    correct_answer: Optional[str] = None
-    is_correct: bool
-    mistake_type: Optional[MistakeType] = None
-    ai_feedback: Optional[str] = None
-    remedial_content_url: Optional[str] = None
-
-
-class HomeworkFeedbackCreate(HomeworkFeedbackBase):
-    scan_id: int
-
-
-class HomeworkFeedbackResponse(HomeworkFeedbackBase):
-    model_config = ConfigDict(from_attributes=True)
-    
-    id: int
-    scan_id: int
-    created_at: datetime
-
-
-class HomeworkScanBase(BaseModel):
-    student_id: int
-    subject_id: int
-    scan_image_urls: List[str]
-    ocr_text: Optional[str] = None
-    processed_results: Optional[Dict[str, Any]] = None
-    total_score: Optional[Decimal] = None
+from decimal import Decimal
 
 
 class HomeworkScanCreate(BaseModel):
     student_id: int
-    subject_id: int
+    subject_id: Optional[int] = None
+    scan_title: Optional[str] = None
+    metadata: Optional[Dict[str, Any]] = None
 
 
-class HomeworkScanUpdate(BaseModel):
-    ocr_text: Optional[str] = None
-    processed_results: Optional[Dict[str, Any]] = None
-    total_score: Optional[Decimal] = None
-
-
-class HomeworkScanResponse(HomeworkScanBase):
+class HomeworkScanResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     
     id: int
-    scan_date: datetime
+    institution_id: int
+    student_id: int
+    subject_id: Optional[int] = None
+    scan_title: Optional[str] = None
+    image_url: str
+    s3_key: str
+    extracted_text: Optional[str] = None
+    detected_problems: Optional[List[Dict[str, Any]]] = None
+    solutions: Optional[List[Dict[str, Any]]] = None
+    ai_feedback: Optional[str] = None
+    confidence_score: Optional[Decimal] = None
+    processing_status: str
+    error_message: Optional[str] = None
+    metadata: Optional[Dict[str, Any]] = None
     created_at: datetime
     updated_at: datetime
 
 
-class HomeworkScanWithFeedbackResponse(HomeworkScanResponse):
-    feedbacks: List[HomeworkFeedbackResponse] = []
+class HomeworkScanDetailResponse(HomeworkScanResponse):
+    subject_name: Optional[str] = None
+    student_name: Optional[str] = None
 
 
-class ImageUploadResponse(BaseModel):
-    image_url: str
-    s3_key: str
+class DetectedProblem(BaseModel):
+    problem_text: str
+    problem_type: str
+    difficulty: Optional[str] = None
+    solution: Optional[str] = None
+    steps: Optional[List[str]] = None
+    confidence: Optional[float] = None
 
 
-class ScanProcessRequest(BaseModel):
+class HomeworkScanAnalysis(BaseModel):
     scan_id: int
-    answer_key: Dict[str, str]
-
-
-class ScanProcessResponse(BaseModel):
-    scan_id: int
-    total_score: Decimal
-    processed_results: Dict[str, Any]
-    feedbacks: List[HomeworkFeedbackResponse]
-
-
-class MistakePatternResponse(BaseModel):
-    mistake_type: MistakeType
-    count: int
-    percentage: float
-
-
-class TeacherNotificationRequest(BaseModel):
-    scan_id: int
-    teacher_id: int
-    message: Optional[str] = None
+    problems_count: int
+    problems: List[DetectedProblem]
+    overall_difficulty: str
+    estimated_time_minutes: int
+    recommendations: List[str]
+    ai_feedback: str

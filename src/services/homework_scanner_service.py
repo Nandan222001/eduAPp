@@ -1,352 +1,365 @@
-from typing import Optional, List, Dict, Any, Tuple
-from sqlalchemy.orm import Session
-from fastapi import HTTPException, status, UploadFile
+from typing import Optional, List, Dict, Any
+from datetime import datetime
 from decimal import Decimal
+from sqlalchemy.orm import Session
+from fastapi import UploadFile
 import re
+import os
 from io import BytesIO
 from PIL import Image
-import pytesseract
-import sympy
-from sympy import sympify, simplify, latex
-from sympy.parsing.sympy_parser import parse_expr, standard_transformations, implicit_multiplication_application
 
-from src.models.homework_scanner import HomeworkScan, HomeworkFeedback, MistakeType
-from src.repositories.homework_scanner_repository import (
-    HomeworkScanRepository,
-    HomeworkFeedbackRepository
-)
-from src.schemas.homework_scanner import (
-    HomeworkScanCreate,
-    HomeworkScanUpdate,
-    HomeworkFeedbackCreate,
-    ScanProcessRequest
-)
+from src.models.homework_scanner import HomeworkScan
+from src.models.student import Student
+from src.models.academic import Subject
 from src.utils.s3_client import s3_client
 from src.config import settings
+
+try:
+    import pytesseract
+    TESSERACT_AVAILABLE = True
+except ImportError:
+    TESSERACT_AVAILABLE = False
+
+try:
+    import sympy as sp
+    from sympy.parsing.sympy_parser import parse_expr, standard_transformations, implicit_multiplication_application
+    SYMPY_AVAILABLE = True
+except ImportError:
+    SYMPY_AVAILABLE = False
+
+try:
+    from openai import OpenAI
+    OPENAI_AVAILABLE = True
+except ImportError:
+    OPENAI_AVAILABLE = False
 
 
 class HomeworkScannerService:
     def __init__(self, db: Session):
         self.db = db
-        self.scan_repo = HomeworkScanRepository(db)
-        self.feedback_repo = HomeworkFeedbackRepository(db)
-
-    def create_scan(self, data: HomeworkScanCreate, image_urls: List[str]) -> HomeworkScan:
-        scan = self.scan_repo.create(
-            student_id=data.student_id,
-            subject_id=data.subject_id,
-            scan_image_urls=image_urls
+        self.openai_client = OpenAI(api_key=settings.openai_api_key) if OPENAI_AVAILABLE and settings.openai_api_key else None
+    
+    async def create_scan(
+        self,
+        institution_id: int,
+        student_id: int,
+        file: UploadFile,
+        subject_id: Optional[int] = None,
+        scan_title: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None
+    ) -> HomeworkScan:
+        file_content = await file.read()
+        file_name = file.filename or "homework_scan.jpg"
+        
+        file_obj = BytesIO(file_content)
+        file_url, s3_key = s3_client.upload_file(
+            file_obj,
+            file_name,
+            folder=f"homework_scans/{institution_id}/{student_id}",
+            content_type=file.content_type or "image/jpeg"
         )
+        
+        scan = HomeworkScan(
+            institution_id=institution_id,
+            student_id=student_id,
+            subject_id=subject_id,
+            scan_title=scan_title,
+            image_url=file_url,
+            s3_key=s3_key,
+            processing_status="pending",
+            metadata=metadata
+        )
+        
+        self.db.add(scan)
         self.db.commit()
         self.db.refresh(scan)
+        
+        await self._process_scan(scan.id, file_content)
+        
         return scan
-
-    def get_scan(self, scan_id: int) -> Optional[HomeworkScan]:
-        return self.scan_repo.get_by_id(scan_id)
-
-    def get_scan_with_feedbacks(self, scan_id: int) -> Optional[HomeworkScan]:
-        return self.scan_repo.get_with_feedbacks(scan_id)
-
-    def list_scans_by_student(
-        self,
-        student_id: int,
-        skip: int = 0,
-        limit: int = 100,
-        subject_id: Optional[int] = None
-    ) -> Tuple[List[HomeworkScan], int]:
-        scans = self.scan_repo.list_by_student(student_id, skip, limit, subject_id)
-        total = self.scan_repo.count_by_student(student_id, subject_id)
-        return scans, total
-
-    def perform_ocr(self, image_url: str) -> str:
-        try:
-            s3_key = image_url.split('.amazonaws.com/')[-1] if '.amazonaws.com/' in image_url else image_url
-            
-            image_bytes = s3_client.download_file(s3_key)
-            image = Image.open(BytesIO(image_bytes))
-            
-            text = pytesseract.image_to_string(
-                image,
-                config='--psm 6 --oem 3'
-            )
-            
-            return text.strip()
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"OCR failed: {str(e)}"
-            )
-
-    def extract_answers_from_ocr(self, ocr_text: str) -> Dict[int, str]:
-        answers = {}
-        
-        lines = ocr_text.split('\n')
-        for line in lines:
-            line = line.strip()
-            if not line:
-                continue
-            
-            match = re.match(r'^(\d+)[\.\)\:]?\s*(.+)$', line)
-            if match:
-                question_num = int(match.group(1))
-                answer = match.group(2).strip()
-                answers[question_num] = answer
-        
-        return answers
-
-    def evaluate_answers(
-        self,
-        scan_id: int,
-        student_answers: Dict[int, str],
-        answer_key: Dict[str, str]
-    ) -> List[Dict[str, Any]]:
-        feedbacks = []
-        correct_count = 0
-        
-        for q_num_str, correct_answer in answer_key.items():
-            q_num = int(q_num_str)
-            student_answer = student_answers.get(q_num, "")
-            
-            is_correct = self._compare_answers(student_answer, correct_answer)
-            
-            mistake_type = None
-            if not is_correct:
-                mistake_type = self._identify_mistake_type(
-                    student_answer,
-                    correct_answer
-                )
-            
-            ai_feedback = self._generate_feedback(
-                student_answer,
-                correct_answer,
-                is_correct,
-                mistake_type
-            )
-            
-            remedial_url = self._get_remedial_content_url(mistake_type, q_num)
-            
-            if is_correct:
-                correct_count += 1
-            
-            feedbacks.append({
-                'scan_id': scan_id,
-                'question_number': q_num,
-                'student_answer': student_answer,
-                'correct_answer': correct_answer,
-                'is_correct': 1 if is_correct else 0,
-                'mistake_type': mistake_type,
-                'ai_feedback': ai_feedback,
-                'remedial_content_url': remedial_url
-            })
-        
-        return feedbacks
-
-    def _compare_answers(self, student_answer: str, correct_answer: str) -> bool:
-        if not student_answer:
-            return False
-        
-        student_clean = student_answer.strip().lower()
-        correct_clean = correct_answer.strip().lower()
-        
-        if student_clean == correct_clean:
-            return True
-        
-        try:
-            transformations = standard_transformations + (implicit_multiplication_application,)
-            student_expr = parse_expr(student_answer, transformations=transformations)
-            correct_expr = parse_expr(correct_answer, transformations=transformations)
-            
-            diff = simplify(student_expr - correct_expr)
-            return diff == 0
-        except:
-            pass
-        
-        student_numeric = re.sub(r'[^\d\.\-]', '', student_answer)
-        correct_numeric = re.sub(r'[^\d\.\-]', '', correct_answer)
-        
-        if student_numeric and correct_numeric:
-            try:
-                return abs(float(student_numeric) - float(correct_numeric)) < 0.001
-            except:
-                pass
-        
-        return False
-
-    def _identify_mistake_type(
-        self,
-        student_answer: str,
-        correct_answer: str
-    ) -> Optional[MistakeType]:
-        if not student_answer.strip():
-            return MistakeType.INCOMPLETE
-        
-        try:
-            student_expr = parse_expr(student_answer)
-            correct_expr = parse_expr(correct_answer)
-            
-            student_neg = simplify(-student_expr)
-            if simplify(student_neg - correct_expr) == 0:
-                return MistakeType.SIGN_ERROR
-            
-        except:
-            pass
-        
-        student_nums = re.findall(r'-?\d+\.?\d*', student_answer)
-        correct_nums = re.findall(r'-?\d+\.?\d*', correct_answer)
-        
-        if len(student_nums) == len(correct_nums) and len(student_nums) > 0:
-            try:
-                s_vals = [float(n) for n in student_nums]
-                c_vals = [float(n) for n in correct_nums]
-                
-                if sorted(s_vals) == sorted(c_vals) and s_vals != c_vals:
-                    return MistakeType.CALCULATION
-            except:
-                pass
-        
-        student_units = re.findall(r'[a-zA-Z]+', student_answer.lower())
-        correct_units = re.findall(r'[a-zA-Z]+', correct_answer.lower())
-        
-        try:
-            student_val = float(re.sub(r'[^\d\.\-]', '', student_answer))
-            correct_val = float(re.sub(r'[^\d\.\-]', '', correct_answer))
-            
-            if abs(student_val - correct_val) < 0.001 and student_units != correct_units:
-                return MistakeType.UNIT
-        except:
-            pass
-        
-        return MistakeType.CONCEPT
-
-    def _generate_feedback(
-        self,
-        student_answer: str,
-        correct_answer: str,
-        is_correct: bool,
-        mistake_type: Optional[MistakeType]
-    ) -> str:
-        if is_correct:
-            return "Excellent! Your answer is correct."
-        
-        if mistake_type == MistakeType.CALCULATION:
-            return f"You have a calculation error. Check your arithmetic steps. The correct answer is {correct_answer}."
-        elif mistake_type == MistakeType.SIGN_ERROR:
-            return f"You have a sign error in your answer. Pay attention to positive and negative values. The correct answer is {correct_answer}."
-        elif mistake_type == MistakeType.CONCEPT:
-            return f"This appears to be a conceptual error. Review the topic and try to understand the underlying principle. The correct answer is {correct_answer}."
-        elif mistake_type == MistakeType.UNIT:
-            return f"Your numerical value might be close, but check your units. The correct answer is {correct_answer}."
-        elif mistake_type == MistakeType.INCOMPLETE:
-            return f"Your answer is incomplete. Make sure to complete all parts of the question. The correct answer is {correct_answer}."
-        else:
-            return f"Your answer is incorrect. The correct answer is {correct_answer}. Please review this question."
-
-    def _get_remedial_content_url(
-        self,
-        mistake_type: Optional[MistakeType],
-        question_number: int
-    ) -> Optional[str]:
-        if not mistake_type:
-            return None
-        
-        base_url = f"{settings.app_url}/learning-resources"
-        
-        remedial_map = {
-            MistakeType.CALCULATION: f"{base_url}/arithmetic-skills",
-            MistakeType.SIGN_ERROR: f"{base_url}/signs-and-operations",
-            MistakeType.CONCEPT: f"{base_url}/concept-review",
-            MistakeType.UNIT: f"{base_url}/units-and-measurements",
-            MistakeType.INCOMPLETE: f"{base_url}/problem-solving-strategies"
-        }
-        
-        return remedial_map.get(mistake_type)
-
-    def process_scan(
-        self,
-        scan_id: int,
-        answer_key: Dict[str, str]
-    ) -> HomeworkScan:
-        scan = self.scan_repo.get_by_id(scan_id)
+    
+    async def _process_scan(self, scan_id: int, image_content: bytes) -> None:
+        scan = self.db.query(HomeworkScan).filter(HomeworkScan.id == scan_id).first()
         if not scan:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Scan not found"
-            )
+            return
         
-        all_ocr_text = []
-        for image_url in scan.scan_image_urls:
-            ocr_text = self.perform_ocr(image_url)
-            all_ocr_text.append(ocr_text)
-        
-        combined_ocr_text = "\n\n--- Page Break ---\n\n".join(all_ocr_text)
-        
-        student_answers = self.extract_answers_from_ocr(combined_ocr_text)
-        
-        feedbacks_data = self.evaluate_answers(scan_id, student_answers, answer_key)
-        
-        feedbacks = self.feedback_repo.create_bulk(feedbacks_data)
-        
-        total_questions = len(answer_key)
-        correct_count = sum(1 for f in feedbacks_data if f['is_correct'])
-        total_score = Decimal(correct_count) / Decimal(total_questions) * Decimal(100)
-        
-        processed_results = {
-            'total_questions': total_questions,
-            'correct_answers': correct_count,
-            'incorrect_answers': total_questions - correct_count,
-            'score_percentage': float(total_score),
-            'student_answers': student_answers,
-            'answer_key': answer_key
-        }
-        
-        self.scan_repo.update(
-            scan_id,
-            ocr_text=combined_ocr_text,
-            processed_results=processed_results,
-            total_score=total_score
-        )
+        try:
+            scan.processing_status = "processing"
+            self.db.commit()
+            
+            extracted_text = await self._extract_text_from_image(image_content)
+            scan.extracted_text = extracted_text
+            
+            detected_problems = await self._detect_problems(extracted_text)
+            scan.detected_problems = detected_problems
+            
+            solutions = await self._generate_solutions(detected_problems)
+            scan.solutions = solutions
+            
+            ai_feedback = await self._generate_ai_feedback(extracted_text, detected_problems, solutions)
+            scan.ai_feedback = ai_feedback
+            
+            scan.confidence_score = Decimal("75.0")
+            scan.processing_status = "completed"
+            
+        except Exception as e:
+            scan.processing_status = "failed"
+            scan.error_message = str(e)
         
         self.db.commit()
+    
+    async def _extract_text_from_image(self, image_content: bytes) -> str:
+        if not TESSERACT_AVAILABLE:
+            return "OCR not available. Please install pytesseract and Tesseract-OCR."
         
-        return self.scan_repo.get_with_feedbacks(scan_id)
+        try:
+            image = Image.open(BytesIO(image_content))
+            text = pytesseract.image_to_string(image)
+            return text.strip()
+        except Exception as e:
+            return f"Error extracting text: {str(e)}"
+    
+    async def _detect_problems(self, text: str) -> List[Dict[str, Any]]:
+        problems = []
+        
+        lines = text.split('\n')
+        
+        math_patterns = [
+            (r'\d+\s*[\+\-\*\/\^]\s*\d+', 'arithmetic'),
+            (r'x\s*[\+\-\*]\s*\d+\s*=\s*\d+', 'linear_equation'),
+            (r'\d*x\^?\d*\s*[\+\-]\s*\d*x?\s*[\+\-]?\s*\d*\s*=\s*\d+', 'quadratic_equation'),
+            (r'\d+\s*\/\s*\d+', 'fraction'),
+            (r'\d+\s*\*\s*\d+', 'multiplication'),
+        ]
+        
+        for idx, line in enumerate(lines):
+            line = line.strip()
+            if not line or len(line) < 3:
+                continue
+            
+            problem_type = 'general'
+            for pattern, ptype in math_patterns:
+                if re.search(pattern, line, re.IGNORECASE):
+                    problem_type = ptype
+                    break
+            
+            if any(char in line for char in ['=', '+', '-', '*', '/', 'x', 'y']):
+                problems.append({
+                    "problem_text": line,
+                    "problem_type": problem_type,
+                    "line_number": idx + 1,
+                    "difficulty": self._estimate_difficulty(line, problem_type)
+                })
+        
+        return problems[:10]
+    
+    def _estimate_difficulty(self, text: str, problem_type: str) -> str:
+        if problem_type == 'arithmetic':
+            return 'easy'
+        elif problem_type in ['linear_equation', 'fraction']:
+            return 'medium'
+        elif problem_type == 'quadratic_equation':
+            return 'hard'
+        return 'medium'
+    
+    async def _generate_solutions(self, problems: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        solutions = []
+        
+        for problem in problems:
+            solution = await self._solve_problem(problem)
+            solutions.append(solution)
+        
+        return solutions
+    
+    async def _solve_problem(self, problem: Dict[str, Any]) -> Dict[str, Any]:
+        problem_text = problem.get('problem_text', '')
+        problem_type = problem.get('problem_type', 'general')
+        
+        solution_data = {
+            "problem_text": problem_text,
+            "problem_type": problem_type,
+            "solution": None,
+            "steps": [],
+            "explanation": ""
+        }
+        
+        if not SYMPY_AVAILABLE:
+            solution_data["explanation"] = "SymPy is not available for mathematical evaluation."
+            return solution_data
+        
+        try:
+            if problem_type == 'arithmetic':
+                result = self._solve_arithmetic(problem_text)
+                solution_data["solution"] = str(result)
+                solution_data["steps"] = [f"Evaluate: {problem_text}", f"Result: {result}"]
+            
+            elif problem_type in ['linear_equation', 'quadratic_equation']:
+                result = self._solve_equation(problem_text)
+                solution_data["solution"] = str(result)
+                solution_data["steps"] = [
+                    f"Given equation: {problem_text}",
+                    f"Solution: {result}"
+                ]
+            
+            elif problem_type == 'fraction':
+                result = self._solve_fraction(problem_text)
+                solution_data["solution"] = str(result)
+                solution_data["steps"] = [f"Simplify: {problem_text}", f"Result: {result}"]
+            
+            else:
+                solution_data["explanation"] = "Problem type not supported for automatic solving."
+        
+        except Exception as e:
+            solution_data["explanation"] = f"Could not solve automatically: {str(e)}"
+        
+        return solution_data
+    
+    def _solve_arithmetic(self, expression: str) -> Any:
+        try:
+            expression = expression.replace('×', '*').replace('÷', '/')
+            expression = re.sub(r'[^\d\+\-\*\/\.\(\)]', '', expression)
+            result = sp.sympify(expression)
+            return float(result) if result.is_number else result
+        except Exception:
+            return "Error evaluating expression"
+    
+    def _solve_equation(self, equation: str) -> Any:
+        try:
+            equation = equation.replace('×', '*').replace('÷', '/')
+            
+            if '=' in equation:
+                left, right = equation.split('=')
+                eq = sp.Eq(parse_expr(left.strip()), parse_expr(right.strip()))
+                solution = sp.solve(eq)
+                return solution
+            return "Not a valid equation"
+        except Exception as e:
+            return f"Error solving equation: {str(e)}"
+    
+    def _solve_fraction(self, fraction: str) -> Any:
+        try:
+            fraction = fraction.replace('÷', '/')
+            result = sp.sympify(fraction)
+            return sp.simplify(result)
+        except Exception:
+            return "Error simplifying fraction"
+    
+    async def _generate_ai_feedback(
+        self,
+        text: str,
+        problems: List[Dict[str, Any]],
+        solutions: List[Dict[str, Any]]
+    ) -> str:
+        if not self.openai_client:
+            return "AI feedback is not available. OpenAI API key not configured."
+        
+        try:
+            prompt = f"""Analyze this student's homework and provide helpful feedback:
 
-    def identify_mistake_patterns(
+Extracted Text:
+{text[:500]}
+
+Detected Problems: {len(problems)}
+Problem Types: {', '.join(set(p.get('problem_type', 'unknown') for p in problems))}
+
+Provide:
+1. Overall assessment of the homework
+2. Suggestions for improvement
+3. Tips for solving similar problems
+4. Encouragement
+
+Keep it concise and student-friendly."""
+            
+            response = self.openai_client.chat.completions.create(
+                model=settings.openai_model,
+                messages=[
+                    {"role": "system", "content": "You are a helpful tutor providing feedback on student homework."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.7,
+                max_tokens=500
+            )
+            
+            return response.choices[0].message.content
+        except Exception as e:
+            return f"Could not generate AI feedback: {str(e)}"
+    
+    def get_scan(self, scan_id: int) -> Optional[HomeworkScan]:
+        return self.db.query(HomeworkScan).filter(HomeworkScan.id == scan_id).first()
+    
+    def get_student_scans(
         self,
         student_id: int,
-        subject_id: Optional[int] = None
-    ) -> List[Dict[str, Any]]:
-        return self.feedback_repo.get_mistake_patterns_by_student(student_id, subject_id)
-
-    async def upload_image(
-        self,
-        file: UploadFile,
-        student_id: int
-    ) -> Dict[str, str]:
-        allowed_types = ['image/jpeg', 'image/png', 'image/jpg']
-        if file.content_type not in allowed_types:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Only JPEG and PNG images are allowed"
-            )
-        
-        file_content = await file.read()
-        
-        max_size = 10 * 1024 * 1024
-        if len(file_content) > max_size:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="File size exceeds 10MB limit"
-            )
-        
-        s3_key = f"homework_scans/student_{student_id}/{file.filename}"
-        
-        image_url = s3_client.upload_file(
-            file_content,
-            s3_key,
-            content_type=file.content_type
+        subject_id: Optional[int] = None,
+        limit: int = 20,
+        skip: int = 0
+    ) -> List[HomeworkScan]:
+        query = self.db.query(HomeworkScan).filter(
+            HomeworkScan.student_id == student_id
         )
         
+        if subject_id:
+            query = query.filter(HomeworkScan.subject_id == subject_id)
+        
+        return query.order_by(HomeworkScan.created_at.desc()).offset(skip).limit(limit).all()
+    
+    def analyze_scan(self, scan_id: int) -> Dict[str, Any]:
+        scan = self.get_scan(scan_id)
+        if not scan:
+            return {"error": "Scan not found"}
+        
+        problems = scan.detected_problems or []
+        solutions = scan.solutions or []
+        
+        detected_problems = []
+        for i, problem in enumerate(problems):
+            solution_data = solutions[i] if i < len(solutions) else {}
+            detected_problems.append({
+                "problem_text": problem.get('problem_text', ''),
+                "problem_type": problem.get('problem_type', 'unknown'),
+                "difficulty": problem.get('difficulty', 'medium'),
+                "solution": solution_data.get('solution'),
+                "steps": solution_data.get('steps', []),
+                "confidence": 0.75
+            })
+        
+        difficulty_counts = {}
+        for p in problems:
+            diff = p.get('difficulty', 'medium')
+            difficulty_counts[diff] = difficulty_counts.get(diff, 0) + 1
+        
+        overall_difficulty = 'medium'
+        if difficulty_counts.get('hard', 0) > len(problems) // 2:
+            overall_difficulty = 'hard'
+        elif difficulty_counts.get('easy', 0) > len(problems) // 2:
+            overall_difficulty = 'easy'
+        
+        estimated_time = len(problems) * 5
+        
+        recommendations = [
+            "Review the step-by-step solutions provided",
+            "Practice similar problems to reinforce understanding",
+            "If stuck, break down the problem into smaller parts"
+        ]
+        
+        if overall_difficulty == 'hard':
+            recommendations.append("Consider seeking additional help for challenging topics")
+        
         return {
-            'image_url': image_url,
-            's3_key': s3_key
+            "scan_id": scan.id,
+            "problems_count": len(detected_problems),
+            "problems": detected_problems,
+            "overall_difficulty": overall_difficulty,
+            "estimated_time_minutes": estimated_time,
+            "recommendations": recommendations,
+            "ai_feedback": scan.ai_feedback or "Processing feedback..."
         }
+    
+    def delete_scan(self, scan_id: int) -> bool:
+        scan = self.get_scan(scan_id)
+        if not scan:
+            return False
+        
+        self.db.delete(scan)
+        self.db.commit()
+        return True
