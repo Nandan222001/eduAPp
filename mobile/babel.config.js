@@ -18,6 +18,7 @@ module.exports = function (api) {
             '@store': './src/store',
             '@types': './src/types',
             '@utils': './src/utils',
+            '@hooks': './src/hooks',
             '@constants': './src/constants',
             '@config': './src/config',
           },

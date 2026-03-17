@@ -1,4 +1,5 @@
 export * from './navigation';
+export * from './student';
 
 export interface User {
   id: number;

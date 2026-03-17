@@ -1,0 +1,8 @@
+export { WelcomeCard } from './WelcomeCard';
+export { AttendanceStatusCard } from './AttendanceStatusCard';
+export { UpcomingAssignmentsCard } from './UpcomingAssignmentsCard';
+export { RecentGradesCard } from './RecentGradesCard';
+export { AIPredictionWidget } from './AIPredictionWidget';
+export { WeakAreasPanel } from './WeakAreasPanel';
+export { StreakTracker } from './StreakTracker';
+export { GamificationWidget } from './GamificationWidget';
