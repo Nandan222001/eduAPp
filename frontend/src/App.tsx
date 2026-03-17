@@ -98,6 +98,8 @@ import JobDetail from './pages/JobDetail';
 import EmployerPortal from './pages/EmployerPortal';
 import CareerCounselorWorkflow from './pages/CareerCounselorWorkflow';
 import WorkHourMonitoring from './pages/WorkHourMonitoring';
+import MistakeReplay from './pages/MistakeReplay';
+import MistakeInsurance from './pages/MistakeInsurance';
 
 import {
   LoginPage,
@@ -344,6 +346,8 @@ function App() {
                   <Route path="employment/work-permits" element={<WorkPermitManager />} />
                   <Route path="employment/my-employment" element={<MyEmploymentDashboard />} />
                   <Route path="employment/work-hours" element={<WorkHourMonitoring />} />
+                  <Route path="mistakes/replay" element={<MistakeReplay />} />
+                  <Route path="mistakes/insurance" element={<MistakeInsurance />} />
                   <Route path="settings" element={<SettingsPage />} />
                 </Route>
               </Route>
