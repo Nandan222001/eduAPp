@@ -15,7 +15,6 @@ import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS } from '@constants';
 import { studentApi } from '../../../src/api/student';
 import { Card } from '../../../src/components/Card';
 
-
 const screenWidth = Dimensions.get('window').width;
 
 export default function AIPredictionsScreen() {

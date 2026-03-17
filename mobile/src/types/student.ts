@@ -87,6 +87,7 @@ export interface GamificationData {
   badges: Badge[];
   recentAchievements: Achievement[];
   streak: StreakData;
+  activeGoalsCount?: number;
 }
 
 export interface Badge {
@@ -219,4 +220,101 @@ export interface DailyBriefing {
   pendingAssignments: number;
   focusTopics: string[];
   motivationalMessage: string;
+}
+
+export interface GamificationDetails {
+  totalPoints: number;
+  currentLevel: number;
+  nextLevelPoints: number;
+  pointsToNextLevel: number;
+  rank: number;
+  totalStudents: number;
+  badges: BadgeDetail[];
+  recentAchievements: Achievement[];
+  streak: StreakData;
+  streakCalendar: StreakCalendarDay[];
+  pointsHistory: PointsHistoryEntry[];
+}
+
+export interface BadgeDetail {
+  id: number;
+  name: string;
+  description: string;
+  icon: string;
+  earnedAt: string | null;
+  rarity: 'common' | 'rare' | 'epic' | 'legendary';
+  progress?: number;
+  total?: number;
+  category: string;
+  unlocked: boolean;
+}
+
+export interface StreakCalendarDay {
+  date: string;
+  count: number;
+  type: 'login' | 'assignment' | 'study' | 'goal';
+}
+
+export interface PointsHistoryEntry {
+  date: string;
+  points: number;
+  reason: string;
+  type: 'earned' | 'spent';
+}
+
+export interface LeaderboardEntry {
+  rank: number;
+  studentId: number;
+  studentName: string;
+  avatar?: string;
+  points: number;
+  level: number;
+  badges: number;
+  trend: 'up' | 'down' | 'same';
+  isCurrentUser: boolean;
+}
+
+export interface Goal {
+  id: number;
+  title: string;
+  description: string;
+  type: 'specific' | 'measurable' | 'achievable' | 'relevant' | 'time-bound';
+  category: 'academic' | 'attendance' | 'behavior' | 'extracurricular' | 'personal';
+  targetValue: number;
+  currentValue: number;
+  unit: string;
+  startDate: string;
+  endDate: string;
+  status: 'active' | 'completed' | 'failed' | 'abandoned';
+  milestones: GoalMilestone[];
+  createdAt: string;
+  updatedAt: string;
+  completedAt?: string;
+  reward?: {
+    points: number;
+    badge?: string;
+  };
+}
+
+export interface GoalMilestone {
+  id: number;
+  title: string;
+  targetValue: number;
+  achieved: boolean;
+  achievedAt?: string;
+}
+
+export interface CreateGoalRequest {
+  title: string;
+  description: string;
+  type: 'specific' | 'measurable' | 'achievable' | 'relevant' | 'time-bound';
+  category: 'academic' | 'attendance' | 'behavior' | 'extracurricular' | 'personal';
+  targetValue: number;
+  unit: string;
+  startDate: string;
+  endDate: string;
+  milestones?: {
+    title: string;
+    targetValue: number;
+  }[];
 }

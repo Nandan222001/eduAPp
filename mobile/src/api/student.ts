@@ -12,6 +12,10 @@ import {
   ChatMessage,
   StudyPlan,
   DailyBriefing,
+  GamificationDetails,
+  LeaderboardEntry,
+  Goal,
+  CreateGoalRequest,
 } from '../types/student';
 
 export interface DashboardData {
@@ -130,5 +134,33 @@ export const studentApi = {
 
   getDailyBriefing: async () => {
     return apiClient.get<DailyBriefing>('/api/v1/study-buddy/daily-briefing');
+  },
+
+  getGamificationDetails: async () => {
+    return apiClient.get<GamificationDetails>('/api/v1/gamification');
+  },
+
+  getLeaderboard: async (period: 'daily' | 'weekly' | 'monthly' | 'all-time' = 'weekly') => {
+    return apiClient.get<LeaderboardEntry[]>(`/api/v1/gamification/leaderboard?period=${period}`);
+  },
+
+  getGoals: async () => {
+    return apiClient.get<Goal[]>('/api/v1/goals');
+  },
+
+  createGoal: async (goal: CreateGoalRequest) => {
+    return apiClient.post<Goal>('/api/v1/goals', goal);
+  },
+
+  updateGoal: async (goalId: number, updates: Partial<CreateGoalRequest>) => {
+    return apiClient.put<Goal>(`/api/v1/goals/${goalId}`, updates);
+  },
+
+  deleteGoal: async (goalId: number) => {
+    return apiClient.delete(`/api/v1/goals/${goalId}`);
+  },
+
+  updateGoalProgress: async (goalId: number, progress: number) => {
+    return apiClient.patch<Goal>(`/api/v1/goals/${goalId}/progress`, { progress });
   },
 };

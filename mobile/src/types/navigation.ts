@@ -30,6 +30,8 @@ export type MainStackParamList = {
   Messages: undefined;
   ChildDetail: { childId: string };
   MessageDetail: { messageId: string };
+  Gamification: undefined;
+  Goals: undefined;
 };
 
 export type StudentTabParamList = {

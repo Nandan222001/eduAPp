@@ -16,6 +16,8 @@ import { AttendanceScreen } from '@screens/parent/AttendanceScreen';
 import { MessagesScreen } from '@screens/parent/MessagesScreen';
 import { ChildDetailScreen } from '@screens/parent/ChildDetailScreen';
 import { MessageDetailScreen } from '@screens/parent/MessageDetailScreen';
+import { GamificationScreen } from '@screens/student/GamificationScreen';
+import { GoalsScreen } from '@screens/student/GoalsScreen';
 import { useAppSelector } from '@store/hooks';
 import { UserRole } from '@types';
 
@@ -129,6 +131,16 @@ export const MainNavigator: React.FC = () => {
           name="MessageDetail"
           component={MessageDetailScreen}
           options={{ headerShown: true, title: 'Message' }}
+        />
+        <Stack.Screen
+          name="Gamification"
+          component={GamificationScreen}
+          options={{ headerShown: true, title: 'Gamification' }}
+        />
+        <Stack.Screen
+          name="Goals"
+          component={GoalsScreen}
+          options={{ headerShown: true, title: 'Goals' }}
         />
       </Stack.Navigator>
     </>

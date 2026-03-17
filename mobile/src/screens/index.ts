@@ -11,6 +11,8 @@ export { AssignmentDetailScreen } from './student/AssignmentDetailScreen';
 export { GradesScreen as StudentGradesScreen } from './student/GradesScreen';
 export { ScheduleScreen } from './student/ScheduleScreen';
 export { ProfileScreen as StudentProfileScreen } from './student/ProfileScreen';
+export { GamificationScreen } from './student/GamificationScreen';
+export { GoalsScreen } from './student/GoalsScreen';
 
 export { DashboardScreen as ParentDashboardScreen } from './parent/DashboardScreen';
 export { ChildrenScreen } from './parent/ChildrenScreen';

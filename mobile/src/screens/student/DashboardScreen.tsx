@@ -20,6 +20,8 @@ import { WeakAreasPanel } from '../../components/student/WeakAreasPanel';
 import { StreakTracker } from '../../components/student/StreakTracker';
 import { GamificationWidget } from '../../components/student/GamificationWidget';
 import { AIFeaturesQuickAccess } from '../../components/student/AIFeaturesQuickAccess';
+import { QuickGamificationWidget } from '../../components/student/QuickGamificationWidget';
+import { ActiveGoalsWidget } from '../../components/student/ActiveGoalsWidget';
 
 export const DashboardScreen: React.FC = () => {
   const [refreshing, setRefreshing] = React.useState(false);
@@ -114,7 +116,17 @@ export const DashboardScreen: React.FC = () => {
 
       <AIPredictionWidget prediction={dashboardData?.aiPredictions} isLoading={!dashboardData} />
 
+      <QuickGamificationWidget
+        points={dashboardData?.gamification?.totalPoints}
+        rank={dashboardData?.gamification?.rank}
+        activeGoals={dashboardData?.gamification?.activeGoalsCount}
+        streak={dashboardData?.gamification?.streak?.currentStreak}
+        isLoading={!dashboardData}
+      />
+
       <AIFeaturesQuickAccess />
+
+      <ActiveGoalsWidget />
 
       <UpcomingAssignmentsCard
         assignments={dashboardData?.upcomingAssignments}
