@@ -1,703 +1,743 @@
-import { useState, useRef, useEffect } from 'react';
-
-interface SpeechRecognitionEvent {
-  results: SpeechRecognitionResultList;
-}
-
-interface SpeechRecognitionResultList {
-  [index: number]: SpeechRecognitionResult;
-  length: number;
-}
-
-interface SpeechRecognitionResult {
-  [index: number]: SpeechRecognitionAlternative;
-  isFinal: boolean;
-  length: number;
-}
-
-interface SpeechRecognitionAlternative {
-  transcript: string;
-  confidence: number;
-}
+import { useState, useEffect, useRef } from 'react';
 import {
   Box,
-  Grid,
-  Paper,
   Typography,
+  Grid,
+  Card,
+  CardContent,
+  CardHeader,
+  Paper,
   TextField,
   IconButton,
   Avatar,
-  Fab,
-  alpha,
-  useTheme,
-  Card,
-  CardContent,
   Chip,
+  List,
+  ListItem,
+  Checkbox,
+  Button,
+  Divider,
+  LinearProgress,
+  useTheme,
+  alpha,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Fab,
+  Tooltip,
 } from '@mui/material';
-import { Send, Mic, MicOff, SmartToy, Person, Celebration } from '@mui/icons-material';
-import { DailyBriefing, StudyPlanCard, WeeklyReview, MoodCheckIn } from '@/components/studyBuddy';
 import {
-  ChatMessage,
-  DailyBriefing as DailyBriefingType,
-  DailyStudyPlan,
-  StudyTask,
-  WeeklyReview as WeeklyReviewType,
-  Achievement,
-  MoodCheckIn as MoodCheckInType,
-  VoiceInputState,
-} from '@/types/studyBuddy';
-import ConfettiCelebration from '@/components/common/ConfettiCelebration';
-import { format } from 'date-fns';
+  Send as SendIcon,
+  Mic as MicIcon,
+  WbSunny as MorningIcon,
+  Psychology as AIIcon,
+  TrendingUp as TrendingUpIcon,
+  ChatBubble as ChatIcon,
+  Timeline as TimelineIcon,
+  MoodBad as MoodBadIcon,
+  Mood as MoodIcon,
+  SentimentSatisfied as MoodNeutralIcon,
+  SentimentVeryDissatisfied as MoodVeryBadIcon,
+  SentimentVerySatisfied as MoodVeryGoodIcon,
+} from '@mui/icons-material';
+import { Line } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip as ChartTooltip,
+  Legend,
+} from 'chart.js';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  ChartTooltip,
+  Legend
+);
+
+interface Message {
+  id: string;
+  text: string;
+  sender: 'user' | 'ai';
+  timestamp: Date;
+}
+
+interface StudyTask {
+  id: string;
+  time: string;
+  subject: string;
+  task: string;
+  duration: string;
+  completed: boolean;
+}
+
+interface Achievement {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+}
+
+type Mood = 'very_bad' | 'bad' | 'neutral' | 'good' | 'very_good';
 
 export default function AIStudyBuddy() {
   const theme = useTheme();
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [inputMessage, setInputMessage] = useState('');
-  const [showMoodCheckIn, setShowMoodCheckIn] = useState(false);
-  const [recentAchievement, setRecentAchievement] = useState<Achievement | null>(null);
-  const [showConfetti, setShowConfetti] = useState(false);
-  const [voiceInput, setVoiceInput] = useState<VoiceInputState>({
-    isListening: false,
-    transcript: '',
-    isSupported: 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window,
-  });
-
-  const recognitionRef = useRef<{
-    continuous: boolean;
-    interimResults: boolean;
-    onresult: ((event: SpeechRecognitionEvent) => void) | null;
-    onerror: (() => void) | null;
-    onend: (() => void) | null;
-    start: () => void;
-    stop: () => void;
-  } | null>(null);
-
-  const mockBriefing: DailyBriefingType = {
-    date: new Date(),
-    schedule: [
-      {
-        id: '1',
-        time: '09:00 AM',
-        subject: 'Mathematics - Calculus',
-        type: 'class',
-        status: 'upcoming',
-      },
-      {
-        id: '2',
-        time: '11:00 AM',
-        subject: 'Physics - Mechanics',
-        type: 'class',
-        status: 'upcoming',
-      },
-      { id: '3', time: '02:00 PM', subject: 'Chemistry Quiz', type: 'exam', status: 'upcoming' },
-      {
-        id: '4',
-        time: '04:00 PM',
-        subject: 'English Essay',
-        type: 'assignment',
-        status: 'upcoming',
-      },
-    ],
-    weakTopics: [
-      { id: '1', subject: 'Mathematics', topic: 'Integration', score: 65, trend: 'improving' },
-      { id: '2', subject: 'Physics', topic: 'Projectile Motion', score: 58, trend: 'declining' },
-      { id: '3', subject: 'Chemistry', topic: 'Organic Reactions', score: 72, trend: 'stable' },
-    ],
-    examReadiness: [
-      { subject: 'Mathematics', readiness: 85, confidence: 78, lastPracticed: '2 hours ago' },
-      { subject: 'Physics', readiness: 72, confidence: 65, lastPracticed: '1 day ago' },
-      { subject: 'Chemistry', readiness: 68, confidence: 70, lastPracticed: '3 days ago' },
-    ],
-    motivationalQuote: 'The expert in anything was once a beginner. Keep going!',
-  };
-
-  const mockStudyPlan: DailyStudyPlan = {
-    date: new Date(),
-    tasks: [
-      {
-        id: '1',
-        title: 'Review Integration Formulas',
-        subject: 'Mathematics',
-        duration: 45,
-        startTime: '05:00 PM',
-        endTime: '05:45 PM',
-        completed: false,
-        priority: 'high',
-        type: 'revision',
-      },
-      {
-        id: '2',
-        title: 'Practice Physics Problems',
-        subject: 'Physics',
-        duration: 60,
-        startTime: '06:00 PM',
-        endTime: '07:00 PM',
-        completed: false,
-        priority: 'high',
-        type: 'practice',
-      },
-      {
-        id: '3',
-        title: 'Read Chemistry Chapter 5',
-        subject: 'Chemistry',
-        duration: 30,
-        startTime: '07:15 PM',
-        endTime: '07:45 PM',
-        completed: false,
-        priority: 'medium',
-        type: 'reading',
-      },
-      {
-        id: '4',
-        title: 'Complete English Essay Draft',
-        subject: 'English',
-        duration: 45,
-        startTime: '08:00 PM',
-        endTime: '08:45 PM',
-        completed: false,
-        priority: 'high',
-        type: 'assignment',
-      },
-    ],
-    totalDuration: 180,
-    completedDuration: 0,
-    productivity: 85,
-  };
-
-  const mockWeeklyReview: WeeklyReviewType = {
-    weekStart: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000),
-    weekEnd: new Date(),
-    totalStudyHours: 24.5,
-    dailySessions: [
-      {
-        date: format(new Date(Date.now() - 6 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
-        hours: 3.5,
-        subjects: [],
-      },
-      {
-        date: format(new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
-        hours: 4.2,
-        subjects: [],
-      },
-      {
-        date: format(new Date(Date.now() - 4 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
-        hours: 2.8,
-        subjects: [],
-      },
-      {
-        date: format(new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
-        hours: 3.9,
-        subjects: [],
-      },
-      {
-        date: format(new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
-        hours: 4.5,
-        subjects: [],
-      },
-      {
-        date: format(new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
-        hours: 3.2,
-        subjects: [],
-      },
-      { date: format(new Date(), 'yyyy-MM-dd'), hours: 2.4, subjects: [] },
-    ],
-    performance: [
-      { subject: 'Mathematics', currentScore: 85, previousScore: 78, delta: 7, trend: 'up' },
-      { subject: 'Physics', currentScore: 72, previousScore: 75, delta: -3, trend: 'down' },
-      { subject: 'Chemistry', currentScore: 80, previousScore: 80, delta: 0, trend: 'stable' },
-      { subject: 'English', currentScore: 88, previousScore: 82, delta: 6, trend: 'up' },
-    ],
-    achievementsEarned: 5,
-    streakDays: 12,
-    topSubjects: ['English', 'Mathematics', 'Chemistry'],
-    areasToImprove: ['Physics - Mechanics', 'Chemistry - Organic'],
-  };
-
-  const [studyPlan, setStudyPlan] = useState(mockStudyPlan);
-
-  useEffect(() => {
-    const initialMessage: ChatMessage = {
+  const [messages, setMessages] = useState<Message[]>([
+    {
       id: '1',
-      content:
-        "Hi! I'm your AI Study Buddy. I'm here to help you stay on track with your studies. How can I assist you today?",
-      sender: 'bot',
+      text: "Hello! I'm your AI Study Buddy. How can I help you today?",
+      sender: 'ai',
       timestamp: new Date(),
-    };
-    setMessages([initialMessage]);
-  }, []);
+    },
+  ]);
+  const [inputText, setInputText] = useState('');
+  const [isListening, setIsListening] = useState(false);
+  const [studyTasks, setStudyTasks] = useState<StudyTask[]>([
+    {
+      id: '1',
+      time: '09:00 AM',
+      subject: 'Mathematics',
+      task: 'Complete Chapter 5 exercises',
+      duration: '45 min',
+      completed: false,
+    },
+    {
+      id: '2',
+      time: '10:00 AM',
+      subject: 'Physics',
+      task: "Watch lecture on Newton's Laws",
+      duration: '30 min',
+      completed: false,
+    },
+    {
+      id: '3',
+      time: '11:00 AM',
+      subject: 'Chemistry',
+      task: 'Practice organic reactions',
+      duration: '60 min',
+      completed: false,
+    },
+    {
+      id: '4',
+      time: '02:00 PM',
+      subject: 'English',
+      task: 'Read chapters 3-4',
+      duration: '40 min',
+      completed: false,
+    },
+    {
+      id: '5',
+      time: '03:30 PM',
+      subject: 'Biology',
+      task: 'Review cell structure notes',
+      duration: '30 min',
+      completed: false,
+    },
+  ]);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [recentAchievement, setRecentAchievement] = useState<Achievement | null>(null);
+  const [showMoodDialog, setShowMoodDialog] = useState(false);
+  const [currentMood, setCurrentMood] = useState<Mood>('neutral');
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    scrollToBottom();
   }, [messages]);
 
   useEffect(() => {
-    if (!voiceInput.isSupported) return;
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition =
+        (window as { SpeechRecognition?: typeof window.SpeechRecognition }).SpeechRecognition ||
+        (window as { webkitSpeechRecognition?: typeof window.SpeechRecognition })
+          .webkitSpeechRecognition;
+      if (!SpeechRecognition) return;
 
-    const SpeechRecognition =
-      (window as Window & { SpeechRecognition?: unknown; webkitSpeechRecognition?: unknown })
-        .SpeechRecognition ||
-      (window as Window & { webkitSpeechRecognition?: unknown }).webkitSpeechRecognition;
-    if (!SpeechRecognition) return;
-    recognitionRef.current = new (SpeechRecognition as new () => unknown)() as {
-      continuous: boolean;
-      interimResults: boolean;
-      onresult: ((event: SpeechRecognitionEvent) => void) | null;
-      onerror: (() => void) | null;
-      onend: (() => void) | null;
-      start: () => void;
-      stop: () => void;
-    };
-    recognitionRef.current.continuous = false;
-    recognitionRef.current.interimResults = true;
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.interimResults = false;
 
-    recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
-      const transcript = Array.from(event.results)
-        .map((result) => result[0])
-        .map((result) => result.transcript)
-        .join('');
+      recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
+        const transcript = event.results[0][0].transcript;
+        setInputText(transcript);
+        setIsListening(false);
+      };
 
-      setVoiceInput((prev) => ({ ...prev, transcript }));
+      recognitionRef.current.onerror = () => {
+        setIsListening(false);
+      };
 
-      if (event.results[0].isFinal) {
-        setInputMessage(transcript);
-      }
-    };
-
-    recognitionRef.current.onerror = () => {
-      setVoiceInput((prev) => ({ ...prev, isListening: false }));
-    };
-
-    recognitionRef.current.onend = () => {
-      setVoiceInput((prev) => ({ ...prev, isListening: false }));
-    };
-
-    return () => {
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-      }
-    };
-  }, [voiceInput.isSupported]);
-
-  const toggleVoiceInput = () => {
-    if (!recognitionRef.current) return;
-
-    if (voiceInput.isListening) {
-      recognitionRef.current.stop();
-      setVoiceInput((prev) => ({ ...prev, isListening: false }));
-    } else {
-      setVoiceInput((prev) => ({ ...prev, transcript: '' }));
-      recognitionRef.current.start();
-      setVoiceInput((prev) => ({ ...prev, isListening: true }));
+      recognitionRef.current.onend = () => {
+        setIsListening(false);
+      };
     }
+  }, []);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   const handleSendMessage = () => {
-    if (!inputMessage.trim()) return;
+    if (inputText.trim() === '') return;
 
-    const userMessage: ChatMessage = {
+    const newMessage: Message = {
       id: Date.now().toString(),
-      content: inputMessage,
+      text: inputText,
       sender: 'user',
       timestamp: new Date(),
     };
 
-    setMessages((prev) => [...prev, userMessage]);
-    setInputMessage('');
-    setVoiceInput((prev) => ({ ...prev, transcript: '' }));
+    setMessages((prev) => [...prev, newMessage]);
+    setInputText('');
 
     setTimeout(() => {
-      const botMessage: ChatMessage = {
+      const aiResponse: Message = {
         id: (Date.now() + 1).toString(),
-        content: getBotResponse(inputMessage),
-        sender: 'bot',
+        text: generateAIResponse(inputText),
+        sender: 'ai',
         timestamp: new Date(),
       };
-      setMessages((prev) => [...prev, botMessage]);
+      setMessages((prev) => [...prev, aiResponse]);
     }, 1000);
   };
 
-  const getBotResponse = (message: string): string => {
-    const lowerMessage = message.toLowerCase();
+  const generateAIResponse = (input: string): string => {
+    const lowerInput = input.toLowerCase();
+    if (lowerInput.includes('help') || lowerInput.includes('stuck')) {
+      return "I'm here to help! What specific topic are you having trouble with? I can explain concepts, provide examples, or suggest study strategies.";
+    }
+    if (lowerInput.includes('math') || lowerInput.includes('equation')) {
+      return "Let's break down the problem step by step. First, identify what you know and what you need to find. Then we can work through it together.";
+    }
+    if (lowerInput.includes('exam') || lowerInput.includes('test')) {
+      return 'Preparing for an exam? I recommend creating a study schedule, reviewing past papers, and focusing on areas where you need more practice. Would you like me to create a custom study plan?';
+    }
+    return "That's a great question! Let me help you understand this better. Could you provide more details about what you'd like to learn?";
+  };
 
-    if (lowerMessage.includes('help') || lowerMessage.includes('how')) {
-      return 'I can help you with:\n• Tracking your study schedule\n• Reviewing weak topics\n• Setting study goals\n• Analyzing your performance\n• Providing study tips\n\nWhat would you like to focus on?';
-    }
-    if (lowerMessage.includes('weak') || lowerMessage.includes('struggle')) {
-      return "I see you're struggling with Integration and Projectile Motion. Let me create a focused study plan for these topics. Would you like to start with a 30-minute session on Integration?";
-    }
-    if (lowerMessage.includes('ready') || lowerMessage.includes('exam')) {
-      return "Based on your recent performance, you're 85% ready for Mathematics! Your Chemistry exam readiness is at 68%. I recommend spending more time on Organic Reactions. Would you like specific practice problems?";
-    }
-    if (lowerMessage.includes('motivate') || lowerMessage.includes('tired')) {
-      return "Remember: Every expert was once a beginner! You've maintained a 12-day study streak and earned 5 achievements this week. That's amazing progress! Take a short break if needed, then let's tackle that next topic together. 💪";
+  const handleVoiceInput = () => {
+    if (!recognitionRef.current) {
+      alert('Voice recognition is not supported in your browser.');
+      return;
     }
 
-    return "That's a great question! I'm here to support your learning journey. Feel free to ask me about your study plan, performance analytics, or any subject you need help with.";
+    if (isListening) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    } else {
+      recognitionRef.current.start();
+      setIsListening(true);
+    }
   };
 
   const handleTaskToggle = (taskId: string) => {
-    setStudyPlan((prev) => {
-      const updatedTasks = prev.tasks.map((task) => {
-        if (task.id === taskId) {
-          const newCompleted = !task.completed;
-
-          if (newCompleted && !task.completed) {
-            checkForAchievements(task);
-          }
-
-          return { ...task, completed: newCompleted };
+    setStudyTasks((prev) =>
+      prev.map((task) => {
+        if (task.id === taskId && !task.completed) {
+          triggerAchievement();
+          return { ...task, completed: true };
         }
         return task;
-      });
-
-      const completedDuration = updatedTasks.reduce(
-        (sum, task) => sum + (task.completed ? task.duration : 0),
-        0
-      );
-
-      return {
-        ...prev,
-        tasks: updatedTasks,
-        completedDuration,
-      };
-    });
+      })
+    );
   };
 
-  const checkForAchievements = (_task: StudyTask) => {
-    const completedTasks = studyPlan.tasks.filter((t) => t.completed).length;
-
-    if (completedTasks === 0) {
-      const achievement: Achievement = {
-        id: Date.now().toString(),
-        title: 'First Step! 🎯',
-        description: 'Completed your first study task today!',
+  const triggerAchievement = () => {
+    const achievements: Achievement[] = [
+      {
+        id: '1',
+        title: 'Task Master!',
+        description: 'Completed a study task',
         icon: '🎯',
-        timestamp: new Date(),
-        points: 10,
-        category: 'completion',
-      };
-      showAchievement(achievement);
-    } else if (completedTasks === studyPlan.tasks.length - 1) {
-      const achievement: Achievement = {
-        id: Date.now().toString(),
-        title: 'Task Master! 🏆',
-        description: 'Completed all study tasks for today!',
+      },
+      {
+        id: '2',
+        title: 'Consistent Learner',
+        description: 'Stayed on track with your schedule',
+        icon: '⭐',
+      },
+      {
+        id: '3',
+        title: 'Focus Champion',
+        description: 'Completed a focused study session',
         icon: '🏆',
-        timestamp: new Date(),
-        points: 50,
-        category: 'completion',
-      };
-      showAchievement(achievement);
-    }
-  };
+      },
+    ];
 
-  const showAchievement = (achievement: Achievement) => {
-    setRecentAchievement(achievement);
+    const randomAchievement = achievements[Math.floor(Math.random() * achievements.length)];
+    setRecentAchievement(randomAchievement);
     setShowConfetti(true);
+
     setTimeout(() => {
       setShowConfetti(false);
-      setTimeout(() => setRecentAchievement(null), 2000);
+      setRecentAchievement(null);
     }, 5000);
   };
 
-  const handleStartTask = (taskId: string) => {
-    const task = studyPlan.tasks.find((t) => t.id === taskId);
-    if (task) {
-      const botMessage: ChatMessage = {
-        id: Date.now().toString(),
-        content: `Great! Let's start "${task.title}". I'll set a timer for ${task.duration} minutes. Focus mode activated! 🎯`,
-        sender: 'bot',
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, botMessage]);
+  const getMoodIcon = (mood: Mood) => {
+    switch (mood) {
+      case 'very_bad':
+        return <MoodVeryBadIcon sx={{ fontSize: 48 }} />;
+      case 'bad':
+        return <MoodBadIcon sx={{ fontSize: 48 }} />;
+      case 'neutral':
+        return <MoodNeutralIcon sx={{ fontSize: 48 }} />;
+      case 'good':
+        return <MoodIcon sx={{ fontSize: 48 }} />;
+      case 'very_good':
+        return <MoodVeryGoodIcon sx={{ fontSize: 48 }} />;
     }
   };
 
-  const handleMoodSubmit = (mood: Omit<MoodCheckInType, 'id' | 'timestamp'>) => {
-    const moodEmoji = {
-      excited: '🤩',
-      happy: '😊',
-      neutral: '😐',
-      tired: '😴',
-      stressed: '😰',
-      confused: '😕',
-    }[mood.mood];
-
-    const botMessage: ChatMessage = {
-      id: Date.now().toString(),
-      content: `Thanks for checking in! I see you're feeling ${mood.mood} ${moodEmoji}. ${mood.energyLevel && mood.energyLevel < 50 ? 'Consider taking a short break and staying hydrated! ' : ''}Let me adjust your study plan to match your energy level.`,
-      sender: 'bot',
-      timestamp: new Date(),
-    };
-    setMessages((prev) => [...prev, botMessage]);
-    setShowMoodCheckIn(false);
+  const weeklyData = {
+    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    datasets: [
+      {
+        label: 'Study Hours',
+        data: [2.5, 3.0, 2.0, 4.0, 3.5, 5.0, 4.5],
+        borderColor: theme.palette.primary.main,
+        backgroundColor: alpha(theme.palette.primary.main, 0.1),
+        tension: 0.4,
+      },
+      {
+        label: 'Target Hours',
+        data: [3, 3, 3, 3, 3, 3, 3],
+        borderColor: theme.palette.success.main,
+        backgroundColor: alpha(theme.palette.success.main, 0.1),
+        borderDash: [5, 5],
+        tension: 0.4,
+      },
+    ],
   };
+
+  const completedTasks = studyTasks.filter((t) => t.completed).length;
+  const totalTasks = studyTasks.length;
+  const progressPercentage = (completedTasks / totalTasks) * 100;
 
   return (
     <Box>
-      {showConfetti && <ConfettiCelebration active={showConfetti} />}
-
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h4" fontWeight={700} gutterBottom>
-          AI Study Buddy 🤖
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
-          Your personalized AI assistant for academic success
-        </Typography>
-      </Box>
+      <Typography variant="h4" fontWeight={700} gutterBottom>
+        AI Study Buddy
+      </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+        Your personalized learning companion
+      </Typography>
 
       <Grid container spacing={3}>
-        <Grid item xs={12} lg={4}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            <DailyBriefing briefing={mockBriefing} />
-
-            {!showMoodCheckIn && (
-              <Card
-                elevation={2}
-                sx={{
-                  borderRadius: 3,
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease',
-                  '&:hover': {
-                    transform: 'translateY(-4px)',
-                    boxShadow: theme.shadows[8],
-                  },
-                }}
-                onClick={() => setShowMoodCheckIn(true)}
-              >
-                <CardContent sx={{ textAlign: 'center', py: 3 }}>
-                  <Typography variant="h6" fontWeight={600} gutterBottom>
-                    How are you feeling today?
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Click to check in
-                  </Typography>
-                </CardContent>
-              </Card>
-            )}
-
-            {showMoodCheckIn && (
-              <MoodCheckIn onSubmit={handleMoodSubmit} onClose={() => setShowMoodCheckIn(false)} />
-            )}
-          </Box>
-        </Grid>
-
-        <Grid item xs={12} lg={4}>
-          <Paper
-            elevation={2}
-            sx={{
-              height: '700px',
-              display: 'flex',
-              flexDirection: 'column',
-              borderRadius: 3,
-              overflow: 'hidden',
-            }}
-          >
-            <Box
-              sx={{
-                p: 2,
-                bgcolor: theme.palette.primary.main,
-                color: 'white',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 2,
-              }}
-            >
-              <Avatar sx={{ bgcolor: alpha('#fff', 0.2) }}>
-                <SmartToy />
-              </Avatar>
-              <Box>
-                <Typography variant="h6" fontWeight={700}>
-                  Study Buddy Chat
-                </Typography>
-                <Typography variant="caption" sx={{ opacity: 0.9 }}>
-                  Always here to help
-                </Typography>
-              </Box>
-            </Box>
-
-            <Box
-              sx={{
-                flexGrow: 1,
-                overflowY: 'auto',
-                p: 2,
-                bgcolor: theme.palette.grey[50],
-              }}
-            >
-              {messages.map((message) => (
-                <Box
-                  key={message.id}
-                  sx={{
-                    display: 'flex',
-                    justifyContent: message.sender === 'user' ? 'flex-end' : 'flex-start',
-                    mb: 2,
-                  }}
-                >
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      gap: 1,
-                      maxWidth: '80%',
-                      flexDirection: message.sender === 'user' ? 'row-reverse' : 'row',
-                    }}
-                  >
-                    <Avatar
+        <Grid item xs={12} md={8}>
+          <Card elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, mb: 3 }}>
+            <CardHeader
+              title="Morning Briefing"
+              avatar={
+                <Avatar sx={{ bgcolor: alpha(theme.palette.warning.main, 0.1) }}>
+                  <MorningIcon sx={{ color: theme.palette.warning.main }} />
+                </Avatar>
+              }
+            />
+            <CardContent>
+              <Typography variant="body1" gutterBottom>
+                Good morning! Here&apos;s your study overview for today:
+              </Typography>
+              <Box sx={{ mt: 2 }}>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={4}>
+                    <Paper
+                      elevation={0}
                       sx={{
-                        width: 32,
-                        height: 32,
-                        bgcolor:
-                          message.sender === 'user'
-                            ? theme.palette.secondary.main
-                            : theme.palette.primary.main,
+                        p: 2,
+                        textAlign: 'center',
+                        bgcolor: alpha(theme.palette.primary.main, 0.05),
                       }}
                     >
-                      {message.sender === 'user' ? (
-                        <Person fontSize="small" />
-                      ) : (
-                        <SmartToy fontSize="small" />
-                      )}
-                    </Avatar>
-                    <Box>
-                      <Paper
-                        elevation={1}
-                        sx={{
-                          p: 1.5,
-                          borderRadius: 2,
-                          bgcolor:
-                            message.sender === 'user' ? theme.palette.secondary.main : 'white',
-                          color: message.sender === 'user' ? 'white' : theme.palette.text.primary,
-                          borderTopRightRadius: message.sender === 'user' ? 0 : undefined,
-                          borderTopLeftRadius: message.sender === 'bot' ? 0 : undefined,
-                        }}
-                      >
-                        <Typography variant="body2" sx={{ whiteSpace: 'pre-line' }}>
-                          {message.content}
-                        </Typography>
-                      </Paper>
+                      <Typography variant="h4" fontWeight={700} color="primary">
+                        {totalTasks}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Tasks Scheduled
+                      </Typography>
+                    </Paper>
+                  </Grid>
+                  <Grid item xs={12} sm={4}>
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 2,
+                        textAlign: 'center',
+                        bgcolor: alpha(theme.palette.success.main, 0.05),
+                      }}
+                    >
+                      <Typography variant="h4" fontWeight={700} color="success.main">
+                        3.5hrs
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Study Time
+                      </Typography>
+                    </Paper>
+                  </Grid>
+                  <Grid item xs={12} sm={4}>
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 2,
+                        textAlign: 'center',
+                        bgcolor: alpha(theme.palette.info.main, 0.05),
+                      }}
+                    >
+                      <Typography variant="h4" fontWeight={700} color="info.main">
+                        2
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Quizzes Due
+                      </Typography>
+                    </Paper>
+                  </Grid>
+                </Grid>
+                <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={<MoodIcon />}
+                    onClick={() => setShowMoodDialog(true)}
+                  >
+                    How are you feeling?
+                  </Button>
+                  <Chip
+                    label={`Current mood: ${currentMood.replace('_', ' ')}`}
+                    size="small"
+                    color="primary"
+                    variant="outlined"
+                  />
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+
+          <Card elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, height: 600 }}>
+            <CardHeader
+              title="Chat with AI Buddy"
+              avatar={
+                <Avatar sx={{ bgcolor: alpha(theme.palette.primary.main, 0.1) }}>
+                  <AIIcon sx={{ color: theme.palette.primary.main }} />
+                </Avatar>
+              }
+            />
+            <CardContent sx={{ height: 'calc(100% - 140px)', overflow: 'auto', pb: 0 }}>
+              <List sx={{ pb: 2 }}>
+                {messages.map((message) => (
+                  <ListItem
+                    key={message.id}
+                    sx={{
+                      justifyContent: message.sender === 'user' ? 'flex-end' : 'flex-start',
+                      px: 0,
+                    }}
+                  >
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 2,
+                        maxWidth: '70%',
+                        bgcolor:
+                          message.sender === 'user'
+                            ? theme.palette.primary.main
+                            : alpha(theme.palette.grey[500], 0.1),
+                        color: message.sender === 'user' ? 'white' : 'text.primary',
+                      }}
+                    >
+                      <Typography variant="body2">{message.text}</Typography>
                       <Typography
                         variant="caption"
-                        color="text.secondary"
-                        sx={{ mt: 0.5, display: 'block' }}
+                        sx={{
+                          mt: 0.5,
+                          display: 'block',
+                          opacity: 0.7,
+                        }}
                       >
-                        {format(message.timestamp, 'HH:mm')}
+                        {message.timestamp.toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
                       </Typography>
-                    </Box>
-                  </Box>
-                </Box>
-              ))}
-              <div ref={messagesEndRef} />
-            </Box>
-
-            <Box sx={{ p: 2, bgcolor: 'white', borderTop: `1px solid ${theme.palette.divider}` }}>
-              {voiceInput.isListening && (
-                <Chip
-                  label={voiceInput.transcript || 'Listening...'}
-                  size="small"
-                  color="error"
-                  sx={{ mb: 1, animation: 'pulse 1.5s infinite' }}
-                />
-              )}
-              <Box sx={{ display: 'flex', gap: 1 }}>
-                <TextField
-                  fullWidth
-                  placeholder="Ask me anything about your studies..."
-                  value={inputMessage}
-                  onChange={(e) => setInputMessage(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                  variant="outlined"
-                  size="small"
+                    </Paper>
+                  </ListItem>
+                ))}
+                <div ref={messagesEndRef} />
+              </List>
+            </CardContent>
+            <Divider />
+            <Box sx={{ p: 2, display: 'flex', gap: 1 }}>
+              <TextField
+                fullWidth
+                placeholder="Ask me anything about your studies..."
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    handleSendMessage();
+                  }
+                }}
+                size="small"
+              />
+              <Tooltip title="Voice input">
+                <IconButton
+                  color={isListening ? 'error' : 'default'}
+                  onClick={handleVoiceInput}
                   sx={{
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: 3,
+                    bgcolor: isListening ? alpha(theme.palette.error.main, 0.1) : 'transparent',
+                  }}
+                >
+                  <MicIcon />
+                </IconButton>
+              </Tooltip>
+              <IconButton color="primary" onClick={handleSendMessage}>
+                <SendIcon />
+              </IconButton>
+            </Box>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} md={4}>
+          <Card elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, mb: 3 }}>
+            <CardHeader
+              title="Today's Study Plan"
+              avatar={
+                <Avatar sx={{ bgcolor: alpha(theme.palette.info.main, 0.1) }}>
+                  <TimelineIcon sx={{ color: theme.palette.info.main }} />
+                </Avatar>
+              }
+              subheader={`${completedTasks}/${totalTasks} tasks completed`}
+            />
+            <CardContent sx={{ pt: 0 }}>
+              <Box sx={{ mb: 2 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                  <Typography variant="caption" color="text.secondary">
+                    Progress
+                  </Typography>
+                  <Typography variant="caption" fontWeight={600}>
+                    {progressPercentage.toFixed(0)}%
+                  </Typography>
+                </Box>
+                <LinearProgress
+                  variant="determinate"
+                  value={progressPercentage}
+                  sx={{
+                    height: 8,
+                    borderRadius: 4,
+                    bgcolor: alpha(theme.palette.primary.main, 0.1),
+                  }}
+                />
+              </Box>
+              <List sx={{ py: 0, maxHeight: 400, overflow: 'auto' }}>
+                {studyTasks.map((task, index) => (
+                  <Box key={task.id}>
+                    <ListItem
+                      sx={{
+                        px: 0,
+                        opacity: task.completed ? 0.6 : 1,
+                        textDecoration: task.completed ? 'line-through' : 'none',
+                      }}
+                    >
+                      <Checkbox
+                        checked={task.completed}
+                        onChange={() => handleTaskToggle(task.id)}
+                        sx={{ mr: 1 }}
+                      />
+                      <Box sx={{ flex: 1 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                          <Typography variant="body2" fontWeight={600}>
+                            {task.time}
+                          </Typography>
+                          <Chip label={task.subject} size="small" sx={{ height: 20 }} />
+                        </Box>
+                        <Typography variant="body2" color="text.secondary">
+                          {task.task}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Duration: {task.duration}
+                        </Typography>
+                      </Box>
+                    </ListItem>
+                    {index < studyTasks.length - 1 && <Divider />}
+                  </Box>
+                ))}
+              </List>
+            </CardContent>
+          </Card>
+
+          <Card elevation={0} sx={{ border: `1px solid ${theme.palette.divider}` }}>
+            <CardHeader
+              title="Weekly Review"
+              avatar={
+                <Avatar sx={{ bgcolor: alpha(theme.palette.success.main, 0.1) }}>
+                  <TrendingUpIcon sx={{ color: theme.palette.success.main }} />
+                </Avatar>
+              }
+            />
+            <CardContent>
+              <Box sx={{ height: 250 }}>
+                <Line
+                  data={weeklyData}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                      legend: {
+                        position: 'bottom',
+                      },
+                    },
+                    scales: {
+                      y: {
+                        beginAtZero: true,
+                        title: {
+                          display: true,
+                          text: 'Hours',
+                        },
+                      },
                     },
                   }}
                 />
-                {voiceInput.isSupported && (
-                  <IconButton
-                    onClick={toggleVoiceInput}
-                    color={voiceInput.isListening ? 'error' : 'default'}
-                    sx={{
-                      bgcolor: voiceInput.isListening
-                        ? alpha(theme.palette.error.main, 0.1)
-                        : undefined,
-                    }}
-                  >
-                    {voiceInput.isListening ? <MicOff /> : <Mic />}
-                  </IconButton>
-                )}
-                <IconButton onClick={handleSendMessage} color="primary">
-                  <Send />
-                </IconButton>
               </Box>
-            </Box>
-          </Paper>
-        </Grid>
-
-        <Grid item xs={12} lg={4}>
-          <StudyPlanCard
-            plan={studyPlan}
-            onTaskToggle={handleTaskToggle}
-            onStartTask={handleStartTask}
-          />
-        </Grid>
-
-        <Grid item xs={12}>
-          <WeeklyReview review={mockWeeklyReview} />
+              <Box sx={{ mt: 2 }}>
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                  <strong>This week:</strong> You studied for 24.5 hours total. Great job staying
+                  above target most days! 🎉
+                </Typography>
+              </Box>
+            </CardContent>
+          </Card>
         </Grid>
       </Grid>
 
-      {recentAchievement && (
-        <Fab
-          variant="extended"
+      {showConfetti && recentAchievement && (
+        <Box
           sx={{
             position: 'fixed',
-            bottom: 24,
-            right: 24,
-            bgcolor: theme.palette.success.main,
-            color: 'white',
-            px: 3,
-            py: 2,
-            animation: 'slideIn 0.5s ease-out',
-            '@keyframes slideIn': {
-              from: {
-                transform: 'translateY(100px)',
-                opacity: 0,
-              },
-              to: {
-                transform: 'translateY(0)',
-                opacity: 1,
-              },
-            },
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            zIndex: 9999,
+            textAlign: 'center',
           }}
         >
-          <Celebration sx={{ mr: 1 }} />
-          <Box>
-            <Typography variant="body2" fontWeight={700}>
+          <Paper
+            elevation={8}
+            sx={{
+              p: 4,
+              bgcolor: 'white',
+              borderRadius: 4,
+              border: `3px solid ${theme.palette.warning.main}`,
+              animation: 'bounce 0.5s ease-in-out',
+              '@keyframes bounce': {
+                '0%, 100%': { transform: 'scale(1)' },
+                '50%': { transform: 'scale(1.1)' },
+              },
+            }}
+          >
+            <Typography variant="h3" sx={{ mb: 2 }}>
+              {recentAchievement.icon}
+            </Typography>
+            <Typography variant="h5" fontWeight={700} gutterBottom>
               {recentAchievement.title}
             </Typography>
-            <Typography variant="caption">{recentAchievement.description}</Typography>
+            <Typography variant="body2" color="text.secondary">
+              {recentAchievement.description}
+            </Typography>
+          </Paper>
+          <Box
+            sx={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              pointerEvents: 'none',
+              zIndex: 9998,
+            }}
+          >
+            {[...Array(50)].map((_, i) => (
+              <Box
+                key={i}
+                sx={{
+                  position: 'absolute',
+                  top: `${Math.random() * 100}%`,
+                  left: `${Math.random() * 100}%`,
+                  fontSize: `${Math.random() * 20 + 10}px`,
+                  animation: `fall ${Math.random() * 3 + 2}s linear forwards`,
+                  '@keyframes fall': {
+                    to: {
+                      transform: 'translateY(100vh) rotate(360deg)',
+                      opacity: 0,
+                    },
+                  },
+                }}
+              >
+                🎉
+              </Box>
+            ))}
           </Box>
-          <Chip
-            label={`+${recentAchievement.points}`}
-            size="small"
-            sx={{ ml: 2, bgcolor: alpha('#fff', 0.2), color: 'white' }}
-          />
-        </Fab>
+        </Box>
       )}
 
-      <style>
-        {`
-          @keyframes pulse {
-            0%, 100% {
-              opacity: 1;
-            }
-            50% {
-              opacity: 0.5;
-            }
-          }
-        `}
-      </style>
+      <Dialog open={showMoodDialog} onClose={() => setShowMoodDialog(false)}>
+        <DialogTitle>How are you feeling today?</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            Your mood helps us personalize your study experience
+          </Typography>
+          <Grid container spacing={2} justifyContent="center">
+            {(['very_bad', 'bad', 'neutral', 'good', 'very_good'] as Mood[]).map((mood) => (
+              <Grid item key={mood}>
+                <Tooltip title={mood.replace('_', ' ')}>
+                  <IconButton
+                    onClick={() => {
+                      setCurrentMood(mood);
+                      setShowMoodDialog(false);
+                    }}
+                    sx={{
+                      border: `2px solid ${currentMood === mood ? theme.palette.primary.main : 'transparent'}`,
+                      bgcolor:
+                        currentMood === mood
+                          ? alpha(theme.palette.primary.main, 0.1)
+                          : 'transparent',
+                      '&:hover': {
+                        bgcolor: alpha(theme.palette.primary.main, 0.05),
+                      },
+                    }}
+                  >
+                    {getMoodIcon(mood)}
+                  </IconButton>
+                </Tooltip>
+              </Grid>
+            ))}
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowMoodDialog(false)}>Cancel</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Fab
+        color="primary"
+        aria-label="chat"
+        sx={{
+          position: 'fixed',
+          bottom: 24,
+          right: 24,
+          display: { xs: 'flex', md: 'none' },
+        }}
+        onClick={() => {
+          const chatElement = document.querySelector('[data-chat-card]');
+          chatElement?.scrollIntoView({ behavior: 'smooth' });
+        }}
+      >
+        <ChatIcon />
+      </Fab>
     </Box>
   );
 }
