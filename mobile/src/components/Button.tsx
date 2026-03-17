@@ -5,44 +5,59 @@ import {
   StyleSheet,
   ActivityIndicator,
   TouchableOpacityProps,
+  ViewStyle,
+  TextStyle,
 } from 'react-native';
-import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS } from '@constants';
 
 interface ButtonProps extends TouchableOpacityProps {
   title: string;
+  onPress: () => void;
+  loading?: boolean;
   variant?: 'primary' | 'secondary' | 'outline';
   size?: 'small' | 'medium' | 'large';
-  loading?: boolean;
-  fullWidth?: boolean;
+  style?: ViewStyle;
+  textStyle?: TextStyle;
 }
 
 export const Button: React.FC<ButtonProps> = ({
   title,
+  onPress,
+  loading = false,
   variant = 'primary',
   size = 'medium',
-  loading = false,
-  fullWidth = false,
   disabled,
   style,
+  textStyle,
   ...props
 }) => {
+  const buttonStyles = [
+    styles.button,
+    styles[`button_${variant}`],
+    styles[`button_${size}`],
+    disabled && styles.button_disabled,
+    style,
+  ];
+
+  const textStyles = [
+    styles.text,
+    styles[`text_${variant}`],
+    styles[`text_${size}`],
+    disabled && styles.text_disabled,
+    textStyle,
+  ];
+
   return (
     <TouchableOpacity
-      style={[
-        styles.button,
-        styles[variant],
-        styles[size],
-        fullWidth && styles.fullWidth,
-        disabled && styles.disabled,
-        style,
-      ]}
+      style={buttonStyles}
+      onPress={onPress}
       disabled={disabled || loading}
+      activeOpacity={0.7}
       {...props}
     >
       {loading ? (
-        <ActivityIndicator color={variant === 'outline' ? COLORS.primary : COLORS.background} />
+        <ActivityIndicator color={variant === 'outline' ? '#007AFF' : '#FFFFFF'} />
       ) : (
-        <Text style={[styles.text, styles[`${variant}Text`], styles[`${size}Text`]]}>{title}</Text>
+        <Text style={textStyles}>{title}</Text>
       )}
     </TouchableOpacity>
   );
@@ -50,59 +65,59 @@ export const Button: React.FC<ButtonProps> = ({
 
 const styles = StyleSheet.create({
   button: {
-    flexDirection: 'row',
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: BORDER_RADIUS.md,
   },
-  primary: {
-    backgroundColor: COLORS.primary,
+  button_primary: {
+    backgroundColor: '#007AFF',
   },
-  secondary: {
-    backgroundColor: COLORS.secondary,
+  button_secondary: {
+    backgroundColor: '#5856D6',
   },
-  outline: {
+  button_outline: {
     backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: COLORS.primary,
+    borderColor: '#007AFF',
   },
-  small: {
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
+  button_small: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
   },
-  medium: {
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
+  button_medium: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
   },
-  large: {
-    paddingHorizontal: SPACING.xl,
-    paddingVertical: SPACING.lg,
+  button_large: {
+    paddingVertical: 16,
+    paddingHorizontal: 32,
   },
-  fullWidth: {
-    width: '100%',
-  },
-  disabled: {
-    opacity: 0.5,
+  button_disabled: {
+    backgroundColor: '#E5E5EA',
+    borderColor: '#E5E5EA',
   },
   text: {
     fontWeight: '600',
   },
-  primaryText: {
-    color: COLORS.background,
+  text_primary: {
+    color: '#FFFFFF',
   },
-  secondaryText: {
-    color: COLORS.background,
+  text_secondary: {
+    color: '#FFFFFF',
   },
-  outlineText: {
-    color: COLORS.primary,
+  text_outline: {
+    color: '#007AFF',
   },
-  smallText: {
-    fontSize: FONT_SIZES.sm,
+  text_small: {
+    fontSize: 14,
   },
-  mediumText: {
-    fontSize: FONT_SIZES.md,
+  text_medium: {
+    fontSize: 16,
   },
-  largeText: {
-    fontSize: FONT_SIZES.lg,
+  text_large: {
+    fontSize: 18,
+  },
+  text_disabled: {
+    color: '#8E8E93',
   },
 });

@@ -1,59 +1,91 @@
-import React from 'react';
-import { View, TextInput, Text, StyleSheet, TextInputProps } from 'react-native';
-import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS } from '@constants';
+import React, { useState } from 'react';
+import {
+  View,
+  TextInput,
+  Text,
+  StyleSheet,
+  TextInputProps,
+  TouchableOpacity,
+  ViewStyle,
+} from 'react-native';
 
 interface InputProps extends TextInputProps {
   label?: string;
   error?: string;
-  helperText?: string;
+  containerStyle?: ViewStyle;
+  secureTextEntry?: boolean;
 }
 
-export const Input: React.FC<InputProps> = ({ label, error, helperText, style, ...props }) => {
+export const Input: React.FC<InputProps> = ({
+  label,
+  error,
+  containerStyle,
+  secureTextEntry,
+  ...props
+}) => {
+  const [isSecure, setIsSecure] = useState(secureTextEntry);
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, containerStyle]}>
       {label && <Text style={styles.label}>{label}</Text>}
-      <TextInput
-        style={[styles.input, error ? styles.inputError : null, style]}
-        placeholderTextColor={COLORS.textSecondary}
-        {...props}
-      />
+      <View style={styles.inputContainer}>
+        <TextInput
+          style={[styles.input, error ? styles.inputError : undefined]}
+          placeholderTextColor="#8E8E93"
+          secureTextEntry={isSecure}
+          {...props}
+        />
+        {secureTextEntry && (
+          <TouchableOpacity
+            style={styles.eyeButton}
+            onPress={() => setIsSecure(!isSecure)}
+          >
+            <Text style={styles.eyeText}>{isSecure ? '👁️' : '👁️‍🗨️'}</Text>
+          </TouchableOpacity>
+        )}
+      </View>
       {error && <Text style={styles.errorText}>{error}</Text>}
-      {helperText && !error && <Text style={styles.helperText}>{helperText}</Text>}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: SPACING.md,
+    marginBottom: 16,
   },
   label: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: 14,
     fontWeight: '500',
-    color: COLORS.text,
-    marginBottom: SPACING.xs,
+    color: '#1C1C1E',
+    marginBottom: 8,
+  },
+  inputContainer: {
+    position: 'relative',
   },
   input: {
-    backgroundColor: COLORS.background,
+    height: 48,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: BORDER_RADIUS.md,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.md,
-    fontSize: FONT_SIZES.md,
-    color: COLORS.text,
+    borderColor: '#D1D1D6',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    fontSize: 16,
+    backgroundColor: '#FFFFFF',
+    color: '#1C1C1E',
   },
   inputError: {
-    borderColor: COLORS.error,
+    borderColor: '#FF3B30',
   },
   errorText: {
-    fontSize: FONT_SIZES.xs,
-    color: COLORS.error,
-    marginTop: SPACING.xs,
+    fontSize: 12,
+    color: '#FF3B30',
+    marginTop: 4,
   },
-  helperText: {
-    fontSize: FONT_SIZES.xs,
-    color: COLORS.textSecondary,
-    marginTop: SPACING.xs,
+  eyeButton: {
+    position: 'absolute',
+    right: 16,
+    top: 12,
+  },
+  eyeText: {
+    fontSize: 20,
   },
 });

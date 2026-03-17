@@ -4,50 +4,22 @@
     "strict": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"],
-      "@api": ["src/api"],
-      "@api/*": ["src/api/*"],
-      "@components": ["src/components"],
-      "@components/*": ["src/components/*"],
-      "@screens": ["src/screens"],
-      "@screens/*": ["src/screens/*"],
-      "@navigation": ["src/navigation"],
-      "@navigation/*": ["src/navigation/*"],
-      "@store": ["src/store"],
-      "@store/*": ["src/store/*"],
-      "@services": ["src/services"],
-      "@services/*": ["src/services/*"],
-      "@types": ["src/types"],
-      "@types/*": ["src/types/*"],
-      "@utils": ["src/utils"],
-      "@utils/*": ["src/utils/*"],
-      "@hooks": ["src/hooks"],
-      "@hooks/*": ["src/hooks/*"],
-      "@constants": ["src/constants"],
-      "@constants/*": ["src/constants/*"],
-      "@config": ["src/config"],
-      "@config/*": ["src/config/*"],
-      "@services": ["src/services"],
-      "@services/*": ["src/services/*"],
-      "@theme": ["src/theme"],
-      "@theme/*": ["src/theme/*"]
+      "@/*": ["src/*"]
     },
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "jsx": "react-native",
+    "target": "esnext",
+    "lib": ["esnext"],
+    "allowJs": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "node",
+    "module": "esnext",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true
   },
-  "include": [
-    "**/*.ts",
-    "**/*.tsx",
-    ".expo/types/**/*.ts",
-    "expo-env.d.ts",
-    "app/**/*.ts",
-    "app/**/*.tsx"
-  ],
-  "exclude": [
-    "node_modules",
-    "**/*_EXAMPLES.tsx",
-    "USAGE_EXAMPLES.tsx",
-    "APP_INTEGRATION_EXAMPLE.tsx",
-    "SHARED_COMPONENTS_EXAMPLES.tsx",
-    "GAMIFICATION_GOALS_EXAMPLES.tsx"
-  ]
+  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"],
+  "exclude": ["node_modules"]
 }

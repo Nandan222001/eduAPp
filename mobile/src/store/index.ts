@@ -1,6 +1,17 @@
-export { useAuthStore } from './authStore';
-export { store, persistor } from './store';
-export type { RootState, AppDispatch } from './store';
-export { useAppDispatch, useAppSelector } from './hooks';
-export * from './slices/studentDataSlice';
-export * from './slices/offlineSlice';
+import { configureStore } from '@reduxjs/toolkit';
+import authReducer from './slices/authSlice';
+
+export const store = configureStore({
+  reducer: {
+    auth: authReducer,
+  },
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: {
+        ignoredActions: ['auth/login/fulfilled', 'auth/loadStoredAuth/fulfilled'],
+      },
+    }),
+});
+
+export type RootState = ReturnType<typeof store.getState>;
+export type AppDispatch = typeof store.dispatch;

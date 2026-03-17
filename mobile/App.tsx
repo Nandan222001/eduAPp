@@ -1,8 +1,17 @@
-// This file is no longer the entry point with Expo Router
-// The entry point is now app/_layout.tsx
-// This file is kept for backward compatibility but won't be used
-import 'react-native-gesture-handler';
+import React from 'react';
+import { Provider } from 'react-redux';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
+import { store } from './src/store';
+import { RootNavigator } from './src/navigation/RootNavigator';
 
 export default function App() {
-  return null;
+  return (
+    <Provider store={store}>
+      <SafeAreaProvider>
+        <StatusBar style="auto" />
+        <RootNavigator />
+      </SafeAreaProvider>
+    </Provider>
+  );
 }

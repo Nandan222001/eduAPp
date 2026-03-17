@@ -1,128 +1,52 @@
-import React, { useEffect, useRef } from 'react';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import * as Notifications from 'expo-notifications';
-import { useAppDispatch, useAppSelector } from '@store/hooks';
-import { loadStoredAuth } from '@store/slices/authSlice';
-import { Loading } from '@components';
-import { RootStackParamList } from '@types';
+import React, { useEffect } from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createStackNavigator } from '@react-navigation/stack';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { loadStoredAuth } from '../store/slices/authSlice';
+import { RootStackParamList } from '../types/navigation';
 import { AuthNavigator } from './AuthNavigator';
-import { MainNavigator } from './MainNavigator';
-import { NavigationContainer } from './NavigationContainer';
-import { authService } from '@utils/authService';
-import { notificationService } from '@services/notificationService';
-import { apiClient } from '@api/client';
-import { analyticsService } from '@services/analytics';
-import { setSentryUser, clearSentryUser } from '@config/sentry';
+import { StudentNavigator } from './StudentNavigator';
+import { ParentNavigator } from './ParentNavigator';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { linking } from './linking';
 
-const Stack = createNativeStackNavigator<RootStackParamList>();
+const Stack = createStackNavigator<RootStackParamList>();
 
 export const RootNavigator: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { isAuthenticated, isLoading, user } = useAppSelector(state => state.auth);
-  const navigationRef = useRef<any>(null);
+  const { isAuthenticated, isLoading, user } = useAppSelector((state) => state.auth);
 
   useEffect(() => {
     dispatch(loadStoredAuth());
   }, [dispatch]);
 
-  useEffect(() => {
-    if (isAuthenticated && user) {
-      authService.initializeAuth();
-      initializeNotifications();
-
-      analyticsService.setUserId(user.id.toString());
-      setSentryUser({
-        id: user.id.toString(),
-        email: user.email,
-        username: user.firstName || user.email,
-      });
-    } else {
-      authService.stopAutoRefresh();
-      notificationService.removeNotificationListeners();
-      analyticsService.clearUserId();
-      clearSentryUser();
-    }
-  }, [isAuthenticated, user]);
-
-  const initializeNotifications = async () => {
-    try {
-      await notificationService.registerForPushNotifications();
-      await notificationService.registerDeviceWithBackend();
-
-      notificationService.setupNotificationListeners(
-        handleNotificationReceived,
-        handleNotificationTapped
-      );
-
-      const unreadResponse = await apiClient.get<{ unread: number }>(
-        '/api/v1/notifications/unread-count'
-      );
-      await notificationService.setBadgeCount(unreadResponse.data.unread);
-    } catch (error) {
-      console.error('Error initializing notifications:', error);
-    }
-  };
-
-  const handleNotificationReceived = async (_notification: Notifications.Notification) => {
-    try {
-      const unreadResponse = await apiClient.get<{ unread: number }>(
-        '/api/v1/notifications/unread-count'
-      );
-      await notificationService.setBadgeCount(unreadResponse.data.unread);
-    } catch (error) {
-      console.error('Error updating badge count:', error);
-    }
-  };
-
-  const handleNotificationTapped = (response: Notifications.NotificationResponse) => {
-    const data = response.notification.request.content.data;
-
-    if (navigationRef.current && data) {
-      if (data.assignmentId) {
-        navigationRef.current.navigate('Main', {
-          screen: 'AssignmentDetail',
-          params: { assignmentId: data.assignmentId.toString() },
-        });
-      } else if (data.actionUrl) {
-        handleDeepLink(data.actionUrl, data);
-      }
-    }
-  };
-
-  const handleDeepLink = (actionUrl: string, data: any) => {
-    if (!navigationRef.current) return;
-
-    if (actionUrl.includes('/assignments/') && data.assignmentId) {
-      navigationRef.current.navigate('Main', {
-        screen: 'AssignmentDetail',
-        params: { assignmentId: data.assignmentId.toString() },
-      });
-    } else if (actionUrl.includes('/grades')) {
-      navigationRef.current.navigate('Main', {
-        screen: 'Grades',
-        params: {},
-      });
-    } else if (actionUrl.includes('/attendance')) {
-      navigationRef.current.navigate('Main', {
-        screen: 'Attendance',
-        params: {},
-      });
-    } else if (actionUrl.includes('/notifications/')) {
-      navigationRef.current.navigate('Main', {
-        screen: 'NotificationHistory',
-      });
-    }
-  };
-
   if (isLoading) {
-    return <Loading />;
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#007AFF" />
+      </View>
+    );
   }
 
+  const getMainNavigator = () => {
+    if (!user?.role?.slug) {
+      return <StudentNavigator />;
+    }
+
+    switch (user.role.slug) {
+      case 'parent':
+        return <ParentNavigator />;
+      case 'student':
+      default:
+        return <StudentNavigator />;
+    }
+  };
+
   return (
-    <NavigationContainer>
+    <NavigationContainer linking={linking}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {isAuthenticated ? (
-          <Stack.Screen name="Main" component={MainNavigator} />
+          <Stack.Screen name="Main" component={getMainNavigator} />
         ) : (
           <Stack.Screen name="Auth" component={AuthNavigator} />
         )}
@@ -130,3 +54,12 @@ export const RootNavigator: React.FC = () => {
     </NavigationContainer>
   );
 };
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F2F2F7',
+  },
+});

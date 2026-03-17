@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "EduPlatform",
-    "slug": "eduplatform",
+    "name": "EduTrack",
+    "slug": "edutrack-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -11,146 +11,34 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "updates": {
-      "enabled": true,
-      "checkAutomatically": "ON_LOAD",
-      "fallbackToCacheTimeout": 0,
-      "url": "https://u.expo.dev/[your-project-id]"
-    },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.yourcompany.eduplatform",
-      "buildNumber": "1",
-      "associatedDomains": [
-        "applinks:edu.app"
-      ],
+      "bundleIdentifier": "com.edutrack.app",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false,
-        "NSCameraUsageDescription": "This app uses the camera to scan documents and take photos.",
-        "NSPhotoLibraryUsageDescription": "This app accesses your photo library to upload images."
+        "NSFaceIDUsageDescription": "Allow EduTrack to use Face ID for secure authentication"
       }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#FFFFFF"
+        "backgroundColor": "#ffffff"
       },
-      "package": "com.yourcompany.eduplatform",
-      "versionCode": 1,
-      "intentFilters": [
-        {
-          "action": "VIEW",
-          "autoVerify": true,
-          "data": [
-            {
-              "scheme": "https",
-              "host": "edu.app",
-              "pathPrefix": "/"
-            }
-          ],
-          "category": [
-            "BROWSABLE",
-            "DEFAULT"
-          ]
-        }
-      ],
+      "package": "com.edutrack.app",
       "permissions": [
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE",
-        "NOTIFICATIONS",
-        "VIBRATE"
-      ],
-      "googleServicesFile": "./google-services.json",
-      "useNextNotificationsApi": true
+        "USE_BIOMETRIC",
+        "USE_FINGERPRINT"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    "scheme": "edutrack",
     "plugins": [
-      [
-        "sentry-expo",
-        {
-          "organization": "your-sentry-org",
-          "project": "edu-mobile"
-        }
-      ],
-      [
-        "expo-camera",
-        {
-          "cameraPermission": "Allow EDU Mobile to access your camera to take photos for assignment submissions and document scanning."
-        }
-      ],
-      [
-        "expo-barcode-scanner",
-        {
-          "cameraPermission": "Allow EDU Mobile to access your camera to scan QR codes for quick access features."
-        }
-      ],
-      [
-        "expo-document-picker",
-        {
-          "iCloudContainerEnvironment": "Production"
-        }
-      ],
-      [
-        "expo-image-picker",
-        {
-          "photosPermission": "Allow EDU Mobile to access your photos to upload profile pictures and assignment files.",
-          "cameraPermission": "Allow EDU Mobile to access your camera to take profile pictures and assignment photos."
-        }
-      ],
-      [
-        "expo-media-library",
-        {
-          "photosPermission": "Allow EDU Mobile to save images to your photo library.",
-          "savePhotosPermission": "Allow EDU Mobile to save images to your photo library.",
-          "isAccessMediaLocationEnabled": true
-        }
-      ],
-      [
-        "expo-local-authentication",
-        {
-          "faceIDPermission": "Allow EDU Mobile to use Face ID for secure authentication."
-        }
-      ],
-      [
-        "expo-notifications",
-        {
-          "icon": "./assets/notification-icon.png",
-          "color": "#2089dc",
-          "sounds": ["./assets/notification-sound.wav"],
-          "mode": "production"
-        }
-      ],
-      [
-        "expo-updates",
-        {
-          "username": "your-expo-username"
-        }
-      ],
-      "expo-router",
-      "expo-secure-store"
-    ],
-    "extra": {
-      "router": {
-        "origin": false
-      },
-      "eas": {
-        "projectId": "[your-project-id]"
-      }
-    },
-    "notification": {
-      "icon": "./assets/notification-icon.png",
-      "color": "#ffffff",
-      "iosDisplayInForeground": true,
-      "androidMode": "default",
-      "androidCollapsedTitle": "EDU Mobile"
-    },
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
-    "owner": "your-expo-username"
+      "expo-secure-store",
+      "expo-local-authentication"
+    ]
   }
 }

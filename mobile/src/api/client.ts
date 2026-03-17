@@ -1,158 +1,121 @@
-import axios, {
-  AxiosInstance,
-  AxiosRequestConfig,
-  AxiosResponse,
-  InternalAxiosRequestConfig,
-} from 'axios';
-import { API_URL } from '@env';
-import { secureStorage } from '@utils/secureStorage';
-import { STORAGE_KEYS, API_TIMEOUT } from '@constants';
-import { ApiError, ApiResponse } from '@types';
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosError } from 'axios';
+import * as SecureStore from 'expo-secure-store';
 
-let isRefreshing = false;
-let refreshSubscribers: ((token: string) => void)[] = [];
-
-const subscribeTokenRefresh = (callback: (token: string) => void) => {
-  refreshSubscribers.push(callback);
-};
-
-const onTokenRefreshed = (token: string) => {
-  refreshSubscribers.forEach(callback => callback(token));
-  refreshSubscribers = [];
-};
+const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:8000';
+const API_VERSION = process.env.API_VERSION || 'v1';
 
 class ApiClient {
-  private instance: AxiosInstance;
+  private client: AxiosInstance;
+  private refreshTokenPromise: Promise<string> | null = null;
 
   constructor() {
-    this.instance = axios.create({
-      baseURL: API_URL,
-      timeout: API_TIMEOUT,
+    this.client = axios.create({
+      baseURL: `${API_BASE_URL}/api/${API_VERSION}`,
       headers: {
         'Content-Type': 'application/json',
       },
+      timeout: 30000,
     });
 
     this.setupInterceptors();
   }
 
   private setupInterceptors() {
-    this.instance.interceptors.request.use(
-      async (config: InternalAxiosRequestConfig) => {
-        const token = await secureStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
-        if (token && config.headers) {
+    this.client.interceptors.request.use(
+      async (config) => {
+        const token = await SecureStore.getItemAsync('accessToken');
+        if (token) {
           config.headers.Authorization = `Bearer ${token}`;
         }
         return config;
       },
-      error => {
+      (error) => {
         return Promise.reject(error);
       }
     );
 
-    this.instance.interceptors.response.use(
-      response => response,
-      async error => {
-        const originalRequest = error.config;
+    this.client.interceptors.response.use(
+      (response) => response,
+      async (error: AxiosError) => {
+        const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean };
 
         if (error.response?.status === 401 && !originalRequest._retry) {
-          if (isRefreshing) {
-            return new Promise(resolve => {
-              subscribeTokenRefresh((token: string) => {
-                if (originalRequest.headers) {
-                  originalRequest.headers.Authorization = `Bearer ${token}`;
-                }
-                resolve(this.instance(originalRequest));
-              });
-            });
-          }
-
           originalRequest._retry = true;
-          isRefreshing = true;
 
           try {
-            const refreshToken = await secureStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
-
-            if (!refreshToken) {
-              throw new Error('No refresh token available');
+            const newAccessToken = await this.handleTokenRefresh();
+            if (newAccessToken && originalRequest.headers) {
+              originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+              return this.client.request(originalRequest);
             }
-
-            const response = await this.instance.post('/auth/refresh', {
-              refresh_token: refreshToken,
-            });
-
-            const { access_token, refresh_token: newRefreshToken } = response.data.data;
-
-            await secureStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, access_token);
-            if (newRefreshToken) {
-              await secureStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, newRefreshToken);
-            }
-
-            isRefreshing = false;
-            onTokenRefreshed(access_token);
-
-            if (originalRequest.headers) {
-              originalRequest.headers.Authorization = `Bearer ${access_token}`;
-            }
-            return this.instance(originalRequest);
           } catch (refreshError) {
-            isRefreshing = false;
-            refreshSubscribers = [];
-
-            await secureStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
-            await secureStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
-            await secureStorage.removeItem(STORAGE_KEYS.USER_DATA);
-
+            await this.clearTokens();
             return Promise.reject(refreshError);
           }
         }
 
-        return Promise.reject(this.handleError(error));
+        return Promise.reject(error);
       }
     );
   }
 
-  private handleError(error: any): ApiError {
-    if (error.response) {
-      return {
-        message: error.response.data?.message || 'An error occurred',
-        errors: error.response.data?.errors,
-        status: error.response.status,
-      };
-    } else if (error.request) {
-      return {
-        message: 'Network error. Please check your connection.',
-        status: 0,
-      };
-    } else {
-      return {
-        message: error.message || 'An unexpected error occurred',
-      };
+  private async handleTokenRefresh(): Promise<string | null> {
+    if (this.refreshTokenPromise) {
+      return this.refreshTokenPromise;
     }
+
+    this.refreshTokenPromise = (async () => {
+      try {
+        const refreshToken = await SecureStore.getItemAsync('refreshToken');
+        if (!refreshToken) {
+          throw new Error('No refresh token available');
+        }
+
+        const response = await axios.post(
+          `${API_BASE_URL}/api/${API_VERSION}/auth/refresh`,
+          { refresh_token: refreshToken }
+        );
+
+        const { access_token, refresh_token } = response.data;
+        await SecureStore.setItemAsync('accessToken', access_token);
+        await SecureStore.setItemAsync('refreshToken', refresh_token);
+
+        return access_token;
+      } finally {
+        this.refreshTokenPromise = null;
+      }
+    })();
+
+    return this.refreshTokenPromise;
   }
 
-  async get<T>(url: string, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
-    const response: AxiosResponse<ApiResponse<T>> = await this.instance.get(url, config);
+  private async clearTokens() {
+    await SecureStore.deleteItemAsync('accessToken');
+    await SecureStore.deleteItemAsync('refreshToken');
+  }
+
+  public async get<T = any>(url: string, config?: AxiosRequestConfig) {
+    const response = await this.client.get<T>(url, config);
     return response.data;
   }
 
-  async post<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
-    const response: AxiosResponse<ApiResponse<T>> = await this.instance.post(url, data, config);
+  public async post<T = any>(url: string, data?: any, config?: AxiosRequestConfig) {
+    const response = await this.client.post<T>(url, data, config);
     return response.data;
   }
 
-  async put<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
-    const response: AxiosResponse<ApiResponse<T>> = await this.instance.put(url, data, config);
+  public async put<T = any>(url: string, data?: any, config?: AxiosRequestConfig) {
+    const response = await this.client.put<T>(url, data, config);
     return response.data;
   }
 
-  async patch<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
-    const response: AxiosResponse<ApiResponse<T>> = await this.instance.patch(url, data, config);
+  public async patch<T = any>(url: string, data?: any, config?: AxiosRequestConfig) {
+    const response = await this.client.patch<T>(url, data, config);
     return response.data;
   }
 
-  async delete<T>(url: string, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
-    const response: AxiosResponse<ApiResponse<T>> = await this.instance.delete(url, config);
+  public async delete<T = any>(url: string, config?: AxiosRequestConfig) {
+    const response = await this.client.delete<T>(url, config);
     return response.data;
   }
 }

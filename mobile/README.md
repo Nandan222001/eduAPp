@@ -1,135 +1,185 @@
-# EDU Mobile App
+# EduTrack Mobile App
 
-Mobile application for the EDU platform built with React Native and Expo.
+React Native mobile application for the EduTrack education management system.
 
-## Prerequisites
+## Features
 
-- Node.js 18+
-- npm or yarn
-- Expo CLI
-- iOS Simulator (for iOS development on macOS)
-- Android Studio with emulator (for Android development)
+### Authentication
+- Email/Password login
+- OTP-based login
+- Biometric authentication (Face ID/Touch ID)
+- Secure token storage using Expo Secure Store
+- Auto-refresh token mechanism
 
-## Getting Started
+### Navigation
+- Role-based tab navigation (Student/Parent)
+- Deep linking support
+- Stack navigation for auth flow
 
-### 1. Install dependencies
+### Student Features
+- Home dashboard with quick actions
+- Course listing
+- Assignment management
+- Profile with settings
 
+### Parent Features
+- Home dashboard with children overview
+- Children management
+- Academic reports
+- Profile with settings
+
+## Tech Stack
+
+- **Framework**: React Native with Expo
+- **State Management**: Redux Toolkit
+- **Navigation**: React Navigation v6
+- **Secure Storage**: Expo Secure Store
+- **Biometric Auth**: Expo Local Authentication
+- **API Client**: Axios
+- **Language**: TypeScript
+
+## Setup
+
+1. Install dependencies:
 ```bash
 npm install
+# or
+yarn install
 ```
 
-### 2. Set up environment variables
-
-Copy the example environment file:
-
+2. Configure environment:
 ```bash
 cp .env.example .env
+# Edit .env with your API base URL
 ```
 
-Edit `.env` and configure your API endpoints.
-
-### 3. Start the development server
-
+3. Start the development server:
 ```bash
 npm start
+# or
+yarn start
 ```
 
-This will start the Expo development server. You can then:
+4. Run on device/simulator:
+```bash
+# iOS
+npm run ios
 
-- Press `i` to open iOS simulator
-- Press `a` to open Android emulator
-- Scan QR code with Expo Go app on your physical device
+# Android
+npm run android
 
-## Available Scripts
-
-### Development
-
-- `npm start` - Start Expo development server
-- `npm run android` - Start on Android
-- `npm run ios` - Start on iOS
-- `npm run web` - Start on web
-- `npm run dev` - Start with development client
-
-### Building
-
-- `npm run build:dev:ios` - Build development iOS app
-- `npm run build:dev:android` - Build development Android app
-- `npm run build:preview:ios` - Build preview iOS app
-- `npm run build:preview:android` - Build preview Android app
-- `npm run build:prod:ios` - Build production iOS app
-- `npm run build:prod:android` - Build production Android app
-
-### Submission
-
-- `npm run submit:ios` - Submit iOS app to App Store
-- `npm run submit:android` - Submit Android app to Play Store
-
-### Code Quality
-
-- `npm run lint` - Run ESLint
-- `npm run lint:fix` - Fix ESLint errors
-- `npm run format` - Format code with Prettier
-- `npm run format:check` - Check code formatting
-- `npm run type-check` - Run TypeScript type checking
+# Web
+npm run web
+```
 
 ## Project Structure
 
 ```
 mobile/
-├── assets/              # Images, fonts, and other static assets
 ├── src/
-│   ├── api/            # API client and endpoints
-│   ├── components/     # Reusable UI components
-│   ├── screens/        # Screen components
-│   ├── navigation/     # Navigation configuration
-│   ├── store/          # State management (Zustand)
-│   ├── types/          # TypeScript type definitions
-│   ├── utils/          # Utility functions
-│   └── constants/      # App constants and theme
-├── App.tsx             # App entry point
-├── app.json            # Expo configuration
-├── eas.json            # EAS Build configuration
-├── package.json        # Dependencies and scripts
-└── tsconfig.json       # TypeScript configuration
+│   ├── api/              # API client and endpoints
+│   │   ├── client.ts     # Axios instance with interceptors
+│   │   └── authApi.ts    # Auth API endpoints
+│   ├── components/       # Reusable components
+│   │   ├── Button.tsx
+│   │   └── Input.tsx
+│   ├── navigation/       # Navigation setup
+│   │   ├── RootNavigator.tsx
+│   │   ├── AuthNavigator.tsx
+│   │   ├── StudentNavigator.tsx
+│   │   ├── ParentNavigator.tsx
+│   │   └── linking.ts    # Deep linking config
+│   ├── screens/          # Screen components
+│   │   ├── auth/         # Authentication screens
+│   │   ├── student/      # Student screens
+│   │   └── parent/       # Parent screens
+│   ├── store/            # Redux store
+│   │   ├── index.ts
+│   │   ├── hooks.ts
+│   │   └── slices/
+│   │       └── authSlice.ts
+│   ├── types/            # TypeScript types
+│   │   ├── auth.ts
+│   │   └── navigation.ts
+│   └── utils/            # Utility functions
+│       ├── secureStorage.ts
+│       └── biometric.ts
+├── App.tsx               # Root component
+├── app.json              # Expo configuration
+├── package.json
+└── tsconfig.json
+
 ```
 
-## Environment Configuration
+## API Integration
 
-The app supports three environments:
+The app connects to the backend API at `/api/v1/auth`:
 
-- **Development**: `.env.development` - Local development
-- **Staging**: `.env.staging` - Staging/preview environment
-- **Production**: `.env.production` - Production environment
+### Endpoints Used
+- `POST /auth/login` - Email/password login
+- `POST /auth/refresh` - Refresh access token
+- `POST /auth/logout` - Logout
+- `POST /auth/logout-all` - Logout from all devices
+- `GET /auth/me` - Get current user info
+- `POST /auth/otp/request` - Request OTP (requires backend implementation)
+- `POST /auth/otp/verify` - Verify OTP (requires backend implementation)
 
-Configure the appropriate environment variables in each file.
+## Security
+
+- Access tokens stored securely in Expo Secure Store
+- Refresh tokens stored securely in Expo Secure Store
+- Automatic token refresh on 401 responses
+- Biometric authentication for quick login
+- Secure credential validation
+
+## Deep Linking
+
+The app supports deep linking with the following URLs:
+
+### Auth
+- `edutrack://login`
+- `edutrack://otp-login`
+- `edutrack://otp-verify`
+
+### Student
+- `edutrack://student/home`
+- `edutrack://student/courses`
+- `edutrack://student/assignments`
+- `edutrack://student/profile`
+
+### Parent
+- `edutrack://parent/home`
+- `edutrack://parent/children`
+- `edutrack://parent/reports`
+- `edutrack://parent/profile`
+
+## Development
+
+### Type Checking
+```bash
+npm run type-check
+```
+
+### Linting
+```bash
+npm run lint
+```
 
 ## Building for Production
 
 ### iOS
-
-1. Configure `eas.json` with your Apple credentials
-2. Run: `npm run build:prod:ios`
-3. Submit: `npm run submit:ios`
+```bash
+expo build:ios
+```
 
 ### Android
+```bash
+expo build:android
+```
 
-1. Configure `eas.json` with your Google Play credentials
-2. Run: `npm run build:prod:android`
-3. Submit: `npm run submit:android`
+## Notes
 
-## Tech Stack
-
-- **Framework**: React Native with Expo
-- **Language**: TypeScript
-- **Navigation**: React Navigation
-- **State Management**: Zustand
-- **API Client**: Axios
-- **Code Quality**: ESLint, Prettier
-- **Build**: EAS Build
-
-## Learn More
-
-- [Expo Documentation](https://docs.expo.dev/)
-- [React Native Documentation](https://reactnative.dev/)
-- [React Navigation](https://reactnavigation.org/)
-- [Zustand](https://github.com/pmndrs/zustand)
+- OTP endpoints (`/auth/otp/request` and `/auth/otp/verify`) need to be implemented in the backend
+- Biometric authentication requires device support for Face ID, Touch ID, or fingerprint
+- Deep linking configuration may need adjustment for production domains
+- Update API_BASE_URL in .env for different environments

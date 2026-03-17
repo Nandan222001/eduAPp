@@ -1,21 +1,14 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { User, UserRole } from '@types';
-import { authApi, LoginRequest } from '@api/auth';
-import { secureStorage } from '@utils/secureStorage';
-import { authService } from '@utils/authService';
-import { STORAGE_KEYS } from '@constants';
-
-interface AuthState {
-  user: User | null;
-  accessToken: string | null;
-  refreshToken: string | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  error: string | null;
-  biometricEnabled: boolean;
-  availableRoles: UserRole[];
-  activeRole: UserRole | null;
-}
+import { authApi } from '../../api/authApi';
+import { secureStorage } from '../../utils/secureStorage';
+import { biometricUtils } from '../../utils/biometric';
+import {
+  AuthState,
+  User,
+  LoginRequest,
+  OTPLoginRequest,
+  OTPVerifyRequest,
+} from '../../types/auth';
 
 const initialState: AuthState = {
   user: null,
@@ -25,208 +18,269 @@ const initialState: AuthState = {
   isLoading: false,
   error: null,
   biometricEnabled: false,
-  availableRoles: [],
-  activeRole: null,
 };
 
 export const login = createAsyncThunk(
   'auth/login',
   async (credentials: LoginRequest, { rejectWithValue }) => {
     try {
-      const response = await authApi.login(credentials);
-      const { user, access_token, refresh_token } = response.data;
+      const tokenResponse = await authApi.login(credentials);
+      await secureStorage.setTokens(tokenResponse.access_token, tokenResponse.refresh_token);
 
-      await authService.saveSession(access_token, refresh_token, user);
+      const user = await authApi.getCurrentUser();
+      await secureStorage.setUserEmail(user.email);
 
-      return { user, accessToken: access_token, refreshToken: refresh_token };
+      return {
+        user,
+        accessToken: tokenResponse.access_token,
+        refreshToken: tokenResponse.refresh_token,
+      };
     } catch (error: any) {
-      return rejectWithValue(error.message || 'Login failed');
+      return rejectWithValue(error.response?.data?.detail || 'Login failed');
     }
   }
 );
 
-export const logout = createAsyncThunk('auth/logout', async (_, { rejectWithValue }) => {
-  try {
-    await authApi.logout();
-  } catch (error: any) {
-    console.error('Logout error:', error);
-  } finally {
-    await authService.clearSession();
+export const requestOTP = createAsyncThunk(
+  'auth/requestOTP',
+  async (data: OTPLoginRequest, { rejectWithValue }) => {
+    try {
+      const response = await authApi.requestOTP(data);
+      return response;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.detail || 'Failed to send OTP');
+    }
   }
-  return;
+);
+
+export const verifyOTP = createAsyncThunk(
+  'auth/verifyOTP',
+  async (data: OTPVerifyRequest, { rejectWithValue }) => {
+    try {
+      const tokenResponse = await authApi.verifyOTP(data);
+      await secureStorage.setTokens(tokenResponse.access_token, tokenResponse.refresh_token);
+
+      const user = await authApi.getCurrentUser();
+      await secureStorage.setUserEmail(user.email);
+
+      return {
+        user,
+        accessToken: tokenResponse.access_token,
+        refreshToken: tokenResponse.refresh_token,
+      };
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.detail || 'OTP verification failed');
+    }
+  }
+);
+
+export const loginWithBiometric = createAsyncThunk(
+  'auth/loginWithBiometric',
+  async (_, { rejectWithValue }) => {
+    try {
+      const isAvailable = await biometricUtils.isAvailable();
+      if (!isAvailable) {
+        throw new Error('Biometric authentication not available');
+      }
+
+      const biometricType = await biometricUtils.getBiometricType();
+      const authResult = await biometricUtils.authenticate({
+        promptMessage: `Use ${biometricType} to login`,
+      });
+
+      if (!authResult.success) {
+        throw new Error(authResult.error || 'Biometric authentication failed');
+      }
+
+      const accessToken = await secureStorage.getAccessToken();
+      const refreshToken = await secureStorage.getRefreshToken();
+
+      if (!accessToken || !refreshToken) {
+        throw new Error('No stored credentials found');
+      }
+
+      const user = await authApi.getCurrentUser();
+
+      return {
+        user,
+        accessToken,
+        refreshToken,
+      };
+    } catch (error: any) {
+      return rejectWithValue(error.message || 'Biometric login failed');
+    }
+  }
+);
+
+export const logout = createAsyncThunk('auth/logout', async (_, { getState, rejectWithValue }) => {
+  try {
+    const state = getState() as { auth: AuthState };
+    const refreshToken = state.auth.refreshToken;
+
+    if (refreshToken) {
+      await authApi.logout(refreshToken);
+    }
+
+    await secureStorage.clearTokens();
+
+    return null;
+  } catch (error: any) {
+    await secureStorage.clearTokens();
+    return rejectWithValue(error.response?.data?.detail || 'Logout failed');
+  }
 });
 
-export const refreshTokens = createAsyncThunk(
-  'auth/refreshToken',
-  async (_, { rejectWithValue }) => {
-    try {
-      const refreshToken = await secureStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
+export const loadStoredAuth = createAsyncThunk('auth/loadStoredAuth', async (_, { rejectWithValue }) => {
+  try {
+    const accessToken = await secureStorage.getAccessToken();
+    const refreshToken = await secureStorage.getRefreshToken();
+    const biometricEnabled = await secureStorage.getBiometricEnabled();
 
-      if (!refreshToken) {
-        throw new Error('No refresh token available');
-      }
-
-      const response = await authApi.refreshToken(refreshToken);
-      const { access_token, refresh_token } = response.data;
-
-      await secureStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, access_token);
-      await secureStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refresh_token);
-
-      return { accessToken: access_token, refreshToken: refresh_token };
-    } catch (error: any) {
-      await authService.clearSession();
-      return rejectWithValue(error.message || 'Token refresh failed');
-    }
-  }
-);
-
-export const loadStoredAuth = createAsyncThunk(
-  'auth/loadStored',
-  async (_, { rejectWithValue }) => {
-    try {
-      const accessToken = await secureStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
-      const refreshToken = await secureStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
-      const user = await secureStorage.getObject<User>(STORAGE_KEYS.USER_DATA);
-      const biometricEnabledStr = await secureStorage.getItem(STORAGE_KEYS.BIOMETRIC_ENABLED);
-      const biometricEnabled = biometricEnabledStr === 'true';
-      const storedActiveRole = await secureStorage.getItem(STORAGE_KEYS.ACTIVE_ROLE);
-
-      if (accessToken && refreshToken && user) {
-        await authService.checkAndRefreshIfNeeded();
-        const activeRole = (storedActiveRole as UserRole) || user.role;
-        return { user, accessToken, refreshToken, biometricEnabled, activeRole };
-      }
+    if (!accessToken || !refreshToken) {
       return null;
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to load stored auth');
     }
-  }
-);
 
-export const enableBiometric = createAsyncThunk(
-  'auth/enableBiometric',
-  async ({ email, password }: { email: string; password: string }, { rejectWithValue }) => {
-    try {
-      await secureStorage.setObject(STORAGE_KEYS.BIOMETRIC_CREDENTIALS, {
-        email,
-        password,
-      });
-      await secureStorage.setItem(STORAGE_KEYS.BIOMETRIC_ENABLED, 'true');
-      return true;
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to enable biometric');
-    }
-  }
-);
+    const user = await authApi.getCurrentUser();
 
-export const disableBiometric = createAsyncThunk(
-  'auth/disableBiometric',
-  async (_, { rejectWithValue }) => {
-    try {
-      await secureStorage.removeItem(STORAGE_KEYS.BIOMETRIC_CREDENTIALS);
-      await secureStorage.setItem(STORAGE_KEYS.BIOMETRIC_ENABLED, 'false');
-      return false;
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to disable biometric');
-    }
+    return {
+      user,
+      accessToken,
+      refreshToken,
+      biometricEnabled,
+    };
+  } catch (error: any) {
+    await secureStorage.clearTokens();
+    return rejectWithValue(error.response?.data?.detail || 'Failed to restore session');
   }
-);
+});
+
+export const enableBiometric = createAsyncThunk('auth/enableBiometric', async (_, { rejectWithValue }) => {
+  try {
+    const isAvailable = await biometricUtils.isAvailable();
+    if (!isAvailable) {
+      throw new Error('Biometric authentication not available on this device');
+    }
+
+    const biometricType = await biometricUtils.getBiometricType();
+    const authResult = await biometricUtils.authenticate({
+      promptMessage: `Enable ${biometricType} for quick login`,
+    });
+
+    if (!authResult.success) {
+      throw new Error(authResult.error || 'Biometric authentication failed');
+    }
+
+    await secureStorage.setBiometricEnabled(true);
+    return true;
+  } catch (error: any) {
+    return rejectWithValue(error.message || 'Failed to enable biometric');
+  }
+});
+
+export const disableBiometric = createAsyncThunk('auth/disableBiometric', async () => {
+  await secureStorage.setBiometricEnabled(false);
+  return false;
+});
 
 const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    setUser: (state, action: PayloadAction<User | null>) => {
-      state.user = action.payload;
-      if (action.payload) {
-        state.availableRoles = action.payload.roles || [action.payload.role];
-        state.activeRole = state.activeRole || action.payload.role;
-      } else {
-        state.availableRoles = [];
-        state.activeRole = null;
-      }
-    },
-    setTokens: (state, action: PayloadAction<{ accessToken: string; refreshToken: string }>) => {
-      state.accessToken = action.payload.accessToken;
-      state.refreshToken = action.payload.refreshToken;
-    },
-    clearError: state => {
+    clearError: (state) => {
       state.error = null;
     },
-    updateUser: (state, action: PayloadAction<Partial<User>>) => {
-      if (state.user) {
-        state.user = { ...state.user, ...action.payload };
-        if (action.payload.roles) {
-          state.availableRoles = action.payload.roles;
-        }
-      }
-    },
-    setActiveRole: (state, action: PayloadAction<UserRole>) => {
-      if (state.availableRoles.includes(action.payload)) {
-        state.activeRole = action.payload;
-        secureStorage.setItem(STORAGE_KEYS.ACTIVE_ROLE, action.payload);
-      }
+    setUser: (state, action: PayloadAction<User>) => {
+      state.user = action.payload;
     },
   },
-  extraReducers: builder => {
+  extraReducers: (builder) => {
     builder
-      .addCase(login.pending, state => {
+      .addCase(login.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
       .addCase(login.fulfilled, (state, action) => {
         state.isLoading = false;
+        state.isAuthenticated = true;
         state.user = action.payload.user;
         state.accessToken = action.payload.accessToken;
         state.refreshToken = action.payload.refreshToken;
-        state.isAuthenticated = true;
-        state.availableRoles = action.payload.user.roles || [action.payload.user.role];
-        state.activeRole = action.payload.user.role;
+        state.error = null;
       })
       .addCase(login.rejected, (state, action) => {
         state.isLoading = false;
+        state.isAuthenticated = false;
         state.error = action.payload as string;
       })
-      .addCase(logout.fulfilled, state => {
-        state.user = null;
-        state.accessToken = null;
-        state.refreshToken = null;
-        state.isAuthenticated = false;
+      .addCase(requestOTP.pending, (state) => {
+        state.isLoading = true;
         state.error = null;
-        state.biometricEnabled = false;
-        state.availableRoles = [];
-        state.activeRole = null;
       })
-      .addCase(refreshTokens.fulfilled, (state, action) => {
+      .addCase(requestOTP.fulfilled, (state) => {
+        state.isLoading = false;
+        state.error = null;
+      })
+      .addCase(requestOTP.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(verifyOTP.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(verifyOTP.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.isAuthenticated = true;
+        state.user = action.payload.user;
         state.accessToken = action.payload.accessToken;
         state.refreshToken = action.payload.refreshToken;
+        state.error = null;
       })
-      .addCase(refreshTokens.rejected, state => {
+      .addCase(verifyOTP.rejected, (state, action) => {
+        state.isLoading = false;
+        state.isAuthenticated = false;
+        state.error = action.payload as string;
+      })
+      .addCase(loginWithBiometric.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(loginWithBiometric.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.isAuthenticated = true;
+        state.user = action.payload.user;
+        state.accessToken = action.payload.accessToken;
+        state.refreshToken = action.payload.refreshToken;
+        state.error = null;
+      })
+      .addCase(loginWithBiometric.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(logout.fulfilled, (state) => {
         state.user = null;
         state.accessToken = null;
         state.refreshToken = null;
         state.isAuthenticated = false;
-        state.biometricEnabled = false;
-        state.availableRoles = [];
-        state.activeRole = null;
+        state.isLoading = false;
+        state.error = null;
       })
-      .addCase(loadStoredAuth.pending, state => {
+      .addCase(loadStoredAuth.pending, (state) => {
         state.isLoading = true;
       })
       .addCase(loadStoredAuth.fulfilled, (state, action) => {
         state.isLoading = false;
         if (action.payload) {
+          state.isAuthenticated = true;
           state.user = action.payload.user;
           state.accessToken = action.payload.accessToken;
           state.refreshToken = action.payload.refreshToken;
-          state.isAuthenticated = true;
           state.biometricEnabled = action.payload.biometricEnabled;
-          state.availableRoles = action.payload.user.roles || [action.payload.user.role];
-          state.activeRole = action.payload.activeRole;
         }
       })
-      .addCase(loadStoredAuth.rejected, state => {
+      .addCase(loadStoredAuth.rejected, (state) => {
         state.isLoading = false;
+        state.isAuthenticated = false;
       })
       .addCase(enableBiometric.fulfilled, (state, action) => {
         state.biometricEnabled = action.payload;
@@ -237,5 +291,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { setUser, setTokens, clearError, updateUser, setActiveRole } = authSlice.actions;
+export const { clearError, setUser } = authSlice.actions;
 export default authSlice.reducer;

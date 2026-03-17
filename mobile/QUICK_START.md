@@ -1,305 +1,273 @@
-# Mobile App Quick Start Guide
+# EduTrack Mobile - Quick Start Guide
 
-## Installation
+## Prerequisites
 
+- Node.js 18+ installed
+- npm or yarn installed
+- Expo CLI (will be installed with dependencies)
+- iOS Simulator (Mac only) or Android Emulator
+- Or physical device with Expo Go app
+
+## Setup (5 minutes)
+
+### 1. Install Dependencies
 ```bash
 cd mobile
 npm install
 ```
 
-## Run the App
-
+### 2. Configure Environment
 ```bash
-# Start Expo dev server
+cp .env.example .env
+```
+
+Edit `.env` file:
+```env
+# For local development
+API_BASE_URL=http://localhost:8000
+API_VERSION=v1
+
+# For Android Emulator, use:
+# API_BASE_URL=http://10.0.2.2:8000
+
+# For Physical Device, use your computer's IP:
+# API_BASE_URL=http://192.168.1.x:8000
+```
+
+### 3. Start Development Server
+```bash
 npm start
+```
 
-# Run on iOS simulator
+### 4. Run the App
+Choose one option:
+
+**A. Physical Device (Easiest)**
+1. Install Expo Go from App Store/Play Store
+2. Scan the QR code shown in terminal
+3. App will open in Expo Go
+
+**B. iOS Simulator (Mac only)**
+```bash
 npm run ios
+```
 
-# Run on Android emulator
+**C. Android Emulator**
+```bash
 npm run android
 ```
 
-## Project Structure Quick Reference
-
-```
-src/
-├── navigation/     - All navigation configuration
-├── screens/        - All screen components
-│   ├── auth/      - Login, Register, etc.
-│   ├── student/   - Student-specific screens
-│   ├── parent/    - Parent-specific screens
-│   └── common/    - Shared screens
-├── store/         - Redux store and slices
-├── types/         - TypeScript type definitions
-├── config/        - App configuration (theme, React Query)
-├── api/           - API integration
-├── components/    - Reusable components
-└── utils/         - Utility functions
+**D. Web Browser**
+```bash
+npm run web
 ```
 
-## Key Files
+## Testing the App
 
-- `App.tsx` - App entry point with providers
-- `src/navigation/RootNavigator.tsx` - Main navigation
-- `src/store/store.ts` - Redux store configuration
-- `src/types/navigation.ts` - Navigation types
-- `app.json` - Deep linking configuration
+### 1. Login with Email/Password
+- Start your backend server first
+- Use existing user credentials
+- Example:
+  ```
+  Email: student@example.com
+  Password: password123
+  Institution ID: 1 (optional)
+  ```
 
-## Navigation Flow
+### 2. Test OTP Login (Requires Backend Implementation)
+- Tap "Sign in with OTP instead"
+- Enter email
+- Receive OTP (via email/SMS)
+- Enter OTP to verify
+
+### 3. Enable Biometric Login
+- Login successfully first
+- Go to Profile tab
+- Toggle "Biometric Authentication"
+- Authenticate with Face ID/Touch ID
+- Next time, you can login with biometric
+
+### 4. Test Role-Based Navigation
+- Student role → See student tabs (Home, Courses, Assignments, Profile)
+- Parent role → See parent tabs (Home, Children, Reports, Profile)
+
+## Project Structure Overview
 
 ```
-App Launch
-    ↓
-Check Auth State (from AsyncStorage via Redux Persist)
-    ↓
-    ├─ Not Authenticated → Auth Stack (Login/Register)
-    │                            ↓
-    │                         Login Success
-    │                            ↓
-    └─ Authenticated ─────────→ Main Stack
-                                    ↓
-                        Check User Role
-                                    ↓
-                ├─ Student → Student Tabs (Dashboard, Courses, etc.)
-                └─ Parent  → Parent Tabs (Dashboard, Children, etc.)
+mobile/
+├── src/
+│   ├── api/              # API client and endpoints
+│   ├── components/       # Reusable UI components
+│   ├── navigation/       # App navigation setup
+│   ├── screens/          # Screen components
+│   │   ├── auth/         # Login, OTP screens
+│   │   ├── student/      # Student app screens
+│   │   └── parent/       # Parent app screens
+│   ├── store/            # Redux store and slices
+│   ├── types/            # TypeScript types
+│   └── utils/            # Utility functions
+├── App.tsx               # Root component
+└── package.json          # Dependencies
 ```
 
-## Common Tasks
+## Key Features
 
-### Add a New Screen
+✅ **Authentication**
+- Email/Password login
+- OTP login (requires backend)
+- Biometric authentication
+- Auto token refresh
+- Secure storage
 
-1. Create screen file in appropriate directory:
+✅ **Navigation**
+- Role-based routing
+- Deep linking support
+- Tab navigation
+- Stack navigation
 
-```typescript
-// src/screens/student/NewScreen.tsx
-import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import { Text } from '@rneui/themed';
-import { StudentTabScreenProps } from '@types/navigation';
+✅ **Security**
+- Secure token storage (Keychain/Keystore)
+- Biometric auth with fallback
+- Automatic session management
+- Token refresh on expiry
 
-type Props = StudentTabScreenProps<'NewScreen'>;
+✅ **UI/UX**
+- Clean, modern design
+- Loading states
+- Error handling
+- Responsive layout
 
-export const NewScreen: React.FC<Props> = ({ navigation }) => {
-  return (
-    <View style={styles.container}>
-      <Text h3>New Screen</Text>
-    </View>
-  );
-};
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-});
-```
-
-2. Add route to navigation types:
-
-```typescript
-// src/types/navigation.ts
-export type StudentTabParamList = {
-  // ... existing routes
-  NewScreen: { someParam?: string };
-};
-```
-
-3. Add screen to navigator:
-
-```typescript
-// src/navigation/StudentTabNavigator.tsx
-<Tab.Screen name="NewScreen" component={NewScreen} />
-```
-
-4. Export from index:
-
-```typescript
-// src/screens/index.ts
-export * from './student/NewScreen';
-```
-
-### Navigate Between Screens
-
-```typescript
-// Navigate to a screen
-navigation.navigate('Courses');
-
-// Navigate with params
-navigation.navigate('CourseDetail', { courseId: '123' });
-
-// Go back
-navigation.goBack();
-
-// Navigate to nested screen
-navigation.navigate('Main', {
-  screen: 'StudentTabs',
-  params: {
-    screen: 'Dashboard',
-  },
-});
-```
-
-### Use Redux
-
-```typescript
-import { useAppDispatch, useAppSelector } from '@store/hooks';
-import { login } from '@store/slices/authSlice';
-
-function MyComponent() {
-  const dispatch = useAppDispatch();
-  const { user, isLoading } = useAppSelector((state) => state.auth);
-
-  const handleLogin = async () => {
-    await dispatch(login({ email, password }));
-  };
-
-  return (/* ... */);
-}
-```
-
-### Use React Query
-
-```typescript
-import { useQuery } from '@tanstack/react-query';
-import { coursesApi } from '@api/courses';
-
-function CoursesScreen() {
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['courses'],
-    queryFn: () => coursesApi.getCourses(),
-  });
-
-  if (isLoading) return <Loading />;
-  if (error) return <Error message={error.message} />;
-
-  return (/* render courses */);
-}
-```
-
-### Handle Deep Links
-
-Deep links are automatically handled by the navigation system. To test:
+## Common Commands
 
 ```bash
-# iOS Simulator
-xcrun simctl openurl booted "edumobile://notifications/123"
+# Start dev server
+npm start
 
-# Android Emulator
-adb shell am start -W -a android.intent.action.VIEW -d "edumobile://notifications/123"
+# Run on iOS
+npm run ios
+
+# Run on Android
+npm run android
+
+# Run on web
+npm run web
+
+# Type check
+npm run type-check
+
+# Lint code
+npm run lint
+
+# Clear cache
+npx expo start --clear
 ```
-
-## Path Aliases
-
-Use these aliases for cleaner imports:
-
-```typescript
-import { Button } from '@components';
-import { useAuthStore } from '@store';
-import { User, UserRole } from '@types';
-import { formatDate } from '@utils';
-import { API_URL } from '@constants';
-import { theme } from '@config';
-import { LoginScreen } from '@screens';
-import { authApi } from '@api';
-```
-
-## Debugging
-
-### Enable Redux DevTools
-
-Redux DevTools are not configured by default. To enable:
-
-1. Install Flipper and redux-flipper plugin
-2. Or use Reactotron for React Native
-
-### Navigation Debugging
-
-```typescript
-// Add this to RootNavigator to log navigation state
-<NavigationContainer
-  linking={linking}
-  onStateChange={(state) => console.log('Navigation state:', state)}
->
-```
-
-### Network Debugging
-
-React Query DevTools are available for web. For mobile, inspect network requests in:
-
-- Flipper (Network plugin)
-- React Native Debugger
-- Browser DevTools (when using Expo web)
 
 ## Troubleshooting
 
-### Build Errors
+### Cannot connect to backend
+**Problem:** "Network request failed" error
 
-```bash
-# Clear cache
-npm start -- --clear
+**Solutions:**
+1. Check backend is running: `http://localhost:8000`
+2. Check API_BASE_URL in `.env`
+3. For Android emulator, use `10.0.2.2` instead of `localhost`
+4. For physical device, use your computer's IP address
+5. Make sure device and computer are on same network
 
-# Reinstall dependencies
-rm -rf node_modules
-npm install
+### Biometric not working
+**Problem:** Biometric authentication fails
 
-# Reset Metro bundler
-npx react-native start --reset-cache
-```
+**Solutions:**
+1. Check device has Face ID/Touch ID enabled
+2. Enroll biometric in device settings
+3. Test on physical device (simulators may not support)
+4. Grant permissions in app settings
 
-### Navigation Issues
+### App crashes on start
+**Problem:** White screen or app crashes
 
-- Ensure all screen components are properly imported
-- Check that route names match exactly (case-sensitive)
-- Verify navigation types are up to date
+**Solutions:**
+1. Clear cache: `npx expo start --clear`
+2. Reinstall dependencies: `rm -rf node_modules && npm install`
+3. Check for TypeScript errors: `npm run type-check`
+4. Check logs for errors
 
-### State Persistence Issues
+### Deep linking not working
+**Problem:** Deep links don't navigate
 
-```bash
-# Clear AsyncStorage in development
-# Add this to a debug screen:
-import AsyncStorage from '@react-native-async-storage/async-storage';
-await AsyncStorage.clear();
-```
+**Solutions:**
+1. Rebuild app after changing `app.json`
+2. Use correct URL format: `edutrack://login`
+3. For iOS: `xcrun simctl openurl booted "edutrack://login"`
+4. For Android: `adb shell am start -W -a android.intent.action.VIEW -d "edutrack://login"`
 
-## Testing Deep Links
+## Development Tips
 
-Test different routes:
+### Hot Reload
+- Save files to see changes instantly
+- Shake device to open developer menu
+- Press `r` in terminal to reload
 
-```bash
-# Auth routes
-edumobile://login
-edumobile://register
-edumobile://reset-password/token123
+### Debug Menu
+- **iOS**: Cmd+D (simulator) or shake device
+- **Android**: Cmd+M (emulator) or shake device
+- Options: Reload, Debug, Performance Monitor
 
-# Student routes
-edumobile://dashboard
-edumobile://courses/456
-edumobile://assignments/789
+### Redux DevTools
+View Redux state and actions:
+1. Open React Native Debugger
+2. Enable Redux DevTools
+3. See all dispatched actions and state changes
 
-# Parent routes
-edumobile://parent/children/123
-edumobile://parent/messages/456
+### Network Debugging
+1. Open Debug menu
+2. Enable "Debug Remote JS"
+3. Open Chrome DevTools
+4. Go to Network tab to see API calls
 
-# Common routes
-edumobile://notifications/789
-edumobile://profile
-```
+## Next Steps
+
+1. **Customize Branding**
+   - Update `app.json` with your app name and icons
+   - Add app icons to `assets/` folder
+   - Configure splash screen
+
+2. **Add More Features**
+   - Implement additional screens
+   - Add more API endpoints
+   - Enhance UI components
+   - Add push notifications
+
+3. **Backend Integration**
+   - Implement OTP endpoints
+   - Test all API integrations
+   - Handle error cases
+   - Add loading states
+
+4. **Testing**
+   - Test on multiple devices
+   - Test different user roles
+   - Test offline scenarios
+   - Test biometric flows
+
+5. **Production Build**
+   - Configure app signing
+   - Build for App Store/Play Store
+   - Test production builds
+   - Submit for review
 
 ## Resources
 
-- [React Navigation Docs](https://reactnavigation.org/)
-- [Redux Toolkit Docs](https://redux-toolkit.js.org/)
-- [React Query Docs](https://tanstack.com/query/latest)
-- [React Native Elements Docs](https://reactnativeelements.com/)
-- [Expo Docs](https://docs.expo.dev/)
+- **Expo Docs**: https://docs.expo.dev
+- **React Navigation**: https://reactnavigation.org
+- **Redux Toolkit**: https://redux-toolkit.js.org
+- **React Native**: https://reactnative.dev
 
-## Support
+## Need Help?
 
-For implementation details, see:
+1. Check `IMPLEMENTATION.md` for detailed documentation
+2. Review error messages in terminal
+3. Check Expo documentation
+4. Review backend API documentation
 
-- `NAVIGATION_IMPLEMENTATION.md` - Complete navigation guide
-- `IMPLEMENTATION_SUMMARY.md` - What was implemented
-- `INSTALL.md` - Installation instructions
+## Happy Coding! 🚀

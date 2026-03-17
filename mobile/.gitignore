@@ -1,135 +1,48 @@
-# OSX
-.DS_Store
-
-# Xcode
-build/
-*.pbxuser
-!default.pbxuser
-*.mode1v3
-!default.mode1v3
-*.mode2v3
-!default.mode2v3
-*.perspectivev3
-!default.perspectivev3
-xcuserdata
-*.xccheckout
-*.moved-aside
-DerivedData
-*.hmap
-*.ipa
-*.xcuserstate
-ios/.xcode.env.local
-
-# Android/IntelliJ
-build/
-.idea
-.gradle
-local.properties
-*.iml
-*.hprof
-.cxx/
-*.keystore
-!debug.keystore
-
-# node.js
+# Node
 node_modules/
 npm-debug.log
 yarn-error.log
 
-# fastlane
-*/fastlane/report.xml
-*/fastlane/Preview.html
-*/fastlane/screenshots
-*/fastlane/test_output
-
-# Bundle artifacts
-*.jsbundle
-
 # Expo
 .expo/
+.expo-shared/
 dist/
 web-build/
-.expo-shared
 
-# Expo Router
-.expo-router/
+# Native
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+*.ipa
+*.apk
+
+# Metro
+.metro-health-check*
 
 # Environment
 .env
 .env.local
 .env.*.local
 
-# Logs
-*.log
+# macOS
+.DS_Store
+*.pem
 
-# Temporary files
-*.tmp
-*.temp
-
-# Editor directories
+# Debug
+yarn-debug.log*
 .vscode/
 .idea/
 
-# Testing
-coverage/
-.jest/
-*.snap
-__tests__/coverage/
-junit.xml
-test-results/
-e2e/artifacts/
-*.e2e.log
-.detox/
+# Android/IOS
+android/
+ios/
 
-# Test snapshots (optional - remove this line if you want to commit snapshots)
-**/__snapshots__/
-
-# Advanced Mobile Features - File Downloads & Cached Files
-downloads/
-scanned_documents/
-documents/
-images/
-*.jpg
-*.jpeg
-*.png
-*.pdf
-!assets/**/*.jpg
-!assets/**/*.jpeg
-!assets/**/*.png
-
-# Certificates and Credentials (SECURITY - DO NOT COMMIT)
-*.p12
-*.cer
-*.mobileprovision
-*.keystore
-!debug.keystore
-*.jks
-certificates/code-signing.pem
-service-account-key.json
-service-account-*.json
-google-services.json
-google-services-*.json
-GoogleService-Info.plist
-GoogleService-Info-*.plist
-firebase-adminsdk-*.json
-
-# Sentry
-sentry.properties
-.sentryclirc
-
-# EAS Build & Deployment
-.eas-build-*
-eas-build-*.tar.gz
-rollback-log.txt
-build-info.json
-build-report-*.txt
-RELEASE_NOTES_*.md
-
-# Store Assets (large binary files - use Git LFS or external storage)
-store/ios/screenshots/**/*.png
-store/ios/screenshots/**/*.jpg
-store/android/screenshots/**/*.png
-store/android/screenshots/**/*.jpg
-store/assets/*.png
-store/assets/*.jpg
-!store/assets/.gitkeep
+# Temporary files
+*.swp
+*.swo
+*~
+.tmp/
