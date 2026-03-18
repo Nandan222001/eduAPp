@@ -13,18 +13,27 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import authReducer from './slices/authSlice';
 import userReducer from './slices/userSlice';
 import notificationReducer from './slices/notificationSlice';
+import dashboardReducer from './slices/dashboardSlice';
+import assignmentsReducer from './slices/assignmentsSlice';
+import gradesReducer from './slices/gradesSlice';
+import attendanceReducer from './slices/attendanceSlice';
 
 const persistConfig = {
   key: 'root',
   version: 1,
   storage: AsyncStorage,
-  whitelist: ['auth'],
+  whitelist: ['auth', 'user', 'dashboard', 'assignments', 'grades', 'attendance'],
+  blacklist: ['notification'],
 };
 
 const rootReducer = combineReducers({
   auth: authReducer,
   user: userReducer,
   notification: notificationReducer,
+  dashboard: dashboardReducer,
+  assignments: assignmentsReducer,
+  grades: gradesReducer,
+  attendance: attendanceReducer,
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
