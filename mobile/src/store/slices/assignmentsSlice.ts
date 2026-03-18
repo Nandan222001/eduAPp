@@ -43,7 +43,10 @@ const assignmentsSlice = createSlice({
     setCurrentAssignment: (state, action: PayloadAction<AssignmentDetail | null>) => {
       state.currentAssignment = action.payload;
     },
-    optimisticUpdateAssignment: (state, action: PayloadAction<{ id: number; updates: Partial<AssignmentDetail> }>) => {
+    optimisticUpdateAssignment: (
+      state,
+      action: PayloadAction<{ id: number; updates: Partial<AssignmentDetail> }>
+    ) => {
       const index = state.assignments.findIndex(a => a.id === action.payload.id);
       if (index >= 0) {
         state.assignments[index] = { ...state.assignments[index], ...action.payload.updates };

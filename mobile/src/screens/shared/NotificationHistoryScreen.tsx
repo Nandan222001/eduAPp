@@ -44,12 +44,10 @@ export const NotificationHistoryScreen: React.FC<Props> = ({ navigation }) => {
       if (pageNum === 1) {
         setNotifications(response.data.notifications);
       } else {
-        setNotifications((prev) => [...prev, ...response.data.notifications]);
+        setNotifications(prev => [...prev, ...response.data.notifications]);
       }
 
-      setHasMore(
-        response.data.notifications.length === response.data.perPage
-      );
+      setHasMore(response.data.notifications.length === response.data.perPage);
       setPage(pageNum);
     } catch (error) {
       console.error('Error loading notifications:', error);
@@ -73,8 +71,8 @@ export const NotificationHistoryScreen: React.FC<Props> = ({ navigation }) => {
   const markAsRead = async (notificationId: number) => {
     try {
       await apiClient.patch(`/api/v1/notifications/${notificationId}/read`);
-      setNotifications((prev) =>
-        prev.map((n) =>
+      setNotifications(prev =>
+        prev.map(n =>
           n.id === notificationId ? { ...n, isRead: true, readAt: new Date().toISOString() } : n
         )
       );
@@ -86,7 +84,7 @@ export const NotificationHistoryScreen: React.FC<Props> = ({ navigation }) => {
   const deleteNotification = async (notificationId: number) => {
     try {
       await apiClient.delete(`/api/v1/notifications/${notificationId}`);
-      setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
+      setNotifications(prev => prev.filter(n => n.id !== notificationId));
     } catch (error) {
       console.error('Error deleting notification:', error);
     }
@@ -110,7 +108,9 @@ export const NotificationHistoryScreen: React.FC<Props> = ({ navigation }) => {
     } else if (actionUrl.includes('/attendance')) {
       navigation.navigate('Attendance', {});
     } else if (actionUrl.includes('/announcements/') && metadata?.announcementId) {
-      navigation.navigate('NotificationDetail', { notificationId: metadata.announcementId.toString() });
+      navigation.navigate('NotificationDetail', {
+        notificationId: metadata.announcementId.toString(),
+      });
     }
   };
 
@@ -166,10 +166,7 @@ export const NotificationHistoryScreen: React.FC<Props> = ({ navigation }) => {
           <View style={styles.notificationContent}>
             <View style={styles.notificationHeader}>
               <Text
-                style={[
-                  styles.notificationTitle,
-                  !item.isRead && styles.unreadTitle,
-                ]}
+                style={[styles.notificationTitle, !item.isRead && styles.unreadTitle]}
                 numberOfLines={1}
               >
                 {item.title}
@@ -192,10 +189,7 @@ export const NotificationHistoryScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         </View>
         <View style={styles.notificationActions}>
-          <TouchableOpacity
-            onPress={() => deleteNotification(item.id)}
-            style={styles.actionButton}
-          >
+          <TouchableOpacity onPress={() => deleteNotification(item.id)} style={styles.actionButton}>
             <Icon name="delete" type="material" color={COLORS.error} size={20} />
           </TouchableOpacity>
         </View>
@@ -205,12 +199,7 @@ export const NotificationHistoryScreen: React.FC<Props> = ({ navigation }) => {
 
   const renderEmpty = () => (
     <View style={styles.emptyContainer}>
-      <Icon
-        name="notifications-none"
-        type="material"
-        color={COLORS.disabled}
-        size={64}
-      />
+      <Icon name="notifications-none" type="material" color={COLORS.disabled} size={64} />
       <Text style={styles.emptyText}>No notifications yet</Text>
     </View>
   );
@@ -237,11 +226,9 @@ export const NotificationHistoryScreen: React.FC<Props> = ({ navigation }) => {
       <FlatList
         data={notifications}
         renderItem={renderNotificationItem}
-        keyExtractor={(item) => item.id.toString()}
+        keyExtractor={item => item.id.toString()}
         contentContainerStyle={styles.listContainer}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         onEndReached={loadMore}
         onEndReachedThreshold={0.5}
         ListEmptyComponent={renderEmpty}

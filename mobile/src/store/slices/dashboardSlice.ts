@@ -1,5 +1,13 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { Profile, Assignment, Grade, AIPrediction, WeakArea, AttendanceSummary, GamificationStats } from '@types';
+import {
+  Profile,
+  Assignment,
+  Grade,
+  AIPrediction,
+  WeakArea,
+  AttendanceSummary,
+  GamificationStats,
+} from '@types';
 
 export interface DashboardState {
   profile: Profile | null;

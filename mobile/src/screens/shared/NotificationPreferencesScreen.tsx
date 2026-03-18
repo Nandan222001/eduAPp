@@ -1,13 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  Switch,
-  Alert,
-  ActivityIndicator,
-} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Switch, Alert, ActivityIndicator } from 'react-native';
 import { Icon } from '@rneui/themed';
 import { apiClient } from '@api/client';
 import { notificationService } from '@services/notificationService';
@@ -61,11 +53,16 @@ export const NotificationPreferencesScreen: React.FC<Props> = ({ navigation }) =
 
       if (updatedPreferences.pushEnabled) {
         const topics = Object.keys(updatedPreferences.categories)
-          .filter((key) => updatedPreferences.categories[key as keyof typeof updatedPreferences.categories])
-          .reduce((acc, key) => {
-            acc[key as keyof typeof preferences.categories] = true;
-            return acc;
-          }, {} as Record<string, boolean>);
+          .filter(
+            key => updatedPreferences.categories[key as keyof typeof updatedPreferences.categories]
+          )
+          .reduce(
+            (acc, key) => {
+              acc[key as keyof typeof preferences.categories] = true;
+              return acc;
+            },
+            {} as Record<string, boolean>
+          );
 
         await notificationService.subscribeToTopics({
           assignments: topics.assignment || false,
@@ -88,10 +85,7 @@ export const NotificationPreferencesScreen: React.FC<Props> = ({ navigation }) =
     if (value) {
       const hasPermission = await notificationService.requestPermissions();
       if (!hasPermission) {
-        Alert.alert(
-          'Permission Required',
-          'Please enable notifications in your device settings'
-        );
+        Alert.alert('Permission Required', 'Please enable notifications in your device settings');
         return;
       }
     }
@@ -146,9 +140,7 @@ export const NotificationPreferencesScreen: React.FC<Props> = ({ navigation }) =
             />
             <View style={styles.preferenceText}>
               <Text style={styles.preferenceTitle}>Push Notifications</Text>
-              <Text style={styles.preferenceDescription}>
-                Receive notifications on this device
-              </Text>
+              <Text style={styles.preferenceDescription}>Receive notifications on this device</Text>
             </View>
           </View>
           <Switch
@@ -170,9 +162,7 @@ export const NotificationPreferencesScreen: React.FC<Props> = ({ navigation }) =
             />
             <View style={styles.preferenceText}>
               <Text style={styles.preferenceTitle}>Email Notifications</Text>
-              <Text style={styles.preferenceDescription}>
-                Receive notifications via email
-              </Text>
+              <Text style={styles.preferenceDescription}>Receive notifications via email</Text>
             </View>
           </View>
           <Switch
@@ -194,9 +184,7 @@ export const NotificationPreferencesScreen: React.FC<Props> = ({ navigation }) =
             />
             <View style={styles.preferenceText}>
               <Text style={styles.preferenceTitle}>SMS Notifications</Text>
-              <Text style={styles.preferenceDescription}>
-                Receive notifications via SMS
-              </Text>
+              <Text style={styles.preferenceDescription}>Receive notifications via SMS</Text>
             </View>
           </View>
           <Switch

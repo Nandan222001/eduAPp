@@ -56,7 +56,13 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Allow EDU Mobile to access your camera to take photos for assignment submissions."
+          "cameraPermission": "Allow EDU Mobile to access your camera to take photos for assignment submissions and document scanning."
+        }
+      ],
+      [
+        "expo-barcode-scanner",
+        {
+          "cameraPermission": "Allow EDU Mobile to access your camera to scan QR codes for quick access features."
         }
       ],
       [
@@ -68,8 +74,22 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow EDU Mobile to access your photos to upload profile pictures.",
-          "cameraPermission": "Allow EDU Mobile to access your camera to take profile pictures."
+          "photosPermission": "Allow EDU Mobile to access your photos to upload profile pictures and assignment files.",
+          "cameraPermission": "Allow EDU Mobile to access your camera to take profile pictures and assignment photos."
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Allow EDU Mobile to save images to your photo library.",
+          "savePhotosPermission": "Allow EDU Mobile to save images to your photo library.",
+          "isAccessMediaLocationEnabled": true
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Allow EDU Mobile to use Face ID for secure authentication."
         }
       ],
       [

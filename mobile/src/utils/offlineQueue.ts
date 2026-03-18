@@ -37,7 +37,7 @@ export interface OfflineQueueState {
 class OfflineQueueManager {
   private queue: QueuedRequest[] = [];
   private isProcessing: boolean = false;
-  private listeners: Array<(state: OfflineQueueState) => void> = [];
+  private listeners: ((state: OfflineQueueState) => void)[] = [];
   private isOnline: boolean = true;
   private unsubscribeNetInfo?: () => void;
 

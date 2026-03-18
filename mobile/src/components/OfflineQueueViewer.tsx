@@ -53,10 +53,7 @@ export const OfflineQueueViewer: React.FC<OfflineQueueViewerProps> = ({ style })
       <View style={[styles.requestItem, isFailed && styles.requestItemFailed]}>
         <View style={styles.requestHeader}>
           <View
-            style={[
-              styles.typeIndicator,
-              { backgroundColor: getRequestTypeColor(item.type) },
-            ]}
+            style={[styles.typeIndicator, { backgroundColor: getRequestTypeColor(item.type) }]}
           />
           <Text style={styles.typeText}>{getRequestTypeLabel(item.type)}</Text>
         </View>

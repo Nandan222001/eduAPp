@@ -69,3 +69,16 @@ web-build/
 
 # Testing
 coverage/
+
+# Advanced Mobile Features - File Downloads & Cached Files
+downloads/
+scanned_documents/
+documents/
+images/
+*.jpg
+*.jpeg
+*.png
+*.pdf
+!assets/**/*.jpg
+!assets/**/*.jpeg
+!assets/**/*.png

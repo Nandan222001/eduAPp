@@ -30,7 +30,7 @@ export const ComponentShowcaseScreen = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [profileImage, setProfileImage] = useState('');
-  
+
   const bottomSheetRef = useRef<BottomSheetModal>(null);
 
   const handleRefresh = async () => {
@@ -61,16 +61,10 @@ export const ComponentShowcaseScreen = () => {
 
         <ScrollView
           showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-          }
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
         >
           {/* Buttons Section */}
-          <SectionHeader
-            title="Buttons"
-            subtitle="Various button styles"
-            icon="gesture-tap"
-          />
+          <SectionHeader title="Buttons" subtitle="Various button styles" icon="gesture-tap" />
           <Card elevation="md" style={{ marginBottom: theme.spacing.md }}>
             <Button
               title="Primary Button"
@@ -104,11 +98,7 @@ export const ComponentShowcaseScreen = () => {
               onPress={() => Alert.alert('Pressed!')}
               style={{ marginBottom: theme.spacing.sm }}
             />
-            <Button
-              title="Disabled"
-              variant="primary"
-              disabled={true}
-            />
+            <Button title="Disabled" variant="primary" disabled={true} />
           </Card>
 
           {/* Input Section */}
@@ -141,10 +131,7 @@ export const ComponentShowcaseScreen = () => {
               <Avatar name="Jane Smith" size="medium" />
               <Avatar name="Bob Wilson" size="large" backgroundColor={theme.colors.secondary} />
               <Avatar icon="account" size="medium" />
-              <Avatar
-                uri="https://via.placeholder.com/150"
-                size="large"
-              />
+              <Avatar uri="https://via.placeholder.com/150" size="large" />
             </View>
           </Card>
 
@@ -200,10 +187,7 @@ export const ComponentShowcaseScreen = () => {
 
           {/* Empty State Example */}
           <SectionHeader title="Empty State" icon="inbox" />
-          <Card
-            elevation="md"
-            style={{ marginBottom: theme.spacing.md, minHeight: 300 }}
-          >
+          <Card elevation="md" style={{ marginBottom: theme.spacing.md, minHeight: 300 }}>
             <EmptyState
               icon="inbox"
               title="No Items"
@@ -269,26 +253,26 @@ export const ExampleLoginScreen = () => {
 
   const validateForm = () => {
     const newErrors: { email?: string; password?: string } = {};
-    
+
     if (!email) {
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(email)) {
       newErrors.email = 'Email is invalid';
     }
-    
+
     if (!password) {
       newErrors.password = 'Password is required';
     } else if (password.length < 6) {
       newErrors.password = 'Password must be at least 6 characters';
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleLogin = async () => {
     if (!validateForm()) return;
-    
+
     setLoading(true);
     try {
       // Your login logic here
@@ -305,11 +289,7 @@ export const ExampleLoginScreen = () => {
     <ScreenContainer keyboardAware>
       <View style={{ flex: 1, justifyContent: 'center' }}>
         <View style={{ alignItems: 'center', marginBottom: theme.spacing.xl }}>
-          <Avatar
-            icon="account-circle"
-            size="xlarge"
-            backgroundColor={theme.colors.primary}
-          />
+          <Avatar icon="account-circle" size="xlarge" backgroundColor={theme.colors.primary} />
           <Text
             style={{
               ...theme.typography.h3,
@@ -335,7 +315,7 @@ export const ExampleLoginScreen = () => {
             label="Email"
             placeholder="Enter your email"
             value={email}
-            onChangeText={(text) => {
+            onChangeText={text => {
               setEmail(text);
               if (errors.email) setErrors({ ...errors, email: undefined });
             }}
@@ -349,7 +329,7 @@ export const ExampleLoginScreen = () => {
             label="Password"
             placeholder="Enter your password"
             value={password}
-            onChangeText={(text) => {
+            onChangeText={text => {
               setPassword(text);
               if (errors.password) setErrors({ ...errors, password: undefined });
             }}
@@ -379,9 +359,7 @@ export const ExampleLoginScreen = () => {
         </Card>
 
         <View style={{ alignItems: 'center', marginTop: theme.spacing.lg }}>
-          <Text style={{ color: theme.colors.textSecondary }}>
-            Don't have an account?
-          </Text>
+          <Text style={{ color: theme.colors.textSecondary }}>Don't have an account?</Text>
           <Button
             title="Sign Up"
             variant="outline"

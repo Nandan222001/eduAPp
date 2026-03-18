@@ -1,5 +1,6 @@
 import { backgroundSyncService } from './backgroundSync';
 import { offlineQueueManager } from './offlineQueue';
+import { fileDownloadManager } from './fileDownloadManager';
 
 export class AppInitializer {
   private static instance: AppInitializer;
@@ -23,6 +24,7 @@ export class AppInitializer {
     try {
       console.log('[AppInitializer] Starting initialization...');
 
+      await this.initializeFileDownloadManager();
       await this.initializeBackgroundSync();
       await this.processOfflineQueue();
 
@@ -31,6 +33,16 @@ export class AppInitializer {
     } catch (error) {
       console.error('[AppInitializer] Initialization failed:', error);
       throw error;
+    }
+  }
+
+  private async initializeFileDownloadManager(): Promise<void> {
+    try {
+      console.log('[AppInitializer] Initializing file download manager...');
+      await fileDownloadManager.initialize();
+      console.log('[AppInitializer] File download manager initialized');
+    } catch (error) {
+      console.error('[AppInitializer] File download manager initialization failed:', error);
     }
   }
 

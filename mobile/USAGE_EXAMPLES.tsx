@@ -1,6 +1,6 @@
 /**
  * Offline-First Architecture Usage Examples
- * 
+ *
  * This file contains examples of how to use the offline-first features
  * in different parts of your application.
  */
@@ -43,9 +43,7 @@ export const DashboardScreenExample: React.FC = () => {
 
   return (
     <ScrollView
-      refreshControl={
-        <RefreshControl refreshing={isSyncing} onRefresh={handleRefresh} />
-      }
+      refreshControl={<RefreshControl refreshing={isSyncing} onRefresh={handleRefresh} />}
     >
       <View>
         {/* Show cached data indicator */}
@@ -54,9 +52,7 @@ export const DashboardScreenExample: React.FC = () => {
         {/* Show sync status banner if there are pending items */}
         <SyncStatusBanner />
 
-        {error && (
-          <Text style={{ color: 'red', padding: 16 }}>Error: {error}</Text>
-        )}
+        {error && <Text style={{ color: 'red', padding: 16 }}>Error: {error}</Text>}
 
         {/* Dashboard content */}
         <Text>Profile: {dashboardData.profile?.firstName}</Text>
@@ -98,7 +94,7 @@ export const AssignmentsScreenExample: React.FC = () => {
         onSuccess: () => {
           Alert.alert('Success', 'Assignment submitted successfully');
         },
-        onError: (error) => {
+        onError: error => {
           Alert.alert('Error', error.message);
         },
       });
@@ -133,10 +129,7 @@ export const AssignmentsScreenExample: React.FC = () => {
           <Text>{assignment.title}</Text>
           <Text>Status: {assignment.status}</Text>
           {assignment.status === 'pending' && (
-            <Button
-              title="Submit"
-              onPress={() => handleSubmitAssignment(assignment.id)}
-            />
+            <Button title="Submit" onPress={() => handleSubmitAssignment(assignment.id)} />
           )}
         </View>
       ))}
@@ -180,8 +173,12 @@ export const GradesScreenExample: React.FC = () => {
         <View style={{ marginTop: 16 }}>
           {grades.map(grade => (
             <View key={grade.id} style={{ padding: 12, borderBottomWidth: 1 }}>
-              <Text>{grade.examName} - {grade.subject}</Text>
-              <Text>Score: {grade.obtainedMarks}/{grade.totalMarks}</Text>
+              <Text>
+                {grade.examName} - {grade.subject}
+              </Text>
+              <Text>
+                Score: {grade.obtainedMarks}/{grade.totalMarks}
+              </Text>
               <Text>Grade: {grade.grade}</Text>
             </View>
           ))}
@@ -210,10 +207,7 @@ export const AttendanceScreenExample: React.FC = () => {
       });
 
       if (result.queued) {
-        Alert.alert(
-          'Queued',
-          'Offline mode: Attendance will be synced when online'
-        );
+        Alert.alert('Queued', 'Offline mode: Attendance will be synced when online');
       } else {
         Alert.alert('Success', 'Attendance marked');
         syncAttendance(); // Refresh data
@@ -273,11 +267,7 @@ export const DoubtsScreenExample: React.FC = () => {
       const result = await offlineAwareApi.postDoubt(doubtData);
 
       if (result.queued) {
-        Alert.alert(
-          'Queued',
-          'Your doubt will be posted when you are online',
-          [{ text: 'OK' }]
-        );
+        Alert.alert('Queued', 'Your doubt will be posted when you are online', [{ text: 'OK' }]);
       } else {
         Alert.alert('Success', 'Doubt posted successfully');
       }
@@ -292,9 +282,7 @@ export const DoubtsScreenExample: React.FC = () => {
 
       {queueState.pendingCount > 0 && (
         <View style={{ backgroundColor: '#FFF3E0', padding: 12, marginBottom: 16 }}>
-          <Text>
-            {queueState.pendingCount} item(s) waiting to sync
-          </Text>
+          <Text>{queueState.pendingCount} item(s) waiting to sync</Text>
         </View>
       )}
 
@@ -324,10 +312,7 @@ export const NetworkStatusExample: React.FC = () => {
 
     try {
       const result = await triggerManualSync();
-      Alert.alert(
-        'Sync Complete',
-        `Processed ${result.processedCount} items`
-      );
+      Alert.alert('Sync Complete', `Processed ${result.processedCount} items`);
     } catch (error: any) {
       Alert.alert('Sync Failed', error.message);
     }

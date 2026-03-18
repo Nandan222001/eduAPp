@@ -8,6 +8,7 @@ import {
   Alert,
   Platform,
   ActivityIndicator,
+  Switch,
 } from 'react-native';
 import { Text } from '@rneui/themed';
 import { StudentTabScreenProps } from '@types';
@@ -17,6 +18,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { profileApi, UpdateProfileRequest, ChangePasswordRequest } from '@api/profile';
 import * as ImagePicker from 'expo-image-picker';
 import ImageCropPicker from 'react-native-image-crop-picker';
+import { biometricsService } from '@utils';
 
 type Props = StudentTabScreenProps<'Profile'>;
 
@@ -24,6 +26,9 @@ export const ProfileScreen: React.FC<Props> = () => {
   const queryClient = useQueryClient();
   const [editMode, setEditMode] = useState(false);
   const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [biometricEnabled, setBiometricEnabled] = useState(false);
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [biometricType, setBiometricType] = useState('Biometric Authentication');
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ['profile'],
@@ -60,6 +65,42 @@ export const ProfileScreen: React.FC<Props> = () => {
       });
     }
   }, [profile]);
+
+  React.useEffect(() => {
+    checkBiometricAvailability();
+    loadBiometricPreference();
+  }, []);
+
+  const checkBiometricAvailability = async () => {
+    const availability = await biometricsService.checkAvailability();
+    setBiometricAvailable(availability.isAvailable);
+    setBiometricType(availability.biometricType);
+  };
+
+  const loadBiometricPreference = async () => {
+    const enabled = await biometricsService.isEnabled();
+    setBiometricEnabled(enabled);
+  };
+
+  const handleBiometricToggle = async (value: boolean) => {
+    if (value) {
+      const authenticated = await biometricsService.authenticate(
+        `Enable ${biometricType} for quick login`
+      );
+
+      if (authenticated) {
+        await biometricsService.setEnabled(true);
+        setBiometricEnabled(true);
+        Alert.alert('Success', `${biometricType} enabled successfully`);
+      } else {
+        Alert.alert('Authentication Failed', 'Could not verify your identity');
+      }
+    } else {
+      await biometricsService.setEnabled(false);
+      setBiometricEnabled(false);
+      Alert.alert('Success', `${biometricType} disabled`);
+    }
+  };
 
   const updateProfileMutation = useMutation({
     mutationFn: (data: UpdateProfileRequest) => profileApi.updateProfile(data),
@@ -390,6 +431,23 @@ export const ProfileScreen: React.FC<Props> = () => {
           </Text>
         </View>
 
+        {biometricAvailable && (
+          <View style={styles.settingRow}>
+            <View style={styles.settingInfo}>
+              <Text style={styles.settingLabel}>{biometricType}</Text>
+              <Text style={styles.settingDescription}>
+                Use {biometricType} for quick and secure login
+              </Text>
+            </View>
+            <Switch
+              value={biometricEnabled}
+              onValueChange={handleBiometricToggle}
+              trackColor={{ false: COLORS.disabled, true: COLORS.primary }}
+              thumbColor={COLORS.background}
+            />
+          </View>
+        )}
+
         {!showPasswordForm ? (
           <Button
             title="Change Password"
@@ -576,5 +634,28 @@ const styles = StyleSheet.create({
   },
   button: {
     flex: 1,
+  },
+  settingRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: SPACING.md,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+    marginBottom: SPACING.md,
+  },
+  settingInfo: {
+    flex: 1,
+    marginRight: SPACING.md,
+  },
+  settingLabel: {
+    fontSize: FONT_SIZES.md,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginBottom: SPACING.xs,
+  },
+  settingDescription: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textSecondary,
   },
 });

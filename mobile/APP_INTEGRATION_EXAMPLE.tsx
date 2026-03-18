@@ -1,6 +1,6 @@
 /**
  * Example App.tsx Integration
- * 
+ *
  * This file demonstrates how to integrate the offline-first architecture
  * into your main App component.
  */
@@ -56,7 +56,7 @@ const AppContent: React.FC = () => {
 
       {/* Your main app navigation goes here */}
       {/* <NavigationContainer>...</NavigationContainer> */}
-      
+
       <View style={styles.placeholder}>
         <Text>Your App Content Here</Text>
       </View>

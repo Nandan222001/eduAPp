@@ -8,8 +8,9 @@ import {
   TouchableOpacity,
   Modal,
   Dimensions,
+  Alert,
 } from 'react-native';
-import { Text, Card, Button } from '@rneui/themed';
+import { Text, Card, Button, Icon } from '@rneui/themed';
 import { LineChart, BarChart } from 'react-native-chart-kit';
 import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS } from '@constants';
 import { StudentTabScreenProps } from '@types';
@@ -20,6 +21,7 @@ import {
   PerformanceInsights,
   GradeDistribution,
 } from '@api/grades';
+import { sharingService } from '@utils';
 
 type Props = StudentTabScreenProps<'Grades'>;
 
@@ -103,6 +105,22 @@ export const GradesScreen: React.FC<Props> = () => {
   const closeGradeDetail = () => {
     setSelectedGrade(null);
     setModalVisible(false);
+  };
+
+  const handleShareGrades = async () => {
+    try {
+      await sharingService.shareGrades(grades, 'Student Name');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to share grades');
+    }
+  };
+
+  const handleShareGradesAsPDF = async () => {
+    try {
+      await sharingService.shareGradesAsPDF(grades, 'Student Name');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to share grades as PDF');
+    }
   };
 
   const getGradeColor = (grade: string) => {
@@ -479,6 +497,19 @@ export const GradesScreen: React.FC<Props> = () => {
 
   return (
     <View style={styles.container}>
+      <View style={styles.header}>
+        <Text h3 style={styles.headerTitle}>
+          Grades
+        </Text>
+        <View style={styles.headerActions}>
+          <TouchableOpacity onPress={handleShareGrades} style={styles.headerButton}>
+            <Icon name="share-2" type="feather" size={24} color={COLORS.primary} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handleShareGradesAsPDF} style={styles.headerButton}>
+            <Icon name="download" type="feather" size={24} color={COLORS.primary} />
+          </TouchableOpacity>
+        </View>
+      </View>
       <ScrollView
         style={styles.content}
         contentContainerStyle={styles.contentContainer}
@@ -527,6 +558,29 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.surface,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.md,
+    paddingTop: SPACING.md,
+    paddingBottom: SPACING.sm,
+    backgroundColor: COLORS.background,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  headerTitle: {
+    fontSize: FONT_SIZES.xl,
+    fontWeight: 'bold',
+    color: COLORS.text,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
+  },
+  headerButton: {
+    padding: SPACING.xs,
   },
   content: {
     flex: 1,
