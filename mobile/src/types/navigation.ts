@@ -32,6 +32,9 @@ export type MainStackParamList = {
   Messages: undefined;
   ChildDetail: { childId: string };
   MessageDetail: { messageId: string };
+  StudyMaterials: undefined;
+  MaterialViewer: { materialId: number };
+  DoubtForum: undefined;
 };
 
 export type StudentTabParamList = {

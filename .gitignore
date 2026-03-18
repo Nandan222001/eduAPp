@@ -238,6 +238,10 @@ mobile/*.mobileprovision
 mobile/*.p12
 mobile/service-account-key.json
 
+# Mobile downloaded study materials (cached locally)
+mobile/downloaded_materials/
+mobile/offline_cache/
+
 # Node modules at root (if any)
 node_modules/
 package-lock.json

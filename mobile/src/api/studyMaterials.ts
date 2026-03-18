@@ -1,5 +1,13 @@
 import { apiClient } from './client';
-import { StudyMaterial, MaterialFilter, Bookmark, MaterialStats } from '@types';
+import {
+  StudyMaterial,
+  MaterialFilter,
+  Bookmark,
+  MaterialStats,
+  Subject,
+  Chapter,
+  Topic,
+} from '@types';
 
 export const studyMaterialsApi = {
   getMaterials: async (filter?: MaterialFilter): Promise<StudyMaterial[]> => {
@@ -90,5 +98,31 @@ export const studyMaterialsApi = {
 
   rateMaterial: async (materialId: number, rating: number): Promise<void> => {
     await apiClient.post(`/api/v1/study-materials/${materialId}/rate`, { rating });
+  },
+
+  getSubjects: async (): Promise<Subject[]> => {
+    const response = await apiClient.get<Subject[]>('/api/v1/study-materials/subjects');
+    return response.data;
+  },
+
+  getChaptersBySubject: async (subjectId: number): Promise<Chapter[]> => {
+    const response = await apiClient.get<Chapter[]>(
+      `/api/v1/study-materials/subjects/${subjectId}/chapters`
+    );
+    return response.data;
+  },
+
+  getTopicsByChapter: async (chapterId: number): Promise<Topic[]> => {
+    const response = await apiClient.get<Topic[]>(
+      `/api/v1/study-materials/chapters/${chapterId}/topics`
+    );
+    return response.data;
+  },
+
+  getMaterialsByTopic: async (topicId: number): Promise<StudyMaterial[]> => {
+    const response = await apiClient.get<StudyMaterial[]>(
+      `/api/v1/study-materials/topic/${topicId}`
+    );
+    return response.data;
   },
 };

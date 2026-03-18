@@ -1,0 +1,15 @@
+export { AIPredictionsScreen } from './AIPredictionsScreen';
+export { AssignmentDetailScreen } from './AssignmentDetailScreen';
+export { AssignmentsScreen } from './AssignmentsScreen';
+export { CourseDetailScreen } from './CourseDetailScreen';
+export { CoursesScreen } from './CoursesScreen';
+export { DashboardScreen } from './DashboardScreen';
+export { DoubtForumScreen } from './DoubtForumScreen';
+export { GoalsScreen } from './GoalsScreen';
+export { GradesScreen } from './GradesScreen';
+export { HomeScreen } from './HomeScreen';
+export { MaterialViewerScreen } from './MaterialViewerScreen';
+export { ProfileScreen } from './ProfileScreen';
+export { QRScannerScreen } from './QRScannerScreen';
+export { ScheduleScreen } from './ScheduleScreen';
+export { StudyMaterialsScreen } from './StudyMaterialsScreen';

@@ -72,3 +72,31 @@ export interface MaterialStats {
   recentlyViewed: StudyMaterial[];
   recommended: StudyMaterial[];
 }
+
+export interface Subject {
+  id: number;
+  name: string;
+  code: string;
+  description?: string;
+  materialCount?: number;
+  icon?: string;
+  color?: string;
+}
+
+export interface Chapter {
+  id: number;
+  subjectId: number;
+  name: string;
+  description?: string;
+  order: number;
+  materialCount?: number;
+}
+
+export interface Topic {
+  id: number;
+  chapterId: number;
+  name: string;
+  description?: string;
+  order: number;
+  materialCount?: number;
+}
