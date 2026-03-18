@@ -432,3 +432,56 @@ def mock_razorpay():
         'amount': 99900
     }
     return mock
+
+
+@pytest.fixture
+def parent_role(db_session: Session) -> Role:
+    """Create parent role."""
+    role = Role(
+        name="Parent",
+        description="Parent role",
+        is_system_role=True,
+    )
+    db_session.add(role)
+    db_session.commit()
+    db_session.refresh(role)
+    return role
+
+
+@pytest.fixture
+def parent_user(db_session: Session, institution: Institution, parent_role: Role) -> User:
+    """Create a parent user for testing."""
+    from src.models.student import Parent
+    
+    user = User(
+        username="parent1",
+        email="parent@testschool.com",
+        first_name="John",
+        last_name="Parent",
+        hashed_password=get_password_hash("password123"),
+        institution_id=institution.id,
+        role_id=parent_role.id,
+        is_active=True,
+        is_superuser=False,
+    )
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+    
+    # Create parent profile
+    parent = Parent(
+        institution_id=institution.id,
+        user_id=user.id,
+        first_name=user.first_name,
+        last_name=user.last_name,
+        email=user.email,
+        phone="+1234567890",
+        relation_type="father",
+        is_primary_contact=True,
+        is_active=True,
+    )
+    db_session.add(parent)
+    db_session.commit()
+    db_session.refresh(parent)
+    
+    return user
