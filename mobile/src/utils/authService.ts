@@ -1,7 +1,7 @@
 import { secureStorage } from './secureStorage';
 import { authApi } from '@api/auth';
 import { STORAGE_KEYS } from '@constants';
-import { store } from '@store/store';
+import { store } from '@store';
 import { setTokens, logout } from '@store/slices/authSlice';
 
 let refreshTimeout: NodeJS.Timeout | null = null;

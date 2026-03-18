@@ -4,7 +4,29 @@
     "strict": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "@components": ["src/components"],
+      "@components/*": ["src/components/*"],
+      "@screens": ["src/screens"],
+      "@screens/*": ["src/screens/*"],
+      "@store": ["src/store"],
+      "@store/*": ["src/store/*"],
+      "@utils": ["src/utils"],
+      "@utils/*": ["src/utils/*"],
+      "@config": ["src/config"],
+      "@config/*": ["src/config/*"],
+      "@types": ["src/types"],
+      "@types/*": ["src/types/*"],
+      "@api": ["src/api"],
+      "@api/*": ["src/api/*"],
+      "@hooks": ["src/hooks"],
+      "@hooks/*": ["src/hooks/*"],
+      "@services": ["src/services"],
+      "@services/*": ["src/services/*"],
+      "@constants": ["src/constants"],
+      "@constants/*": ["src/constants/*"],
+      "@theme": ["src/theme"],
+      "@theme/*": ["src/theme/*"]
     },
     "skipLibCheck": true,
     "jsx": "react-native",
@@ -20,6 +42,6 @@
     "isolatedModules": true,
     "noEmit": true
   },
-  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"],
+  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts", "app/**/*.ts", "app/**/*.tsx"],
   "exclude": ["node_modules"]
 }

@@ -2,3 +2,5 @@ export { OfflineIndicator } from './OfflineIndicator';
 export { CachedDataBanner } from './CachedDataBanner';
 export { SyncStatus } from './SyncStatus';
 export { ParentDashboard } from './ParentDashboard';
+export { Loading } from './Loading';
+export { OfflineDataRefresher } from './OfflineDataRefresher';

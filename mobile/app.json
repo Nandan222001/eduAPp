@@ -19,7 +19,8 @@
       "bundleIdentifier": "com.edutrack.app",
       "infoPlist": {
         "NSFaceIDUsageDescription": "Allow EduTrack to use Face ID for secure authentication"
-      }
+      },
+      "associatedDomains": ["applinks:edutrack.app"]
     },
     "android": {
       "adaptiveIcon": {
@@ -31,13 +32,31 @@
         "USE_BIOMETRIC",
         "USE_FINGERPRINT"
       ],
-      "googleServicesFile": "./google-services.json"
+      "googleServicesFile": "./google-services.json",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "edutrack.app",
+              "pathPrefix": "/"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "scheme": "edutrack",
+    "experiments": {
+      "typedRoutes": true
+    },
     "plugins": [
+      "expo-router",
       "expo-secure-store",
       "expo-local-authentication",
       [

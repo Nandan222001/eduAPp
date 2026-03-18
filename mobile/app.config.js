@@ -189,6 +189,9 @@ export default ({ config }) => ({
       },
     ],
   ],
+  experiments: {
+    typedRoutes: true,
+  },
   extra: {
     router: {
       origin: false,
