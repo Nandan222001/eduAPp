@@ -1,355 +1,324 @@
-import { apiClient } from '@api/client';
-import { Sentry } from '@config/sentry';
+import * as amplitude from '@amplitude/analytics-react-native';
+import analytics from '@react-native-firebase/analytics';
 import Constants from 'expo-constants';
 import * as Device from 'expo-device';
-import { Platform } from 'react-native';
 
-export interface AnalyticsEvent {
-  event_name: string;
-  event_category: string;
-  event_properties?: Record<string, any>;
-  timestamp?: string;
-  user_id?: string;
-  session_id?: string;
+interface AnalyticsConfig {
+  amplitudeApiKey?: string;
+  enableInDevelopment?: boolean;
+  useFirebase?: boolean;
 }
 
-export interface PerformanceMetric {
-  metric_name: string;
-  metric_type: 'app_launch' | 'screen_render' | 'api_response' | 'custom';
-  value: number;
-  unit: 'ms' | 'seconds' | 'bytes' | 'count';
-  metadata?: Record<string, any>;
-  timestamp?: string;
+interface UserProperties {
+  userId?: string;
+  email?: string;
+  role?: string;
+  [key: string]: any;
+}
+
+interface EventProperties {
+  [key: string]: any;
 }
 
 class AnalyticsService {
-  private sessionId: string;
-  private userId: string | null = null;
-  private eventQueue: AnalyticsEvent[] = [];
-  private performanceQueue: PerformanceMetric[] = [];
-  private flushInterval: NodeJS.Timeout | null = null;
-  private readonly FLUSH_INTERVAL_MS = 30000;
-  private readonly MAX_QUEUE_SIZE = 50;
-  private appLaunchTime: number;
-  private screenStartTimes: Map<string, number> = new Map();
-  private apiRequestStartTimes: Map<string, number> = new Map();
+  private initialized = false;
+  private amplitudeEnabled = false;
+  private firebaseEnabled = false;
 
-  constructor() {
-    this.sessionId = this.generateSessionId();
-    this.appLaunchTime = Date.now();
-    this.startAutoFlush();
-  }
+  /**
+   * Initialize analytics services
+   */
+  async init(config: AnalyticsConfig): Promise<void> {
+    const { amplitudeApiKey, enableInDevelopment = false, useFirebase = true } = config;
 
-  private generateSessionId(): string {
-    return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-  }
+    // Don't initialize in development unless explicitly enabled
+    if (__DEV__ && !enableInDevelopment) {
+      console.log('[Analytics] Skipping initialization in development mode');
+      return;
+    }
 
-  private startAutoFlush() {
-    this.flushInterval = setInterval(() => {
-      this.flush();
-    }, this.FLUSH_INTERVAL_MS);
-  }
+    try {
+      // Initialize Amplitude
+      if (amplitudeApiKey) {
+        await amplitude.init(amplitudeApiKey, undefined, {
+          trackingOptions: {
+            ipAddress: false,
+            language: true,
+            platform: true,
+          },
+          minIdLength: 1,
+        });
+        this.amplitudeEnabled = true;
+        console.log('[Analytics] Amplitude initialized');
+      }
 
-  public setUserId(userId: string) {
-    this.userId = userId;
-  }
+      // Initialize Firebase Analytics
+      if (useFirebase) {
+        await analytics().setAnalyticsCollectionEnabled(true);
+        this.firebaseEnabled = true;
+        console.log('[Analytics] Firebase Analytics initialized');
+      }
 
-  public clearUserId() {
-    this.userId = null;
-  }
+      // Set default properties
+      await this.setDefaultProperties();
 
-  public async trackEvent(
-    eventName: string,
-    category: string,
-    properties?: Record<string, any>
-  ): Promise<void> {
-    const event: AnalyticsEvent = {
-      event_name: eventName,
-      event_category: category,
-      event_properties: {
-        ...properties,
-        platform: Platform.OS,
-        app_version: Constants.expoConfig?.version || '1.0.0',
-        device_model: Device.modelName,
-        device_brand: Device.brand,
-        os_version: Device.osVersion,
-      },
-      timestamp: new Date().toISOString(),
-      user_id: this.userId || undefined,
-      session_id: this.sessionId,
-    };
-
-    this.eventQueue.push(event);
-
-    Sentry.addBreadcrumb({
-      category: 'analytics',
-      message: `Event: ${eventName}`,
-      level: 'info',
-      data: properties,
-    });
-
-    if (this.eventQueue.length >= this.MAX_QUEUE_SIZE) {
-      await this.flush();
+      this.initialized = true;
+      console.log('[Analytics] Initialized successfully');
+    } catch (error) {
+      console.error('[Analytics] Initialization failed:', error);
     }
   }
 
-  public async trackScreenView(screenName: string, previousScreen?: string): Promise<void> {
-    await this.trackEvent(
-      'screen_view',
-      'navigation',
-      {
+  /**
+   * Set default device and app properties
+   */
+  private async setDefaultProperties(): Promise<void> {
+    const defaultProperties = {
+      device_model: Device.modelName,
+      device_brand: Device.brand,
+      os_name: Device.osName,
+      os_version: Device.osVersion,
+      app_version: Constants.expoConfig?.version,
+      expo_version: Constants.expoVersion,
+    };
+
+    if (this.amplitudeEnabled) {
+      const identifyEvent = new amplitude.Identify();
+      Object.entries(defaultProperties).forEach(([key, value]) => {
+        identifyEvent.set(key, value);
+      });
+      await amplitude.identify(identifyEvent);
+    }
+
+    if (this.firebaseEnabled) {
+      await Promise.all(
+        Object.entries(defaultProperties).map(([key, value]) =>
+          analytics().setUserProperty(key, String(value))
+        )
+      );
+    }
+  }
+
+  /**
+   * Set user ID and properties
+   */
+  async setUser(userId: string, properties?: UserProperties): Promise<void> {
+    if (!this.initialized) return;
+
+    try {
+      if (this.amplitudeEnabled) {
+        await amplitude.setUserId(userId);
+
+        if (properties) {
+          const identifyEvent = new amplitude.Identify();
+          Object.entries(properties).forEach(([key, value]) => {
+            identifyEvent.set(key, value);
+          });
+          await amplitude.identify(identifyEvent);
+        }
+      }
+
+      if (this.firebaseEnabled) {
+        await analytics().setUserId(userId);
+
+        if (properties) {
+          await Promise.all(
+            Object.entries(properties).map(([key, value]) =>
+              analytics().setUserProperty(key, String(value))
+            )
+          );
+        }
+      }
+    } catch (error) {
+      console.error('[Analytics] Set user failed:', error);
+    }
+  }
+
+  /**
+   * Clear user data (on logout)
+   */
+  async clearUser(): Promise<void> {
+    if (!this.initialized) return;
+
+    try {
+      if (this.amplitudeEnabled) {
+        await amplitude.setUserId(undefined);
+        await amplitude.reset();
+      }
+
+      if (this.firebaseEnabled) {
+        await analytics().setUserId(null);
+      }
+    } catch (error) {
+      console.error('[Analytics] Clear user failed:', error);
+    }
+  }
+
+  /**
+   * Track an event
+   */
+  async trackEvent(eventName: string, properties?: EventProperties): Promise<void> {
+    if (!this.initialized) {
+      console.log('[Analytics] Event (not tracked):', eventName, properties);
+      return;
+    }
+
+    try {
+      if (this.amplitudeEnabled) {
+        await amplitude.track(eventName, properties);
+      }
+
+      if (this.firebaseEnabled) {
+        await analytics().logEvent(eventName, properties);
+      }
+    } catch (error) {
+      console.error('[Analytics] Track event failed:', error);
+    }
+  }
+
+  /**
+   * Track screen view
+   */
+  async trackScreenView(screenName: string, screenClass?: string): Promise<void> {
+    if (!this.initialized) return;
+
+    try {
+      await this.trackEvent('screen_view', {
         screen_name: screenName,
-        previous_screen: previousScreen,
-      }
-    );
+        screen_class: screenClass || screenName,
+      });
 
-    Sentry.addBreadcrumb({
-      category: 'navigation',
-      message: `Screen: ${screenName}`,
-      level: 'info',
-    });
-  }
-
-  public async trackButtonClick(
-    buttonName: string,
-    screenName: string,
-    additionalData?: Record<string, any>
-  ): Promise<void> {
-    await this.trackEvent(
-      'button_click',
-      'interaction',
-      {
-        button_name: buttonName,
-        screen_name: screenName,
-        ...additionalData,
-      }
-    );
-  }
-
-  public async trackAssignmentSubmission(
-    assignmentId: string,
-    assignmentTitle: string,
-    submissionType: string
-  ): Promise<void> {
-    await this.trackEvent(
-      'assignment_submission',
-      'academic',
-      {
-        assignment_id: assignmentId,
-        assignment_title: assignmentTitle,
-        submission_type: submissionType,
-      }
-    );
-  }
-
-  public async trackLogin(method: string, success: boolean): Promise<void> {
-    await this.trackEvent(
-      'login',
-      'authentication',
-      {
-        method,
-        success,
-      }
-    );
-  }
-
-  public async trackLogout(): Promise<void> {
-    await this.trackEvent('logout', 'authentication', {});
-    await this.flush();
-  }
-
-  public async trackFeatureUsage(
-    featureName: string,
-    featureCategory: string,
-    metadata?: Record<string, any>
-  ): Promise<void> {
-    await this.trackEvent(
-      'feature_usage',
-      'feature',
-      {
-        feature_name: featureName,
-        feature_category: featureCategory,
-        ...metadata,
-      }
-    );
-  }
-
-  public async trackSearch(
-    searchQuery: string,
-    searchCategory: string,
-    resultCount: number
-  ): Promise<void> {
-    await this.trackEvent(
-      'search',
-      'search',
-      {
-        query: searchQuery,
-        category: searchCategory,
-        result_count: resultCount,
-      }
-    );
-  }
-
-  public async trackError(
-    errorMessage: string,
-    errorCode?: string,
-    stackTrace?: string
-  ): Promise<void> {
-    await this.trackEvent(
-      'error',
-      'error',
-      {
-        message: errorMessage,
-        code: errorCode,
-        stack_trace: stackTrace,
-      }
-    );
-  }
-
-  public trackAppLaunchTime(): void {
-    const launchTime = Date.now() - this.appLaunchTime;
-    this.trackPerformanceMetric({
-      metric_name: 'app_launch_time',
-      metric_type: 'app_launch',
-      value: launchTime,
-      unit: 'ms',
-    });
-
-    Sentry.setMeasurement('app_launch_time', launchTime, 'millisecond');
-  }
-
-  public startScreenRender(screenName: string): void {
-    this.screenStartTimes.set(screenName, Date.now());
-  }
-
-  public endScreenRender(screenName: string): void {
-    const startTime = this.screenStartTimes.get(screenName);
-    if (startTime) {
-      const renderTime = Date.now() - startTime;
-      this.trackPerformanceMetric({
-        metric_name: 'screen_render_time',
-        metric_type: 'screen_render',
-        value: renderTime,
-        unit: 'ms',
-        metadata: {
+      if (this.firebaseEnabled) {
+        await analytics().logScreenView({
           screen_name: screenName,
-        },
-      });
-
-      Sentry.setMeasurement(`screen_render_${screenName}`, renderTime, 'millisecond');
-      this.screenStartTimes.delete(screenName);
+          screen_class: screenClass || screenName,
+        });
+      }
+    } catch (error) {
+      console.error('[Analytics] Track screen view failed:', error);
     }
   }
 
-  public startApiRequest(requestId: string, endpoint: string, method: string): void {
-    this.apiRequestStartTimes.set(requestId, Date.now());
+  /**
+   * Track user engagement events
+   */
+  async trackEngagement(action: string, properties?: EventProperties): Promise<void> {
+    await this.trackEvent(`engagement_${action}`, properties);
+  }
 
-    Sentry.addBreadcrumb({
-      category: 'api',
-      message: `API Request: ${method} ${endpoint}`,
-      level: 'info',
-      data: { request_id: requestId },
+  /**
+   * Track conversion events
+   */
+  async trackConversion(conversionType: string, value?: number, currency?: string): Promise<void> {
+    await this.trackEvent('conversion', {
+      conversion_type: conversionType,
+      value,
+      currency,
     });
   }
 
-  public endApiRequest(
-    requestId: string,
-    endpoint: string,
-    method: string,
-    statusCode: number,
-    success: boolean
-  ): void {
-    const startTime = this.apiRequestStartTimes.get(requestId);
-    if (startTime) {
-      const responseTime = Date.now() - startTime;
-      this.trackPerformanceMetric({
-        metric_name: 'api_response_time',
-        metric_type: 'api_response',
-        value: responseTime,
-        unit: 'ms',
-        metadata: {
-          endpoint,
-          method,
-          status_code: statusCode,
-          success,
-        },
-      });
-
-      Sentry.addBreadcrumb({
-        category: 'api',
-        message: `API Response: ${method} ${endpoint}`,
-        level: success ? 'info' : 'error',
-        data: {
-          request_id: requestId,
-          status_code: statusCode,
-          response_time: responseTime,
-        },
-      });
-
-      this.apiRequestStartTimes.delete(requestId);
-    }
+  /**
+   * Track errors
+   */
+  async trackError(error: Error, context?: Record<string, any>): Promise<void> {
+    await this.trackEvent('error', {
+      error_message: error.message,
+      error_stack: error.stack,
+      ...context,
+    });
   }
 
-  private trackPerformanceMetric(metric: PerformanceMetric): void {
-    const completeMetric: PerformanceMetric = {
-      ...metric,
-      timestamp: metric.timestamp || new Date().toISOString(),
-    };
-
-    this.performanceQueue.push(completeMetric);
-
-    if (this.performanceQueue.length >= this.MAX_QUEUE_SIZE) {
-      this.flushPerformanceMetrics();
-    }
-  }
-
-  private async flush(): Promise<void> {
-    if (this.eventQueue.length === 0) {
-      return;
-    }
-
-    const eventsToSend = [...this.eventQueue];
-    this.eventQueue = [];
+  /**
+   * Set user properties
+   */
+  async setUserProperties(properties: UserProperties): Promise<void> {
+    if (!this.initialized) return;
 
     try {
-      await apiClient.post('/analytics/track', {
-        events: eventsToSend,
-      });
+      if (this.amplitudeEnabled) {
+        const identifyEvent = new amplitude.Identify();
+        Object.entries(properties).forEach(([key, value]) => {
+          identifyEvent.set(key, value);
+        });
+        await amplitude.identify(identifyEvent);
+      }
+
+      if (this.firebaseEnabled) {
+        await Promise.all(
+          Object.entries(properties).map(([key, value]) =>
+            analytics().setUserProperty(key, String(value))
+          )
+        );
+      }
     } catch (error) {
-      console.error('Failed to send analytics events:', error);
-      this.eventQueue.unshift(...eventsToSend.slice(-10));
+      console.error('[Analytics] Set user properties failed:', error);
     }
   }
 
-  private async flushPerformanceMetrics(): Promise<void> {
-    if (this.performanceQueue.length === 0) {
-      return;
-    }
-
-    const metricsToSend = [...this.performanceQueue];
-    this.performanceQueue = [];
+  /**
+   * Increment user property
+   */
+  async incrementUserProperty(property: string, value: number = 1): Promise<void> {
+    if (!this.initialized || !this.amplitudeEnabled) return;
 
     try {
-      await apiClient.post('/analytics/performance', {
-        metrics: metricsToSend,
+      const identifyEvent = new amplitude.Identify();
+      identifyEvent.add(property, value);
+      await amplitude.identify(identifyEvent);
+    } catch (error) {
+      console.error('[Analytics] Increment user property failed:', error);
+    }
+  }
+
+  /**
+   * Track revenue (for in-app purchases)
+   */
+  async trackRevenue(amount: number, productId?: string, quantity: number = 1): Promise<void> {
+    if (!this.initialized) return;
+
+    try {
+      if (this.amplitudeEnabled) {
+        const revenue = new amplitude.Revenue();
+        revenue.setPrice(amount);
+        if (productId) revenue.setProductId(productId);
+        revenue.setQuantity(quantity);
+        await amplitude.revenue(revenue);
+      }
+
+      await this.trackEvent('purchase', {
+        value: amount,
+        product_id: productId,
+        quantity,
       });
     } catch (error) {
-      console.error('Failed to send performance metrics:', error);
-      this.performanceQueue.unshift(...metricsToSend.slice(-10));
+      console.error('[Analytics] Track revenue failed:', error);
     }
   }
 
-  public async forceFlush(): Promise<void> {
-    await Promise.all([this.flush(), this.flushPerformanceMetrics()]);
-  }
+  /**
+   * Flush events (ensure they're sent before app closes)
+   */
+  async flush(): Promise<void> {
+    if (!this.initialized || !this.amplitudeEnabled) return;
 
-  public destroy(): void {
-    if (this.flushInterval) {
-      clearInterval(this.flushInterval);
-      this.flushInterval = null;
+    try {
+      await amplitude.flush();
+    } catch (error) {
+      console.error('[Analytics] Flush failed:', error);
     }
-    this.forceFlush();
   }
 }
 
 export const analyticsService = new AnalyticsService();
+export default analyticsService;
+
+// Convenience functions for common events
+export const trackAppOpen = () => analyticsService.trackEvent('app_open');
+export const trackAppClose = () => analyticsService.trackEvent('app_close');
+export const trackLogin = (method: string) => analyticsService.trackEvent('login', { method });
+export const trackLogout = () => analyticsService.trackEvent('logout');
+export const trackSignup = (method: string) => analyticsService.trackEvent('signup', { method });
+export const trackSearch = (query: string, resultsCount: number) =>
+  analyticsService.trackEvent('search', { query, results_count: resultsCount });
+export const trackShare = (contentType: string, contentId: string) =>
+  analyticsService.trackEvent('share', { content_type: contentType, content_id: contentId });

@@ -31,7 +31,7 @@ class User(Base):
     devices = relationship("UserDevice", back_populates="user", cascade="all, delete-orphan")
     deletion_requests = relationship("AccountDeletionRequest", back_populates="user", cascade="all, delete-orphan")
     dashboard_widgets = relationship("DashboardWidget", back_populates="user", cascade="all, delete-orphan")
-    feedbacks = relationship("Feedback", back_populates="user", cascade="all, delete-orphan")
+    push_devices = relationship("PushDevice", back_populates="user", cascade="all, delete-orphan")
     
     __table_args__ = (
         Index('idx_user_institution_email', 'institution_id', 'email', unique=True),

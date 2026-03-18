@@ -1,52 +1,53 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, Alert } from 'react-native';
-import {
-  OfflineIndicator,
-  SyncStatusBanner,
-  ManualSyncButton,
-  OfflineQueueViewer,
-} from '@components';
-import { useOfflineSync, useNetworkStatus } from '@hooks';
-import { backgroundSyncService } from '@utils/backgroundSync';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, Switch, TouchableOpacity, Alert } from 'react-native';
+import { useAppDispatch, useAppSelector } from '@store/hooks';
+import { useNetworkStatus, useOfflineQueue } from '@hooks';
+import { setAutoSyncEnabled } from '@store/slices/offlineSlice';
+import { offlineQueueManager } from '@utils/offlineQueue';
+import { BackgroundSyncService } from '@utils/backgroundSync';
+import { OfflineIndicator, OfflineQueueStatus, CachedDataBadge, SyncButton } from '@components';
+import { COLORS, SPACING, FONT_SIZES } from '@constants';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
 export const OfflineSettingsScreen: React.FC = () => {
-  const { queueState, clearQueue, clearFailedRequests } = useOfflineSync();
-  const { isConnected, type, isInternetReachable } = useNetworkStatus();
-  const [backgroundSyncEnabled, setBackgroundSyncEnabled] = React.useState(true);
+  const dispatch = useAppDispatch();
+  const { isConnected, isInternetReachable, type } = useNetworkStatus();
+  const { queueSize } = useOfflineQueue();
+  const [syncingQueue, setSyncingQueue] = useState(false);
 
-  React.useEffect(() => {
-    checkBackgroundSyncStatus();
-  }, []);
+  const {
+    autoSyncEnabled,
+    lastSyncTime,
+    profileLastSync,
+    dashboardLastSync,
+    assignmentsLastSync,
+    gradesLastSync,
+    attendanceLastSync,
+  } = useAppSelector(state => ({
+    autoSyncEnabled: state.offline.autoSyncEnabled,
+    lastSyncTime: state.offline.lastSyncTime,
+    profileLastSync: state.studentData.profileLastSync,
+    dashboardLastSync: state.studentData.dashboardLastSync,
+    assignmentsLastSync: state.studentData.assignmentsLastSync,
+    gradesLastSync: state.studentData.gradesLastSync,
+    attendanceLastSync: state.studentData.attendanceLastSync,
+  }));
 
-  const checkBackgroundSyncStatus = async () => {
-    const isRegistered = await backgroundSyncService.isTaskRegistered();
-    setBackgroundSyncEnabled(isRegistered);
+  const handleToggleAutoSync = (value: boolean) => {
+    dispatch(setAutoSyncEnabled(value));
   };
 
-  const toggleBackgroundSync = async (value: boolean) => {
-    try {
-      if (value) {
-        await backgroundSyncService.registerBackgroundSync();
-      } else {
-        await backgroundSyncService.unregisterBackgroundSync();
-      }
-      setBackgroundSyncEnabled(value);
-    } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to toggle background sync');
-    }
-  };
-
-  const handleClearQueue = () => {
+  const handleClearQueue = async () => {
     Alert.alert(
       'Clear Queue',
-      'Are you sure you want to clear all pending requests? This action cannot be undone.',
+      'Are you sure you want to clear all pending operations? This cannot be undone.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Clear',
           style: 'destructive',
           onPress: async () => {
-            await clearQueue();
+            await offlineQueueManager.clearQueue();
             Alert.alert('Success', 'Queue cleared successfully');
           },
         },
@@ -54,87 +55,151 @@ export const OfflineSettingsScreen: React.FC = () => {
     );
   };
 
-  const handleClearFailed = () => {
-    Alert.alert('Clear Failed', 'Remove all failed requests from the queue?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Clear',
-        style: 'destructive',
-        onPress: async () => {
-          await clearFailedRequests();
-          Alert.alert('Success', 'Failed requests cleared');
-        },
-      },
-    ]);
+  const handleManualSync = async () => {
+    setSyncingQueue(true);
+    try {
+      const result = await offlineQueueManager.manualSync();
+      if (result.success) {
+        Alert.alert('Success', `Successfully synced ${result.syncedCount} operations`);
+      } else {
+        Alert.alert(
+          'Partial Success',
+          `Synced ${result.syncedCount} operations. ${result.failedCount} failed.`
+        );
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to sync queue. Please try again.');
+    } finally {
+      setSyncingQueue(false);
+    }
+  };
+
+  const handleRegisterBackgroundSync = async () => {
+    try {
+      await BackgroundSyncService.register();
+      Alert.alert('Success', 'Background sync registered successfully');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to register background sync');
+    }
   };
 
   return (
     <ScrollView style={styles.container}>
+      <OfflineIndicator onSyncPress={handleManualSync} />
+
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Network Status</Text>
         <View style={styles.card}>
-          <OfflineIndicator style={styles.indicator} showWhenOnline />
-
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Connection:</Text>
-            <Text style={styles.infoValue}>{isConnected ? 'Connected' : 'Disconnected'}</Text>
+          <View style={styles.row}>
+            <Icon
+              name={isConnected ? 'wifi' : 'wifi-off'}
+              size={24}
+              color={isConnected ? COLORS.success : COLORS.error}
+            />
+            <View style={styles.statusInfo}>
+              <Text style={styles.statusLabel}>Connection Status</Text>
+              <Text style={styles.statusValue}>{isConnected ? 'Connected' : 'Disconnected'}</Text>
+            </View>
           </View>
 
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Network Type:</Text>
-            <Text style={styles.infoValue}>{type || 'Unknown'}</Text>
+          <View style={styles.divider} />
+
+          <View style={styles.row}>
+            <Icon name="language" size={24} color={COLORS.primary} />
+            <View style={styles.statusInfo}>
+              <Text style={styles.statusLabel}>Internet Access</Text>
+              <Text style={styles.statusValue}>
+                {isInternetReachable ? 'Available' : 'Unavailable'}
+              </Text>
+            </View>
           </View>
 
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Internet Reachable:</Text>
-            <Text style={styles.infoValue}>
-              {isInternetReachable === null ? 'Unknown' : isInternetReachable ? 'Yes' : 'No'}
-            </Text>
-          </View>
-        </View>
-      </View>
+          <View style={styles.divider} />
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Sync Status</Text>
-        <SyncStatusBanner style={styles.syncBanner} />
-
-        <View style={styles.card}>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Total Queued:</Text>
-            <Text style={styles.infoValue}>{queueState.totalCount}</Text>
-          </View>
-
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Pending:</Text>
-            <Text style={styles.infoValue}>{queueState.pendingCount}</Text>
-          </View>
-
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Failed:</Text>
-            <Text style={styles.infoValue}>{queueState.failedCount}</Text>
+          <View style={styles.row}>
+            <Icon name="network-cell" size={24} color={COLORS.primary} />
+            <View style={styles.statusInfo}>
+              <Text style={styles.statusLabel}>Connection Type</Text>
+              <Text style={styles.statusValue}>{type || 'Unknown'}</Text>
+            </View>
           </View>
         </View>
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Actions</Text>
+        <Text style={styles.sectionTitle}>Offline Queue</Text>
         <View style={styles.card}>
-          <ManualSyncButton style={styles.syncButton} />
+          <View style={styles.row}>
+            <Icon name="cloud-queue" size={24} color={COLORS.primary} />
+            <View style={styles.statusInfo}>
+              <Text style={styles.statusLabel}>Pending Operations</Text>
+              <Text style={styles.statusValue}>{queueSize}</Text>
+            </View>
+          </View>
 
-          {queueState.totalCount > 0 && (
-            <TouchableOpacity style={styles.actionButton} onPress={handleClearQueue}>
-              <Text style={styles.actionButtonText}>Clear Queue</Text>
-            </TouchableOpacity>
-          )}
+          {queueSize > 0 && (
+            <>
+              <View style={styles.divider} />
+              <View style={styles.buttonRow}>
+                <TouchableOpacity
+                  onPress={handleManualSync}
+                  disabled={!isConnected || syncingQueue}
+                  style={[styles.button, styles.syncButton]}
+                >
+                  <Icon name="sync" size={20} color={COLORS.background} />
+                  <Text style={styles.buttonText}>{syncingQueue ? 'Syncing...' : 'Sync Now'}</Text>
+                </TouchableOpacity>
 
-          {queueState.failedCount > 0 && (
-            <TouchableOpacity
-              style={[styles.actionButton, styles.actionButtonSecondary]}
-              onPress={handleClearFailed}
-            >
-              <Text style={styles.actionButtonTextSecondary}>Clear Failed Requests</Text>
-            </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleClearQueue}
+                  style={[styles.button, styles.clearButton]}
+                >
+                  <Icon name="delete" size={20} color={COLORS.error} />
+                  <Text style={[styles.buttonText, { color: COLORS.error }]}>Clear</Text>
+                </TouchableOpacity>
+              </View>
+            </>
           )}
+        </View>
+
+        <OfflineQueueStatus showDetails={true} />
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Cached Data</Text>
+        <View style={styles.card}>
+          <View style={styles.cachedItem}>
+            <Text style={styles.cachedLabel}>Profile</Text>
+            <CachedDataBadge lastSyncTime={profileLastSync} isOnline={isConnected} />
+          </View>
+
+          <View style={styles.divider} />
+
+          <View style={styles.cachedItem}>
+            <Text style={styles.cachedLabel}>Dashboard</Text>
+            <CachedDataBadge lastSyncTime={dashboardLastSync} isOnline={isConnected} />
+          </View>
+
+          <View style={styles.divider} />
+
+          <View style={styles.cachedItem}>
+            <Text style={styles.cachedLabel}>Assignments</Text>
+            <CachedDataBadge lastSyncTime={assignmentsLastSync} isOnline={isConnected} />
+          </View>
+
+          <View style={styles.divider} />
+
+          <View style={styles.cachedItem}>
+            <Text style={styles.cachedLabel}>Grades</Text>
+            <CachedDataBadge lastSyncTime={gradesLastSync} isOnline={isConnected} />
+          </View>
+
+          <View style={styles.divider} />
+
+          <View style={styles.cachedItem}>
+            <Text style={styles.cachedLabel}>Attendance</Text>
+            <CachedDataBadge lastSyncTime={attendanceLastSync} isOnline={isConnected} />
+          </View>
         </View>
       </View>
 
@@ -143,19 +208,31 @@ export const OfflineSettingsScreen: React.FC = () => {
         <View style={styles.card}>
           <View style={styles.settingRow}>
             <View style={styles.settingInfo}>
-              <Text style={styles.settingLabel}>Background Sync</Text>
-              <Text style={styles.settingDescription}>
-                Automatically sync data when connection is restored
-              </Text>
+              <Text style={styles.settingLabel}>Auto Sync</Text>
+              <Text style={styles.settingDescription}>Automatically sync data when online</Text>
             </View>
-            <Switch value={backgroundSyncEnabled} onValueChange={toggleBackgroundSync} />
+            <Switch
+              value={autoSyncEnabled}
+              onValueChange={handleToggleAutoSync}
+              trackColor={{ false: COLORS.disabled, true: COLORS.primary }}
+              thumbColor={COLORS.background}
+            />
           </View>
+
+          <View style={styles.divider} />
+
+          <TouchableOpacity onPress={handleRegisterBackgroundSync} style={styles.settingRow}>
+            <View style={styles.settingInfo}>
+              <Text style={styles.settingLabel}>Background Sync</Text>
+              <Text style={styles.settingDescription}>Enable background data synchronization</Text>
+            </View>
+            <Icon name="chevron-right" size={24} color={COLORS.textSecondary} />
+          </TouchableOpacity>
         </View>
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Queued Requests</Text>
-        <OfflineQueueViewer style={styles.queueViewer} />
+        <SyncButton onSyncComplete={() => {}} />
       </View>
     </ScrollView>
   );
@@ -164,100 +241,101 @@ export const OfflineSettingsScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: COLORS.surface,
   },
   section: {
-    marginBottom: 24,
+    marginTop: SPACING.md,
+    paddingHorizontal: SPACING.md,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#212121',
-    marginBottom: 12,
-    marginHorizontal: 16,
-    marginTop: 16,
+    fontSize: FONT_SIZES.lg,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginBottom: SPACING.sm,
   },
   card: {
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 16,
-    borderRadius: 8,
-    padding: 16,
-    elevation: 2,
+    backgroundColor: COLORS.background,
+    borderRadius: 12,
+    padding: SPACING.md,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
+    elevation: 2,
   },
-  indicator: {
-    marginBottom: 16,
-    alignSelf: 'flex-start',
-  },
-  infoRow: {
+  row: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    alignItems: 'center',
   },
-  infoLabel: {
-    fontSize: 14,
-    color: '#757575',
+  statusInfo: {
+    marginLeft: SPACING.md,
+    flex: 1,
   },
-  infoValue: {
-    fontSize: 14,
+  statusLabel: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textSecondary,
+  },
+  statusValue: {
+    fontSize: FONT_SIZES.md,
     fontWeight: '600',
-    color: '#212121',
+    color: COLORS.text,
+    marginTop: 2,
   },
-  syncBanner: {
-    marginHorizontal: 16,
-    marginBottom: 16,
+  divider: {
+    height: 1,
+    backgroundColor: COLORS.border,
+    marginVertical: SPACING.md,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
+  },
+  button: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: SPACING.sm,
     borderRadius: 8,
+    gap: SPACING.xs,
   },
   syncButton: {
-    marginBottom: 12,
+    backgroundColor: COLORS.primary,
   },
-  actionButton: {
-    backgroundColor: '#F44336',
-    paddingVertical: 12,
-    borderRadius: 8,
+  clearButton: {
+    backgroundColor: COLORS.error + '20',
+  },
+  buttonText: {
+    fontSize: FONT_SIZES.sm,
+    fontWeight: '600',
+    color: COLORS.background,
+  },
+  cachedItem: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    justifyContent: 'space-between',
   },
-  actionButtonSecondary: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#F44336',
-  },
-  actionButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  actionButtonTextSecondary: {
-    color: '#F44336',
-    fontSize: 16,
-    fontWeight: '600',
+  cachedLabel: {
+    fontSize: FONT_SIZES.md,
+    fontWeight: '500',
+    color: COLORS.text,
   },
   settingRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
   settingInfo: {
     flex: 1,
-    marginRight: 16,
   },
   settingLabel: {
-    fontSize: 16,
+    fontSize: FONT_SIZES.md,
     fontWeight: '600',
-    color: '#212121',
-    marginBottom: 4,
+    color: COLORS.text,
   },
   settingDescription: {
-    fontSize: 12,
-    color: '#757575',
-  },
-  queueViewer: {
-    minHeight: 200,
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textSecondary,
+    marginTop: 2,
   },
 });

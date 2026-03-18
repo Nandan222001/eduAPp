@@ -1,89 +1,79 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   View,
+  StyleSheet,
   ScrollView,
   RefreshControl,
-  StyleSheet,
   TouchableOpacity,
-  Alert,
+  Modal,
+  FlatList,
+  Dimensions,
 } from 'react-native';
-import { Text, Icon } from '@rneui/themed';
-import { Calendar, DateData } from 'react-native-calendars';
-import { format, startOfMonth, endOfMonth, subMonths, addMonths } from 'date-fns';
-import { MainStackScreenProps } from '@types';
-import { Card } from '@components';
-import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS } from '@constants';
-import { parentsApi, AttendanceData } from '@api/parents';
+import { Text, Card, Icon, Badge } from '@rneui/themed';
+import { Calendar } from 'react-native-calendars';
+import { useChildren, useChildAttendance } from '@hooks/useParentQueries';
+import { LoadingState } from '@components/shared/LoadingState';
+import { ErrorState } from '@components/shared/ErrorState';
+import { EmptyState } from '@components/shared/EmptyState';
+import { COLORS, SPACING } from '@constants';
+import type { ChildAttendanceRecord } from '../../types/parent';
 
-type Props = MainStackScreenProps<'Attendance'>;
+export const AttendanceScreen = () => {
+  const [selectedChildId, setSelectedChildId] = useState<number | null>(null);
+  const [selectorVisible, setSelectorVisible] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const currentDate = new Date();
+  const [month, setMonth] = useState(currentDate.getMonth() + 1);
+  const [year, setYear] = useState(currentDate.getFullYear());
 
-export const AttendanceScreen: React.FC<Props> = ({ route }) => {
-  const childId = route.params?.childId;
-  const [refreshing, setRefreshing] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [attendanceData, setAttendanceData] = useState<AttendanceData | null>(null);
-  const [selectedDate, setSelectedDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
-  const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
+  const { data: children, isLoading: isLoadingChildren, isError: isErrorChildren } = useChildren();
 
-  const fetchAttendanceData = useCallback(
-    async (startDate: Date, endDate: Date) => {
-      if (!childId) return;
+  const {
+    data: attendanceData,
+    isLoading: isLoadingAttendance,
+    isError: isErrorAttendance,
+    error,
+    refetch,
+    isRefetching,
+  } = useChildAttendance(selectedChildId, {
+    month: month.toString().padStart(2, '0'),
+    year,
+  });
 
-      try {
-        setLoading(true);
-        const response = await parentsApi.getAttendance(
-          parseInt(childId),
-          format(startDate, 'yyyy-MM-dd'),
-          format(endDate, 'yyyy-MM-dd')
-        );
-        setAttendanceData(response.data);
-      } catch (error) {
-        console.error('Error fetching attendance data:', error);
-        Alert.alert('Error', 'Failed to load attendance data');
-      } finally {
-        setLoading(false);
-      }
-    },
-    [childId]
-  );
-
-  useEffect(() => {
-    if (childId) {
-      const start = startOfMonth(currentMonth);
-      const end = endOfMonth(currentMonth);
-      fetchAttendanceData(start, end);
+  React.useEffect(() => {
+    if (children && children.length > 0 && !selectedChildId) {
+      setSelectedChildId(children[0].id);
     }
-  }, [childId, currentMonth, fetchAttendanceData]);
+  }, [children, selectedChildId]);
 
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    const start = startOfMonth(currentMonth);
-    const end = endOfMonth(currentMonth);
-    await fetchAttendanceData(start, end);
-    setRefreshing(false);
-  }, [currentMonth, fetchAttendanceData]);
+  if (isLoadingChildren || (isLoadingAttendance && selectedChildId)) {
+    return <LoadingState message="Loading attendance..." />;
+  }
 
-  const handleMonthChange = (direction: 'prev' | 'next') => {
-    const newMonth = direction === 'prev' ? subMonths(currentMonth, 1) : addMonths(currentMonth, 1);
-    setCurrentMonth(newMonth);
-  };
+  if (isErrorChildren || isErrorAttendance) {
+    return (
+      <ErrorState
+        message={error?.message || 'Failed to load attendance'}
+        onRetry={() => refetch()}
+      />
+    );
+  }
+
+  if (!children || children.length === 0) {
+    return <EmptyState title="No Children" message="No children found" />;
+  }
 
   const getMarkedDates = () => {
-    const marked: {
-      [key: string]: {
-        selected: boolean;
-        selectedColor: string;
-        marked: boolean;
-        dotColor: string;
-        selectedTextColor?: string;
-      };
-    } = {};
+    if (!attendanceData?.monthlyRecords) return {};
 
-    attendanceData?.records.forEach(record => {
-      let color = COLORS.textSecondary;
-      if (record.status === 'present') color = COLORS.success;
-      else if (record.status === 'absent') color = COLORS.error;
-      else if (record.status === 'late') color = COLORS.warning;
+    const marked: any = {};
+    attendanceData.monthlyRecords.forEach((record: ChildAttendanceRecord) => {
+      const color =
+        record.status === 'present'
+          ? COLORS.success
+          : record.status === 'absent'
+            ? COLORS.error
+            : COLORS.warning;
 
       marked[record.date] = {
         selected: true,
@@ -98,408 +88,469 @@ export const AttendanceScreen: React.FC<Props> = ({ route }) => {
         ...marked[selectedDate],
         selected: true,
         selectedColor: marked[selectedDate].selectedColor,
-        selectedTextColor: COLORS.background,
       };
     }
 
     return marked;
   };
 
-  const getAttendanceForDate = (date: string) => {
-    return attendanceData?.records.find(record => record.date === date);
-  };
-
-  const renderAttendanceGauge = () => {
-    if (!attendanceData) return null;
-
-    const percentage = attendanceData.summary.percentage;
-
-    return (
-      <View style={styles.gaugeContainer}>
-        <View style={styles.gauge}>
-          <View style={styles.gaugeCircle}>
-            <Text style={styles.gaugePercentage}>{percentage.toFixed(1)}%</Text>
-            <Text style={styles.gaugeLabel}>Attendance</Text>
-          </View>
-        </View>
-        <View style={styles.gaugeLegend}>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: COLORS.success }]} />
-            <Text style={styles.legendText}>Present: {attendanceData.summary.present} days</Text>
-          </View>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: COLORS.error }]} />
-            <Text style={styles.legendText}>Absent: {attendanceData.summary.absent} days</Text>
-          </View>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: COLORS.warning }]} />
-            <Text style={styles.legendText}>Late: {attendanceData.summary.late} days</Text>
-          </View>
-        </View>
-      </View>
+  const getSelectedDayAttendance = () => {
+    if (!selectedDate || !attendanceData?.monthlyRecords) return null;
+    return attendanceData.monthlyRecords.find(
+      (record: ChildAttendanceRecord) => record.date === selectedDate
     );
   };
 
-  const selectedAttendance = getAttendanceForDate(selectedDate);
+  const selectedDayData = getSelectedDayAttendance();
 
-  if (!childId) {
-    return (
-      <View style={styles.centerContainer}>
-        <Text>No child selected</Text>
-      </View>
-    );
-  }
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'present':
+        return COLORS.success;
+      case 'absent':
+        return COLORS.error;
+      case 'late':
+        return COLORS.warning;
+      default:
+        return COLORS.textSecondary;
+    }
+  };
 
-  if (loading && !refreshing) {
-    return (
-      <View style={styles.centerContainer}>
-        <Text>Loading attendance...</Text>
-      </View>
-    );
-  }
+  const handleMonthChange = (monthData: any) => {
+    setMonth(monthData.month);
+    setYear(monthData.year);
+  };
 
   return (
-    <View style={styles.container}>
-      <ScrollView
-        style={styles.scrollView}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />
-        }
+    <ScrollView
+      style={styles.container}
+      refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
+    >
+      <Card containerStyle={styles.card}>
+        <Card.Title>Select Child</Card.Title>
+        <Card.Divider />
+        <TouchableOpacity style={styles.selector} onPress={() => setSelectorVisible(true)}>
+          <View style={styles.selectorContent}>
+            {selectedChildId && children.find(c => c.id === selectedChildId) ? (
+              <>
+                <Text style={styles.selectedText}>
+                  {children.find(c => c.id === selectedChildId)!.firstName}{' '}
+                  {children.find(c => c.id === selectedChildId)!.lastName}
+                </Text>
+                <Text style={styles.selectedSubtext}>
+                  {children.find(c => c.id === selectedChildId)!.grade} -{' '}
+                  {children.find(c => c.id === selectedChildId)!.section}
+                </Text>
+              </>
+            ) : (
+              <Text style={styles.placeholderText}>Select a child</Text>
+            )}
+          </View>
+          <Icon name="arrow-drop-down" type="material" color={COLORS.textSecondary} size={24} />
+        </TouchableOpacity>
+      </Card>
+
+      <Modal
+        visible={selectorVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSelectorVisible(false)}
       >
-        <View style={styles.header}>
-          <View style={styles.monthSelector}>
-            <TouchableOpacity onPress={() => handleMonthChange('prev')} style={styles.monthButton}>
-              <Icon name="chevron-back" type="ionicon" color={COLORS.primary} size={24} />
-            </TouchableOpacity>
-            <Text style={styles.monthText}>{format(currentMonth, 'MMMM yyyy')}</Text>
-            <TouchableOpacity onPress={() => handleMonthChange('next')} style={styles.monthButton}>
-              <Icon name="chevron-forward" type="ionicon" color={COLORS.primary} size={24} />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <Card style={styles.card}>
-          <Text style={styles.cardTitle}>Monthly Calendar</Text>
-          <Calendar
-            current={format(currentMonth, 'yyyy-MM-dd')}
-            markedDates={getMarkedDates()}
-            onDayPress={(day: DateData) => setSelectedDate(day.dateString)}
-            theme={{
-              backgroundColor: COLORS.background,
-              calendarBackground: COLORS.background,
-              textSectionTitleColor: COLORS.textSecondary,
-              selectedDayBackgroundColor: COLORS.primary,
-              selectedDayTextColor: COLORS.background,
-              todayTextColor: COLORS.primary,
-              dayTextColor: COLORS.text,
-              textDisabledColor: COLORS.disabled,
-              dotColor: COLORS.primary,
-              selectedDotColor: COLORS.background,
-              arrowColor: COLORS.primary,
-              monthTextColor: COLORS.text,
-              textMonthFontWeight: '600',
-              textDayFontSize: FONT_SIZES.sm,
-              textMonthFontSize: FONT_SIZES.lg,
-            }}
-          />
-          <View style={styles.calendarLegend}>
-            <View style={styles.calendarLegendItem}>
-              <View style={[styles.legendSquare, { backgroundColor: COLORS.success }]} />
-              <Text style={styles.calendarLegendText}>Present</Text>
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setSelectorVisible(false)}
+        >
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Child</Text>
+              <TouchableOpacity onPress={() => setSelectorVisible(false)}>
+                <Icon name="close" type="material" color={COLORS.text} size={24} />
+              </TouchableOpacity>
             </View>
-            <View style={styles.calendarLegendItem}>
-              <View style={[styles.legendSquare, { backgroundColor: COLORS.error }]} />
-              <Text style={styles.calendarLegendText}>Absent</Text>
-            </View>
-            <View style={styles.calendarLegendItem}>
-              <View style={[styles.legendSquare, { backgroundColor: COLORS.warning }]} />
-              <Text style={styles.calendarLegendText}>Late</Text>
-            </View>
-          </View>
-        </Card>
-
-        {selectedAttendance && (
-          <Card style={styles.card}>
-            <Text style={styles.cardTitle}>
-              Selected Date: {format(new Date(selectedDate), 'MMMM dd, yyyy')}
-            </Text>
-            <View style={styles.attendanceDetail}>
-              <View style={styles.attendanceDetailRow}>
-                <Text style={styles.attendanceDetailLabel}>Status:</Text>
-                <Text
-                  style={[
-                    styles.attendanceDetailValue,
-                    styles.statusText,
-                    {
-                      color:
-                        selectedAttendance.status === 'present'
-                          ? COLORS.success
-                          : selectedAttendance.status === 'absent'
-                            ? COLORS.error
-                            : COLORS.warning,
-                    },
-                  ]}
+            <FlatList
+              data={children}
+              keyExtractor={item => item.id.toString()}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[styles.optionItem, item.id === selectedChildId && styles.selectedOption]}
+                  onPress={() => {
+                    setSelectedChildId(item.id);
+                    setSelectedDate(null);
+                    setSelectorVisible(false);
+                  }}
                 >
-                  {selectedAttendance.status.charAt(0).toUpperCase() +
-                    selectedAttendance.status.slice(1)}
-                </Text>
-              </View>
-              {selectedAttendance.markedAt && (
-                <View style={styles.attendanceDetailRow}>
-                  <Text style={styles.attendanceDetailLabel}>Marked At:</Text>
-                  <Text style={styles.attendanceDetailValue}>
-                    {format(new Date(selectedAttendance.markedAt), 'hh:mm a')}
-                  </Text>
-                </View>
-              )}
-              {selectedAttendance.remarks && (
-                <View style={styles.attendanceDetailRow}>
-                  <Text style={styles.attendanceDetailLabel}>Remarks:</Text>
-                  <Text style={styles.attendanceDetailValue}>{selectedAttendance.remarks}</Text>
-                </View>
-              )}
-            </View>
-          </Card>
-        )}
-
-        <Card style={styles.card}>
-          <Text style={styles.cardTitle}>Attendance Summary</Text>
-          {renderAttendanceGauge()}
-        </Card>
-
-        {attendanceData && attendanceData.subjectWise.length > 0 && (
-          <Card style={styles.card}>
-            <Text style={styles.cardTitle}>Subject-wise Attendance</Text>
-            <View style={styles.subjectTable}>
-              <View style={styles.subjectTableHeader}>
-                <Text style={[styles.subjectTableHeaderText, styles.subjectNameColumn]}>
-                  Subject
-                </Text>
-                <Text style={[styles.subjectTableHeaderText, styles.subjectStatsColumn]}>
-                  Present/Total
-                </Text>
-                <Text style={[styles.subjectTableHeaderText, styles.subjectStatsColumn]}>%</Text>
-              </View>
-              {attendanceData.subjectWise.map((subject, index) => (
-                <View key={index} style={styles.subjectTableRow}>
-                  <View style={styles.subjectNameColumn}>
-                    <Text style={styles.subjectName}>{subject.subject}</Text>
-                    <Text style={styles.subjectCode}>{subject.subjectCode}</Text>
-                  </View>
-                  <Text style={[styles.subjectTableText, styles.subjectStatsColumn]}>
-                    {subject.attended}/{subject.totalClasses}
-                  </Text>
-                  <View style={[styles.subjectStatsColumn, styles.percentageContainer]}>
+                  <View style={styles.optionContent}>
                     <Text
                       style={[
-                        styles.subjectTableText,
-                        styles.percentageText,
-                        {
-                          color:
-                            subject.percentage >= 75
-                              ? COLORS.success
-                              : subject.percentage >= 60
-                                ? COLORS.warning
-                                : COLORS.error,
-                        },
+                        styles.optionText,
+                        item.id === selectedChildId && styles.selectedOptionText,
                       ]}
                     >
-                      {subject.percentage.toFixed(1)}%
+                      {item.firstName} {item.lastName}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.optionSubtext,
+                        item.id === selectedChildId && styles.selectedOptionSubtext,
+                      ]}
+                    >
+                      {item.grade} - {item.section}
                     </Text>
                   </View>
-                </View>
-              ))}
+                  {item.id === selectedChildId && (
+                    <Icon name="check" type="material" color={COLORS.primary} size={24} />
+                  )}
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {attendanceData && (
+        <>
+          <Card containerStyle={styles.card}>
+            <View style={styles.cardHeader}>
+              <Card.Title style={styles.cardTitle}>Attendance Summary</Card.Title>
+              <Badge
+                value={attendanceData.todayStatus.toUpperCase()}
+                badgeStyle={{
+                  backgroundColor: getStatusColor(attendanceData.todayStatus),
+                }}
+              />
+            </View>
+            <Card.Divider />
+            <View style={styles.statsContainer}>
+              <View style={styles.statItem}>
+                <Text style={styles.statValue}>{attendanceData.percentage.toFixed(1)}%</Text>
+                <Text style={styles.statLabel}>Overall</Text>
+              </View>
+              <View style={styles.statItem}>
+                <Text style={styles.statValue}>{attendanceData.attendedClasses}</Text>
+                <Text style={styles.statLabel}>Present</Text>
+              </View>
+              <View style={styles.statItem}>
+                <Text style={styles.statValue}>
+                  {attendanceData.totalClasses - attendanceData.attendedClasses}
+                </Text>
+                <Text style={styles.statLabel}>Absent</Text>
+              </View>
+              <View style={styles.statItem}>
+                <Text style={styles.statValue}>{attendanceData.totalClasses}</Text>
+                <Text style={styles.statLabel}>Total</Text>
+              </View>
             </View>
           </Card>
-        )}
 
-        <View style={styles.bottomSpacing} />
-      </ScrollView>
-    </View>
+          <Card containerStyle={styles.card}>
+            <Card.Title>Attendance Calendar</Card.Title>
+            <Card.Divider />
+            <View style={styles.legendContainer}>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: COLORS.success }]} />
+                <Text style={styles.legendText}>Present</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: COLORS.error }]} />
+                <Text style={styles.legendText}>Absent</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: COLORS.warning }]} />
+                <Text style={styles.legendText}>Late</Text>
+              </View>
+            </View>
+            <Calendar
+              current={`${year}-${month.toString().padStart(2, '0')}-01`}
+              markedDates={getMarkedDates()}
+              onDayPress={(day: any) => setSelectedDate(day.dateString)}
+              onMonthChange={handleMonthChange}
+              theme={{
+                selectedDayBackgroundColor: COLORS.primary,
+                todayTextColor: COLORS.primary,
+                arrowColor: COLORS.primary,
+                monthTextColor: COLORS.text,
+                textMonthFontWeight: 'bold',
+                textDayFontSize: 14,
+                textMonthFontSize: 16,
+              }}
+            />
+          </Card>
+
+          {selectedDayData && (
+            <Card containerStyle={styles.card}>
+              <View style={styles.cardHeader}>
+                <Card.Title style={styles.cardTitle}>
+                  {new Date(selectedDate!).toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  })}
+                </Card.Title>
+                <Badge
+                  value={selectedDayData.status.toUpperCase()}
+                  badgeStyle={{
+                    backgroundColor: getStatusColor(selectedDayData.status),
+                  }}
+                />
+              </View>
+              <Card.Divider />
+              {selectedDayData.subject && (
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Subject:</Text>
+                  <Text style={styles.detailValue}>{selectedDayData.subject}</Text>
+                </View>
+              )}
+              {selectedDayData.remarks && (
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Remarks:</Text>
+                  <Text style={styles.detailValue}>{selectedDayData.remarks}</Text>
+                </View>
+              )}
+            </Card>
+          )}
+
+          <Card containerStyle={styles.card}>
+            <Card.Title>Recent Attendance</Card.Title>
+            <Card.Divider />
+            {attendanceData.monthlyRecords.slice(0, 10).map((record, index) => (
+              <TouchableOpacity
+                key={index}
+                style={styles.attendanceItem}
+                onPress={() => setSelectedDate(record.date)}
+              >
+                <View style={styles.attendanceItemLeft}>
+                  <Icon
+                    name={
+                      record.status === 'present'
+                        ? 'check-circle'
+                        : record.status === 'absent'
+                          ? 'cancel'
+                          : 'warning'
+                    }
+                    type="material"
+                    color={getStatusColor(record.status)}
+                    size={24}
+                  />
+                  <View style={styles.attendanceItemInfo}>
+                    <Text style={styles.attendanceDate}>
+                      {new Date(record.date).toLocaleDateString('en-US', {
+                        weekday: 'short',
+                        month: 'short',
+                        day: 'numeric',
+                      })}
+                    </Text>
+                    {record.subject && (
+                      <Text style={styles.attendanceSubject}>{record.subject}</Text>
+                    )}
+                  </View>
+                </View>
+                <Badge
+                  value={record.status}
+                  badgeStyle={{
+                    backgroundColor: getStatusColor(record.status),
+                  }}
+                />
+              </TouchableOpacity>
+            ))}
+          </Card>
+        </>
+      )}
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.surface,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  centerContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  header: {
-    padding: SPACING.lg,
     backgroundColor: COLORS.background,
   },
-  monthSelector: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  monthButton: {
-    padding: SPACING.sm,
-  },
-  monthText: {
-    fontSize: FONT_SIZES.xl,
-    fontWeight: '600',
-    color: COLORS.text,
-  },
   card: {
-    marginHorizontal: SPACING.lg,
-    marginBottom: SPACING.md,
+    borderRadius: 8,
+    marginHorizontal: SPACING.md,
+    marginVertical: SPACING.sm,
   },
-  cardTitle: {
-    fontSize: FONT_SIZES.lg,
-    fontWeight: '600',
-    color: COLORS.text,
-    marginBottom: SPACING.md,
-  },
-  calendarLegend: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginTop: SPACING.lg,
-    paddingTop: SPACING.md,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-  },
-  calendarLegendItem: {
+  selector: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: SPACING.xs,
+    justifyContent: 'space-between',
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 8,
+    backgroundColor: COLORS.background,
   },
-  legendSquare: {
-    width: 16,
-    height: 16,
-    borderRadius: BORDER_RADIUS.sm,
+  selectorContent: {
+    flex: 1,
   },
-  calendarLegendText: {
-    fontSize: FONT_SIZES.xs,
+  selectedText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  selectedSubtext: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  placeholderText: {
+    fontSize: 16,
     color: COLORS.textSecondary,
   },
-  attendanceDetail: {
-    gap: SPACING.md,
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  attendanceDetailRow: {
+  modalContent: {
+    backgroundColor: COLORS.background,
+    borderRadius: 12,
+    width: Dimensions.get('window').width * 0.85,
+    maxHeight: Dimensions.get('window').height * 0.6,
+    overflow: 'hidden',
+  },
+  modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    padding: SPACING.md,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
   },
-  attendanceDetailLabel: {
-    fontSize: FONT_SIZES.md,
-    color: COLORS.textSecondary,
-    fontWeight: '500',
-  },
-  attendanceDetailValue: {
-    fontSize: FONT_SIZES.md,
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
     color: COLORS.text,
-    flex: 1,
-    textAlign: 'right',
   },
-  statusText: {
+  optionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.md,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  selectedOption: {
+    backgroundColor: COLORS.surface,
+  },
+  optionContent: {
+    flex: 1,
+  },
+  optionText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: COLORS.text,
+  },
+  optionSubtext: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  selectedOptionText: {
+    color: COLORS.primary,
     fontWeight: '600',
   },
-  gaugeContainer: {
-    alignItems: 'center',
-    paddingVertical: SPACING.lg,
-  },
-  gauge: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: SPACING.lg,
-  },
-  gaugeCircle: {
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    borderWidth: 12,
-    borderColor: COLORS.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-  },
-  gaugePercentage: {
-    fontSize: FONT_SIZES.xxxl,
-    fontWeight: '700',
+  selectedOptionSubtext: {
     color: COLORS.primary,
   },
-  gaugeLabel: {
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.textSecondary,
-    marginTop: SPACING.xs,
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.sm,
   },
-  gaugeLegend: {
-    gap: SPACING.sm,
-    width: '100%',
+  cardTitle: {
+    marginBottom: 0,
+    flex: 1,
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingVertical: SPACING.md,
+  },
+  statItem: {
+    alignItems: 'center',
+  },
+  statValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: COLORS.primary,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    marginTop: 4,
+  },
+  legendContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: SPACING.md,
+    paddingVertical: SPACING.sm,
+    backgroundColor: COLORS.surface,
+    borderRadius: 8,
   },
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: SPACING.sm,
   },
   legendDot: {
     width: 12,
     height: 12,
     borderRadius: 6,
+    marginRight: 6,
   },
   legendText: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: 12,
     color: COLORS.text,
   },
-  subjectTable: {
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-  },
-  subjectTableHeader: {
+  detailRow: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     paddingVertical: SPACING.sm,
-    backgroundColor: COLORS.surface,
-  },
-  subjectTableHeaderText: {
-    fontSize: FONT_SIZES.sm,
-    fontWeight: '600',
-    color: COLORS.textSecondary,
-  },
-  subjectTableRow: {
-    flexDirection: 'row',
-    paddingVertical: SPACING.md,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
-    alignItems: 'center',
   },
-  subjectNameColumn: {
-    flex: 2,
-  },
-  subjectStatsColumn: {
-    flex: 1,
-    textAlign: 'center',
-    alignItems: 'center',
-  },
-  subjectName: {
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.text,
+  detailLabel: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
     fontWeight: '500',
   },
-  subjectCode: {
-    fontSize: FONT_SIZES.xs,
-    color: COLORS.textSecondary,
-    marginTop: SPACING.xs,
+  detailValue: {
+    fontSize: 14,
+    color: COLORS.text,
+    fontWeight: '600',
+    flex: 1,
+    textAlign: 'right',
   },
-  subjectTableText: {
-    fontSize: FONT_SIZES.sm,
+  attendanceItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: SPACING.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  attendanceItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  attendanceItemInfo: {
+    marginLeft: SPACING.sm,
+    flex: 1,
+  },
+  attendanceDate: {
+    fontSize: 14,
+    fontWeight: '600',
     color: COLORS.text,
   },
-  percentageContainer: {
-    alignItems: 'center',
-  },
-  percentageText: {
-    fontWeight: '600',
-  },
-  bottomSpacing: {
-    height: SPACING.xl,
+  attendanceSubject: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    marginTop: 2,
   },
 });

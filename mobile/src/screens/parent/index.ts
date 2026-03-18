@@ -1,0 +1,10 @@
+export { DashboardScreen } from './DashboardScreen';
+export { AttendanceScreen } from './AttendanceScreen';
+export { GradesScreen } from './GradesScreen';
+export { MessagesScreen } from './MessagesScreen';
+export { ChildrenScreen } from './ChildrenScreen';
+export { ChildDetailScreen } from './ChildDetailScreen';
+export { CommunicationScreen } from './CommunicationScreen';
+export { MessageDetailScreen } from './MessageDetailScreen';
+export { ProfileScreen } from './ProfileScreen';
+export { ReportsScreen } from './ReportsScreen';

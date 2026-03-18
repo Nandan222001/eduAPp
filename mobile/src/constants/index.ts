@@ -55,6 +55,11 @@ export const STORAGE_KEYS = {
   BIOMETRIC_ENABLED: '@edu_biometric_enabled',
   BIOMETRIC_CREDENTIALS: '@edu_biometric_credentials',
   ACTIVE_ROLE: '@edu_active_role',
-  NOTIFICATION_PERMISSION_REQUESTED: '@edu_notification_permission_requested',
-  PUSH_TOKEN: '@edu_push_token',
+  OFFLINE_QUEUE: '@edu_offline_queue',
+  LAST_SYNC_TIME: '@edu_last_sync_time',
+  PIN_ENABLED: '@edu_pin_enabled',
+  PIN_HASH: '@edu_pin_hash',
+  DEVICE_FINGERPRINT: '@edu_device_fingerprint',
+  SESSION_DATA: '@edu_session_data',
+  SECURITY_SETTINGS: '@edu_security_settings',
 };

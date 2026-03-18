@@ -1,37 +1,42 @@
 {
   "expo": {
-    "name": "EDU Mobile",
-    "slug": "edu-mobile",
+    "name": "EduPlatform",
+    "slug": "eduplatform",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
-    "scheme": "edumobile",
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "updates": {
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0,
+      "url": "https://u.expo.dev/[your-project-id]"
+    },
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.edu.mobile",
+      "bundleIdentifier": "com.yourcompany.eduplatform",
       "buildNumber": "1",
       "associatedDomains": [
         "applinks:edu.app"
       ],
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCameraUsageDescription": "This app uses the camera to scan documents and take photos.",
+        "NSPhotoLibraryUsageDescription": "This app accesses your photo library to upload images."
       }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#FFFFFF"
       },
-      "package": "com.edu.mobile",
+      "package": "com.yourcompany.eduplatform",
       "versionCode": 1,
       "intentFilters": [
         {
@@ -50,13 +55,20 @@
           ]
         }
       ],
-      "permissions": []
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "NOTIFICATIONS",
+        "VIBRATE"
+      ],
+      "googleServicesFile": "./google-services.json",
+      "useNextNotificationsApi": true
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-router",
       [
         "sentry-expo",
         {
@@ -108,7 +120,7 @@
         {
           "icon": "./assets/notification-icon.png",
           "color": "#2089dc",
-          "sounds": [],
+          "sounds": ["./assets/notification-sound.wav"],
           "mode": "production"
         }
       ],
@@ -117,24 +129,24 @@
         {
           "username": "your-expo-username"
         }
-      ]
+      ],
+      "expo-router",
+      "expo-secure-store"
     ],
     "extra": {
+      "router": {
+        "origin": false
+      },
       "eas": {
-        "projectId": "your-project-id"
+        "projectId": "[your-project-id]"
       }
     },
     "notification": {
       "icon": "./assets/notification-icon.png",
-      "color": "#2089dc",
+      "color": "#ffffff",
+      "iosDisplayInForeground": true,
       "androidMode": "default",
       "androidCollapsedTitle": "EDU Mobile"
-    },
-    "updates": {
-      "enabled": true,
-      "checkAutomatically": "ON_LOAD",
-      "fallbackToCacheTimeout": 0,
-      "url": "https://u.expo.dev/your-project-id"
     },
     "runtimeVersion": {
       "policy": "appVersion"

@@ -16,11 +16,10 @@ from src.models.notification import (
     NotificationAnalytics,
     NotificationPriority,
     DigestMode,
-    NotificationGroup,
-    PushDevice,
-    NotificationDevice
+    NotificationGroup
 )
 from src.models.user import User
+from src.models.push_device import PushDevice, PushDeviceTopic
 from src.schemas.notification import (
     NotificationCreate,
     NotificationPreferenceCreate,
@@ -32,6 +31,7 @@ from src.schemas.notification import (
     NotificationEngagementCreate
 )
 from src.services.notification_providers import NotificationProviderFactory
+from src.services.expo_push_service import ExpoPushService
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +39,7 @@ logger = logging.getLogger(__name__)
 class NotificationService:
     def __init__(self, db: Session):
         self.db = db
+        self.expo_push_service = ExpoPushService()
 
     def create_notification(
         self,
@@ -410,22 +411,25 @@ class NotificationService:
             return False
         
         try:
-            provider = NotificationProviderFactory.get_provider(notification.channel)
-            
-            recipient = self._get_recipient(user, notification.channel)
-            if not recipient:
-                notification.status = NotificationStatus.FAILED.value
-                notification.error_message = f"No {notification.channel} contact information"
-                self.db.commit()
-                self._record_delivery(notification, False, f"No {notification.channel} contact information")
-                return False
-            
-            success = await provider.send(
-                recipient=recipient,
-                subject=notification.title,
-                content=notification.message,
-                data=notification.data
-            )
+            if notification.channel == "push":
+                success = await self._send_expo_push_notification(notification, user)
+            else:
+                provider = NotificationProviderFactory.get_provider(notification.channel)
+                
+                recipient = self._get_recipient(user, notification.channel)
+                if not recipient:
+                    notification.status = NotificationStatus.FAILED.value
+                    notification.error_message = f"No {notification.channel} contact information"
+                    self.db.commit()
+                    self._record_delivery(notification, False, f"No {notification.channel} contact information")
+                    return False
+                
+                success = await provider.send(
+                    recipient=recipient,
+                    subject=notification.title,
+                    content=notification.message,
+                    data=notification.data
+                )
             
             if success:
                 notification.status = NotificationStatus.SENT.value
@@ -456,13 +460,13 @@ class NotificationService:
         elif channel == "sms":
             return user.phone
         elif channel == "push":
-            active_devices = self.db.query(NotificationDevice).filter(
+            devices = self.db.query(PushDevice).filter(
                 and_(
-                    NotificationDevice.user_id == user.id,
-                    NotificationDevice.is_active == True
+                    PushDevice.user_id == user.id,
+                    PushDevice.is_active == True
                 )
-            ).first()
-            return active_devices.device_token if active_devices else None
+            ).all()
+            return ",".join([device.token for device in devices]) if devices else None
         elif channel == "in_app":
             return str(user.id)
         return None
@@ -740,202 +744,116 @@ class NotificationService:
         
         return summaries
 
-    def register_device(
-        self,
-        user_id: int,
-        token: str,
-        device_type: str,
-        device_id: str,
-        topics: Optional[List[str]] = None
-    ) -> PushDevice:
-        existing_device = self.db.query(PushDevice).filter(
-            PushDevice.token == token
-        ).first()
-        
-        if existing_device:
-            existing_device.user_id = user_id
-            existing_device.device_type = device_type
-            existing_device.device_id = device_id
-            existing_device.topics = topics or []
-            existing_device.is_active = True
-            existing_device.last_used_at = datetime.utcnow()
-            existing_device.updated_at = datetime.utcnow()
-            self.db.commit()
-            self.db.refresh(existing_device)
-            return existing_device
-        
-        device = PushDevice(
-            user_id=user_id,
-            token=token,
-            device_type=device_type,
-            device_id=device_id,
-            topics=topics or [],
-            is_active=True,
-            last_used_at=datetime.utcnow()
-        )
-        self.db.add(device)
-        self.db.commit()
-        self.db.refresh(device)
-        return device
-
-    def get_unread_count(self, user_id: int) -> int:
-        count = self.db.query(func.count(Notification.id)).filter(
+    async def _send_expo_push_notification(self, notification: Notification, user: User) -> bool:
+        devices = self.db.query(PushDevice).filter(
             and_(
-                Notification.user_id == user_id,
-                Notification.status != NotificationStatus.READ.value
-            )
-        ).scalar()
-        return count or 0
-
-    def register_notification_device(
-        self,
-        user_id: int,
-        role: str,
-        device_token: str,
-        device_type: str,
-        platform: str,
-        device_info: Optional[Dict[str, Any]] = None,
-        app_version: Optional[str] = None
-    ) -> NotificationDevice:
-        existing_device = self.db.query(NotificationDevice).filter(
-            NotificationDevice.device_token == device_token
-        ).first()
-        
-        if existing_device:
-            existing_device.user_id = user_id
-            existing_device.role = role
-            existing_device.device_type = device_type
-            existing_device.platform = platform
-            existing_device.device_info = device_info
-            existing_device.app_version = app_version
-            existing_device.is_active = True
-            existing_device.last_used_at = datetime.utcnow()
-            existing_device.updated_at = datetime.utcnow()
-            self.db.commit()
-            self.db.refresh(existing_device)
-            return existing_device
-        
-        device = NotificationDevice(
-            user_id=user_id,
-            role=role,
-            device_token=device_token,
-            device_type=device_type,
-            platform=platform,
-            device_info=device_info,
-            app_version=app_version,
-            is_active=True,
-            last_used_at=datetime.utcnow()
-        )
-        self.db.add(device)
-        self.db.commit()
-        self.db.refresh(device)
-        return device
-
-    def get_user_devices(
-        self,
-        user_id: int,
-        active_only: bool = True
-    ) -> List[NotificationDevice]:
-        query = self.db.query(NotificationDevice).filter(
-            NotificationDevice.user_id == user_id
-        )
-        
-        if active_only:
-            query = query.filter(NotificationDevice.is_active == True)
-        
-        return query.order_by(NotificationDevice.last_used_at.desc()).all()
-
-    def get_device_by_id(
-        self,
-        device_id: int,
-        user_id: int
-    ) -> Optional[NotificationDevice]:
-        return self.db.query(NotificationDevice).filter(
-            and_(
-                NotificationDevice.id == device_id,
-                NotificationDevice.user_id == user_id
-            )
-        ).first()
-
-    def update_device(
-        self,
-        device_id: int,
-        user_id: int,
-        device_info: Optional[Dict[str, Any]] = None,
-        app_version: Optional[str] = None,
-        is_active: Optional[bool] = None
-    ) -> Optional[NotificationDevice]:
-        device = self.get_device_by_id(device_id, user_id)
-        
-        if not device:
-            return None
-        
-        if device_info is not None:
-            device.device_info = device_info
-        if app_version is not None:
-            device.app_version = app_version
-        if is_active is not None:
-            device.is_active = is_active
-        
-        device.updated_at = datetime.utcnow()
-        self.db.commit()
-        self.db.refresh(device)
-        return device
-
-    def revoke_device(
-        self,
-        device_id: int,
-        user_id: int
-    ) -> bool:
-        device = self.get_device_by_id(device_id, user_id)
-        
-        if not device:
-            return False
-        
-        device.is_active = False
-        device.updated_at = datetime.utcnow()
-        self.db.commit()
-        return True
-
-    def revoke_device_by_token(
-        self,
-        device_token: str,
-        user_id: int
-    ) -> bool:
-        device = self.db.query(NotificationDevice).filter(
-            and_(
-                NotificationDevice.device_token == device_token,
-                NotificationDevice.user_id == user_id
-            )
-        ).first()
-        
-        if not device:
-            return False
-        
-        device.is_active = False
-        device.updated_at = datetime.utcnow()
-        self.db.commit()
-        return True
-
-    def deactivate_user_devices(self, user_id: int) -> int:
-        count = self.db.query(NotificationDevice).filter(
-            and_(
-                NotificationDevice.user_id == user_id,
-                NotificationDevice.is_active == True
-            )
-        ).update({
-            "is_active": False,
-            "updated_at": datetime.utcnow()
-        })
-        self.db.commit()
-        return count
-
-    def get_active_device_tokens(self, user_id: int) -> List[str]:
-        devices = self.db.query(NotificationDevice).filter(
-            and_(
-                NotificationDevice.user_id == user_id,
-                NotificationDevice.is_active == True
+                PushDevice.user_id == user.id,
+                PushDevice.is_active == True
             )
         ).all()
         
-        return [device.device_token for device in devices]
+        if not devices:
+            logger.warning(f"No active push devices for user {user.id}")
+            return False
+        
+        tokens = [device.token for device in devices]
+        
+        priority_map = {
+            "low": "default",
+            "medium": "default",
+            "high": "high",
+            "urgent": "high",
+        }
+        
+        channel_id_map = {
+            "assignments": "assignments",
+            "grades": "grades",
+            "attendance": "attendance",
+            "announcements": "announcements",
+        }
+        
+        data = notification.data or {}
+        data["notification_id"] = notification.id
+        data["type"] = notification.notification_group
+        
+        if notification.data and "screen" not in data:
+            if notification.notification_group == "assignments":
+                data["screen"] = "Assignment"
+            elif notification.notification_group == "grades":
+                data["screen"] = "Grade"
+            elif notification.notification_group == "attendance":
+                data["screen"] = "Attendance"
+            elif notification.notification_group == "announcements":
+                data["screen"] = "Announcement"
+        
+        result = self.expo_push_service.send_push_notification(
+            tokens=tokens,
+            title=notification.title,
+            body=notification.message,
+            data=data,
+            priority=priority_map.get(notification.priority, "default"),
+            channel_id=channel_id_map.get(notification.notification_group),
+        )
+        
+        if result.get("invalid_tokens"):
+            for token in result["invalid_tokens"]:
+                device = self.db.query(PushDevice).filter(
+                    PushDevice.token == token
+                ).first()
+                if device:
+                    device.is_active = False
+            self.db.commit()
+        
+        return result.get("success", False)
+
+    def send_push_notification_to_topic(
+        self,
+        topic: str,
+        title: str,
+        message: str,
+        data: Optional[Dict[str, Any]] = None,
+        institution_id: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        query = self.db.query(PushDevice).join(
+            PushDeviceTopic,
+            PushDevice.id == PushDeviceTopic.device_id
+        ).filter(
+            and_(
+                PushDevice.is_active == True,
+                PushDeviceTopic.topic == topic
+            )
+        )
+        
+        if institution_id:
+            query = query.join(User).filter(User.institution_id == institution_id)
+        
+        devices = query.all()
+        
+        if not devices:
+            return {
+                "success": False,
+                "message": "No devices subscribed to this topic"
+            }
+        
+        tokens = [device.token for device in devices]
+        
+        notification_data = data or {}
+        notification_data["type"] = topic
+        
+        result = self.expo_push_service.send_push_notification(
+            tokens=tokens,
+            title=title,
+            body=message,
+            data=notification_data,
+        )
+        
+        if result.get("invalid_tokens"):
+            for token in result["invalid_tokens"]:
+                device = self.db.query(PushDevice).filter(
+                    PushDevice.token == token
+                ).first()
+                if device:
+                    device.is_active = False
+            self.db.commit()
+        
+        return result

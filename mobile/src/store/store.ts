@@ -13,27 +13,46 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import authReducer from './slices/authSlice';
 import userReducer from './slices/userSlice';
 import notificationReducer from './slices/notificationSlice';
-import dashboardReducer from './slices/dashboardSlice';
-import assignmentsReducer from './slices/assignmentsSlice';
-import gradesReducer from './slices/gradesSlice';
-import attendanceReducer from './slices/attendanceSlice';
+import studentDataReducer from './slices/studentDataSlice';
+import offlineReducer from './slices/offlineSlice';
 
 const persistConfig = {
   key: 'root',
   version: 1,
   storage: AsyncStorage,
-  whitelist: ['auth', 'user', 'dashboard', 'assignments', 'grades', 'attendance'],
-  blacklist: ['notification'],
+  whitelist: ['auth', 'studentData', 'offline'],
+  blacklist: ['user', 'notification'],
+};
+
+const studentDataPersistConfig = {
+  key: 'studentData',
+  storage: AsyncStorage,
+  whitelist: [
+    'profile',
+    'profileLastSync',
+    'dashboard',
+    'dashboardLastSync',
+    'assignments',
+    'assignmentsLastSync',
+    'grades',
+    'gradesLastSync',
+    'attendance',
+    'attendanceLastSync',
+  ],
+};
+
+const offlinePersistConfig = {
+  key: 'offline',
+  storage: AsyncStorage,
+  whitelist: ['queuedOperations', 'lastSyncTime', 'autoSyncEnabled'],
 };
 
 const rootReducer = combineReducers({
   auth: authReducer,
   user: userReducer,
   notification: notificationReducer,
-  dashboard: dashboardReducer,
-  assignments: assignmentsReducer,
-  grades: gradesReducer,
-  attendance: attendanceReducer,
+  studentData: persistReducer(studentDataPersistConfig, studentDataReducer),
+  offline: persistReducer(offlinePersistConfig, offlineReducer),
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

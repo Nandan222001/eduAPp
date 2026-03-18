@@ -11,7 +11,7 @@ export { AssignmentDetailScreen } from './student/AssignmentDetailScreen';
 export { GradesScreen as StudentGradesScreen } from './student/GradesScreen';
 export { ScheduleScreen } from './student/ScheduleScreen';
 export { ProfileScreen as StudentProfileScreen } from './student/ProfileScreen';
-export { AIPredictionsScreen } from './student/AIPredictionsScreen';
+export { GamificationScreen } from './student/GamificationScreen';
 export { GoalsScreen } from './student/GoalsScreen';
 
 export { DashboardScreen as ParentDashboardScreen } from './parent/DashboardScreen';
@@ -25,9 +25,11 @@ export { CommunicationScreen } from './parent/CommunicationScreen';
 export { ReportsScreen } from './parent/ReportsScreen';
 export { ProfileScreen as ParentProfileScreen } from './parent/ProfileScreen';
 
-export { SettingsScreen } from './shared/SettingsScreen';
-export { FeedbackScreen } from './shared/FeedbackScreen';
+export { ProfileScreen } from './common/ProfileScreen';
+export { SettingsScreen } from './common/SettingsScreen';
 export { NotificationsScreen } from './common/NotificationsScreen';
 export { NotificationDetailScreen } from './common/NotificationDetailScreen';
-export { NotificationHistoryScreen } from './shared/NotificationHistoryScreen';
-export { NotificationPreferencesScreen } from './shared/NotificationPreferencesScreen';
+export { PinSetupScreen } from './common/PinSetupScreen';
+export { DeviceManagementScreen } from './common/DeviceManagementScreen';
+export { AuthHistoryScreen } from './common/AuthHistoryScreen';
+export { SessionLockScreen } from './common/SessionLockScreen';

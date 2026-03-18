@@ -8,81 +8,104 @@
       "description": "Development build with dev client for local testing",
       "developmentClient": true,
       "distribution": "internal",
+      "channel": "development",
       "ios": {
         "resourceClass": "m-medium",
         "simulator": true,
         "buildConfiguration": "Debug",
+        "image": "latest",
         "autoIncrement": true
       },
       "android": {
         "buildType": "apk",
         "gradleCommand": ":app:assembleDebug",
+        "image": "latest",
         "autoIncrement": true
       },
       "env": {
-        "APP_ENV": "development"
-      },
-      "channel": "development"
+        "APP_ENV": "development",
+        "SENTRY_ENVIRONMENT": "development"
+      }
     },
     "preview": {
       "description": "Preview build for internal testing (TestFlight/Internal Testing)",
       "distribution": "internal",
+      "channel": "staging",
       "ios": {
         "simulator": false,
         "resourceClass": "m-medium",
         "buildConfiguration": "Release",
+        "image": "latest",
+        "enterpriseProvisioning": "adhoc",
         "autoIncrement": true,
-        "bundleIdentifier": "com.edu.mobile"
+        "bundleIdentifier": "com.yourcompany.eduplatform"
       },
       "android": {
         "buildType": "apk",
         "gradleCommand": ":app:assembleRelease",
+        "image": "latest",
         "autoIncrement": true
       },
       "env": {
-        "APP_ENV": "staging"
+        "APP_ENV": "staging",
+        "SENTRY_ENVIRONMENT": "staging"
       },
-      "channel": "preview"
+      "autoIncrement": true
+    },
+    "preview-internal": {
+      "extends": "preview",
+      "distribution": "internal",
+      "channel": "preview-internal",
+      "android": {
+        "buildType": "apk"
+      }
     },
     "staging": {
       "description": "Staging build for pre-production testing",
       "distribution": "internal",
+      "channel": "staging",
       "ios": {
         "simulator": false,
         "resourceClass": "m-medium",
         "buildConfiguration": "Release",
+        "image": "latest",
         "autoIncrement": true,
-        "bundleIdentifier": "com.edu.mobile.staging"
+        "bundleIdentifier": "com.yourcompany.eduplatform.staging"
       },
       "android": {
         "buildType": "apk",
         "gradleCommand": ":app:assembleRelease",
+        "image": "latest",
         "autoIncrement": true,
-        "applicationId": "com.edu.mobile.staging"
+        "applicationId": "com.yourcompany.eduplatform.staging"
       },
       "env": {
-        "APP_ENV": "staging"
-      },
-      "channel": "staging"
+        "APP_ENV": "staging",
+        "SENTRY_ENVIRONMENT": "staging"
+      }
     },
     "production": {
       "description": "Production build for App Store and Google Play",
       "distribution": "store",
+      "channel": "production",
       "ios": {
         "resourceClass": "m-medium",
         "buildConfiguration": "Release",
+        "image": "latest",
         "autoIncrement": "buildNumber",
-        "bundleIdentifier": "com.edu.mobile"
+        "bundleIdentifier": "com.yourcompany.eduplatform"
       },
       "android": {
         "buildType": "aab",
         "gradleCommand": ":app:bundleRelease",
+        "image": "latest",
         "autoIncrement": "versionCode"
       },
       "env": {
-        "APP_ENV": "production"
+        "APP_ENV": "production",
+        "SENTRY_ENVIRONMENT": "production"
       },
-      "channel": "production"
+      "autoIncrement": true
     },
     "production-ios": {
       "description": "Production iOS build for App Store",
@@ -91,7 +114,7 @@
         "resourceClass": "m-medium",
         "buildConfiguration": "Release",
         "autoIncrement": "buildNumber",
-        "bundleIdentifier": "com.edu.mobile"
+        "bundleIdentifier": "com.yourcompany.eduplatform"
       }
     },
     "production-android": {
@@ -101,6 +124,13 @@
         "buildType": "aab",
         "gradleCommand": ":app:bundleRelease",
         "autoIncrement": "versionCode"
+      }
+    },
+    "production-android-apk": {
+      "extends": "production",
+      "android": {
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease"
       }
     }
   },
@@ -114,12 +144,36 @@
         "appleId": "${APPLE_ID}",
         "ascAppId": "${ASC_APP_ID}",
         "appleTeamId": "${APPLE_TEAM_ID}",
-        "sku": "edu-mobile-preview"
+        "sku": "eduplatform-ios",
+        "language": "en-US",
+        "companyName": "Your Company Name",
+        "appName": "EduPlatform"
       },
       "android": {
         "serviceAccountKeyPath": "${GOOGLE_SERVICE_ACCOUNT_KEY_PATH}",
         "track": "internal",
-        "releaseStatus": "draft"
+        "releaseStatus": "draft",
+        "changesNotSentForReview": false
+      }
+    },
+    "beta": {
+      "ios": {
+        "appleId": "${APPLE_ID}",
+        "ascAppId": "${ASC_APP_ID}",
+        "appleTeamId": "${APPLE_TEAM_ID}"
+      },
+      "android": {
+        "serviceAccountKeyPath": "${GOOGLE_SERVICE_ACCOUNT_KEY_PATH}",
+        "track": "beta",
+        "releaseStatus": "completed",
+        "rollout": 0.1
+      }
+    },
+    "alpha": {
+      "android": {
+        "serviceAccountKeyPath": "${GOOGLE_SERVICE_ACCOUNT_KEY_PATH}",
+        "track": "alpha",
+        "releaseStatus": "completed"
       }
     },
     "staging": {
@@ -128,7 +182,7 @@
         "appleId": "${APPLE_ID}",
         "ascAppId": "${ASC_APP_ID_STAGING}",
         "appleTeamId": "${APPLE_TEAM_ID}",
-        "sku": "edu-mobile-staging"
+        "sku": "eduplatform-staging"
       },
       "android": {
         "serviceAccountKeyPath": "${GOOGLE_SERVICE_ACCOUNT_KEY_PATH}",
@@ -142,10 +196,10 @@
         "appleId": "${APPLE_ID}",
         "ascAppId": "${ASC_APP_ID}",
         "appleTeamId": "${APPLE_TEAM_ID}",
-        "sku": "edu-mobile",
+        "sku": "eduplatform",
         "language": "en-US",
-        "companyName": "EDU Mobile Inc",
-        "appName": "EDU Mobile"
+        "companyName": "Your Company Name",
+        "appName": "EduPlatform"
       },
       "android": {
         "serviceAccountKeyPath": "${GOOGLE_SERVICE_ACCOUNT_KEY_PATH}",

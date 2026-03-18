@@ -22,8 +22,6 @@ export type MainStackParamList = {
   Settings: undefined;
   Notifications: undefined;
   NotificationDetail: { notificationId: string };
-  NotificationHistory: undefined;
-  NotificationPreferences: undefined;
   Courses: undefined;
   CourseDetail: { courseId: string };
   AssignmentDetail: { assignmentId: string };
@@ -32,11 +30,8 @@ export type MainStackParamList = {
   Messages: undefined;
   ChildDetail: { childId: string };
   MessageDetail: { messageId: string };
-  StudyMaterials: undefined;
-  MaterialViewer: { materialId: number };
-  DoubtForum: undefined;
-  Gamification: { studentId?: number };
-  Goals: { studentId?: number };
+  Gamification: undefined;
+  Goals: undefined;
 };
 
 export type StudentTabParamList = {

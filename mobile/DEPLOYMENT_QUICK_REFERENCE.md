@@ -1,309 +1,499 @@
 # Deployment Quick Reference
 
-Fast reference for common EAS Build and deployment commands.
+Quick commands and procedures for common deployment tasks.
 
-## 🚀 Quick Commands
+## Quick Commands
 
-### Build
+### Building
+
 ```bash
-# Development
-npm run build:dev                  # Both platforms
-npm run build:dev:ios             # iOS only
-npm run build:dev:android         # Android only
+# Development builds
+npm run build:dev:ios
+npm run build:dev:android
+npm run build:dev:all
 
-# Preview (TestFlight/Internal Testing)
-npm run build:preview             # Both platforms
-npm run build:preview:ios         # iOS only
-npm run build:preview:android     # Android only
+# Preview/Staging builds
+npm run build:preview:ios
+npm run build:preview:android
+npm run build:preview:all
 
-# Staging
-npm run build:staging             # Both platforms
-npm run build:staging:ios         # iOS only
-npm run build:staging:android     # Android only
-
-# Production
-npm run build:prod                # Both platforms
-npm run build:prod:ios            # iOS only
-npm run build:prod:android        # Android only
+# Production builds
+npm run build:prod:ios
+npm run build:prod:android
+npm run build:prod:all
 ```
 
-### Submit
+### Submitting
+
 ```bash
-# Preview
-npm run submit:preview:ios        # TestFlight
-npm run submit:preview:android    # Internal Testing
+# iOS
+npm run submit:beta:ios          # TestFlight
+npm run submit:ios               # App Store
 
-# Staging
-npm run submit:staging:ios
-npm run submit:staging:android
-
-# Production
-npm run submit:prod:ios           # App Store (10% rollout)
-npm run submit:prod:android       # Play Store (10% rollout)
-npm run submit:prod:android:rollout  # Full rollout
+# Android
+npm run submit:alpha:android     # Internal testing
+npm run submit:beta:android      # Beta testing
+npm run submit:android           # Production
 ```
 
 ### OTA Updates
-```bash
-# Publish updates
-npm run update:publish:dev "Message"
-npm run update:publish:preview "Message"
-npm run update:publish:staging "Message"
-npm run update:publish:prod "Message"
 
-# View channels
-npm run channel:list
-npm run channel:view production
+```bash
+# Preview/Staging
+npm run update:preview -- "Your update message"
+
+# Production
+npm run update:production -- "Your update message"
+
+# Check updates
+node scripts/check-updates.js production
+node scripts/check-updates.js staging
 ```
 
-### Version Management
+### Automated Releases
+
 ```bash
-# Bump version
-npm run version:bump:patch        # 1.0.0 → 1.0.1
-npm run version:bump:minor        # 1.0.0 → 1.1.0
-npm run version:bump:major        # 1.0.0 → 2.0.0
+# Platform-specific releases
+npm run release:ios
+npm run release:android
+
+# Full release (both platforms)
+npm run release:full
 ```
 
-### Monitoring
-```bash
-# View builds
-npm run build:list
-npm run build:view <build-id>
-npm run build:cancel <build-id>
+### Validation & Testing
 
-# Credentials
-npm run credentials:ios
-npm run credentials:android
+```bash
+# Run all tests
+npm run test:ci
+
+# Linting
+npm run lint
+npm run lint:fix
+
+# Type checking
+npm run type-check
+
+# Validate deployment setup
+node scripts/validate-deployment.js
 ```
 
-## 📋 Common Workflows
+### Credentials
 
-### New Feature Release
+```bash
+# Setup all credentials
+bash scripts/setup-credentials.sh
+
+# Manage iOS credentials
+eas credentials --platform ios
+
+# Manage Android credentials
+eas credentials --platform android
+
+# Clear credential cache
+eas credentials --clear-cache
+```
+
+## Common Workflows
+
+### Standard Release
+
 ```bash
 # 1. Update version
-npm run version:bump:minor
+npm version [patch|minor|major]
 
-# 2. Commit changes
-git add .
-git commit -m "chore: bump version to 1.1.0"
-git tag v1.1.0
+# 2. Run tests
+npm run test:ci && npm run lint
 
-# 3. Build
-npm run build:prod
+# 3. Build and release
+npm run release:full
 
-# 4. Submit
-npm run submit:prod:ios
-npm run submit:prod:android
-
-# 5. Push to git
-git push origin main --tags
+# 4. Follow prompts for:
+#    - Version bumping
+#    - Testing
+#    - Building
+#    - Submitting
+#    - OTA updates
 ```
 
 ### Hotfix Release
+
 ```bash
-# 1. Patch version
-npm run version:bump:patch
+# 1. Create hotfix branch
+git checkout -b hotfix/v1.0.1
 
-# 2. Build and submit
-npm run build:prod
-npm run submit:prod:ios
-npm run submit:prod:android
+# 2. Make fixes
+# ... edit files ...
 
-# 3. Tag and push
-git add .
-git commit -m "fix: critical bug fix"
-git tag v1.0.1
-git push origin main --tags
+# 3. Test
+npm run test:ci
+
+# 4. If JavaScript-only changes
+npm run update:production -- "Hotfix: [description]"
+
+# 5. If native changes required
+npm version patch
+npm run build:prod:all
+npm run submit:ios
+npm run submit:android
 ```
 
-### OTA Update (JS-only changes)
+### Beta Release
+
 ```bash
-# 1. Make changes
+# 1. Build preview
+npm run build:preview:all
+
+# 2. Submit to beta
+npm run submit:beta:ios
+npm run submit:alpha:android
+
+# 3. Notify testers
+# Send TestFlight/Play Store links
+```
+
+### OTA-Only Update
+
+```bash
+# 1. Make JavaScript changes
 # 2. Test locally
-# 3. Publish update
-npm run update:publish:prod "Bug fixes and performance improvements"
+npm start
 
-# 4. Monitor
-eas channel:view production
+# 3. Deploy to staging
+npm run update:preview -- "Feature: [description]"
+
+# 4. Test on staging
+# 5. Deploy to production
+npm run update:production -- "Feature: [description]"
+
+# 6. Monitor
+# Check Sentry for crashes
 ```
 
-### Preview Build for Testing
+## Rollback Procedures
+
+### OTA Rollback
+
 ```bash
-# Build preview
-npm run build:preview
+# List updates
+eas update:list --branch production
 
-# Submit to TestFlight/Internal Testing
-npm run submit:preview:ios
-npm run submit:preview:android
+# Rollback to previous
+eas update:rollback --branch production
+
+# Or republish specific version
+eas update:republish --update-id [UPDATE_ID] --branch production
 ```
 
-### Rollback OTA Update
+### Store Release Rollback
+
+**iOS:**
+1. App Store Connect → My Apps → [App]
+2. App Store → App Store Versions
+3. Select previous version → Submit for Review
+
+**Android:**
+1. Play Console → Release → Production
+2. Find previous version → Roll back
+
+## Monitoring Commands
+
+### Check Build Status
+
 ```bash
-# Use rollback script
-./scripts/rollback-update.sh production
+# List recent builds
+eas build:list
 
-# Or manually
-eas channel:edit production --branch <previous-branch-id>
+# View specific build
+eas build:view [BUILD_ID]
+
+# Build logs
+eas build:view [BUILD_ID] --log
 ```
 
-## 🔧 Troubleshooting
+### Check Update Status
+
+```bash
+# List updates
+eas update:list --branch production
+eas update:list --branch staging
+
+# View specific update
+eas update:view [UPDATE_ID]
+```
+
+### Check Credentials
+
+```bash
+# View stored credentials
+eas credentials
+
+# Check specific platform
+eas credentials --platform ios
+eas credentials --platform android
+```
+
+## Environment Setup
+
+### Switch Environments
+
+```bash
+# Development
+export APP_ENV=development
+
+# Staging
+export APP_ENV=staging
+
+# Production
+export APP_ENV=production
+```
+
+### Load Environment Variables
+
+```bash
+# Development
+export $(cat .env.development | xargs)
+
+# Staging
+export $(cat .env.staging | xargs)
+
+# Production
+export $(cat .env.production | xargs)
+```
+
+## Troubleshooting
 
 ### Build Failed
-```bash
-# View build details
-eas build:view <build-id>
 
-# Check credentials
-eas credentials -p ios
-eas credentials -p android
+```bash
+# View build logs
+eas build:view [BUILD_ID] --log
 
 # Clear cache and retry
-eas build --profile production --platform ios --clear-cache
+eas build:clear-cache
+npm run build:prod:ios --clear-cache
 ```
 
-### Submission Failed
-```bash
-# Check submission status
-eas submission:list
+### Credential Issues
 
-# Retry submission
-eas submit --profile production --platform ios --latest
+```bash
+# Clear and reconfigure
+eas credentials --clear-cache
+eas credentials --platform [ios|android]
 ```
 
 ### Update Not Appearing
+
 ```bash
-# Verify channel
-eas channel:view production
+# Check update published
+eas update:list --branch production
 
-# Check update configuration
-grep -A 5 '"updates"' app.json
+# Force update in app
+# Use UpdateManager component or
+# otaUpdateService.forceUpdate()
 
-# Force check in app
-# Settings → Check for updates
+# Verify runtime version matches
+# Check app.config.js updates.runtimeVersion
 ```
 
-## 📱 Platform-Specific
+### Submission Failed
 
-### iOS
 ```bash
-# Manage certificates
-eas credentials -p ios
+# View submission status
+eas submit:list
 
-# View App Store Connect
-open https://appstoreconnect.apple.com
-
-# TestFlight builds
-eas build:list --platform ios --status finished
+# Retry submission
+eas submit --platform [ios|android] --latest
 ```
 
-### Android
+## Emergency Procedures
+
+### Critical Bug in Production
+
 ```bash
-# Manage keystore
-eas credentials -p android
+# 1. Immediate: Pause rollouts
+# iOS: App Store Connect → Pause Phased Release
+# Android: Play Console → Pause rollout
 
-# View Google Play Console
-open https://play.google.com/console
+# 2. Deploy hotfix via OTA (if JS-only)
+npm run update:production -- "Emergency fix: [description]"
 
-# Check release
-eas submission:list --platform android
+# 3. Monitor Sentry
+# Watch for crash rate drop
+
+# 4. If native fix needed
+npm version patch
+npm run build:prod:all
+npm run submit:ios
+npm run submit:android
 ```
 
-## 🎯 Release Strategy
+### Revert to Previous Version
 
-### Gradual Rollout (Recommended)
-
-**Day 1**: 10% rollout
 ```bash
-# Already configured in eas.json
-npm run submit:prod:android
+# OTA revert
+eas update:rollback --branch production
+
+# Store revert
+# iOS: Use App Store Connect
+# Android: Use Play Console rollback feature
 ```
 
-**Day 2-3**: Increase to 25%
+## Useful EAS Commands
+
 ```bash
-# Update eas.json rolloutFraction to 0.25
-npm run submit:prod:android
+# Login/Logout
+eas login
+eas logout
+eas whoami
+
+# Project info
+eas project:info
+eas project:init
+
+# Build
+eas build --platform [all|ios|android]
+eas build --profile [development|preview|production]
+eas build --local  # Build locally
+eas build:list
+eas build:view [BUILD_ID]
+eas build:cancel [BUILD_ID]
+
+# Submit
+eas submit --platform [ios|android]
+eas submit --latest
+eas submit:list
+
+# Update (OTA)
+eas update --branch [branch-name]
+eas update:list
+eas update:view [UPDATE_ID]
+eas update:delete [UPDATE_ID]
+eas update:rollback
+
+# Credentials
+eas credentials
+eas credentials --platform [ios|android]
+eas credentials --clear-cache
+
+# Metadata
+eas metadata:pull
+eas metadata:push
+
+# Other
+eas channel:list
+eas channel:create [name]
+eas device:create
+eas device:list
 ```
 
-**Day 4-5**: Increase to 50%
+## Version Management
+
 ```bash
-# Update eas.json rolloutFraction to 0.5
-npm run submit:prod:android
+# Bump version (updates package.json)
+npm version patch   # 1.0.0 → 1.0.1
+npm version minor   # 1.0.0 → 1.1.0
+npm version major   # 1.0.0 → 2.0.0
+
+# Update with message
+npm version patch -m "Release version %s"
+
+# No git tag
+npm version patch --no-git-tag-version
 ```
 
-**Day 7**: Full rollout
+## Git Tags
+
 ```bash
-npm run submit:prod:android:rollout
+# Create annotated tag
+git tag -a v1.0.0 -m "Release 1.0.0"
+
+# Push tag
+git push origin v1.0.0
+
+# Push all tags
+git push origin --tags
+
+# List tags
+git tag -l
+
+# Delete tag
+git tag -d v1.0.0
+git push origin :refs/tags/v1.0.0
 ```
 
-### Monitoring Metrics
+## Sentry
 
-Check these before increasing rollout:
-- Crash-free rate: > 99.5%
-- ANR rate: < 0.5%
-- User rating: > 4.0
-- No critical bugs reported
+```bash
+# Upload source maps
+npx sentry-cli sourcemaps upload \
+  --org [ORG] \
+  --project [PROJECT] \
+  --release [VERSION] \
+  ./dist
 
-## 🔐 Security Checklist
+# Create release
+npx sentry-cli releases new [VERSION]
+npx sentry-cli releases finalize [VERSION]
 
-Before each production release:
-- [ ] No hardcoded secrets
-- [ ] API keys in environment variables
-- [ ] Certificates not expired
-- [ ] Keystore backed up
-- [ ] 2FA enabled on all accounts
-- [ ] Service account permissions correct
+# Associate commits
+npx sentry-cli releases set-commits [VERSION] --auto
+```
 
-## 📊 Key Metrics to Monitor
+## Analytics
 
-### First 24 Hours
-- Crash-free rate
-- Install success rate
-- Launch time
-- App size
-- User ratings
+```bash
+# Firebase
+# View analytics in Firebase Console
 
-### First Week
-- Daily active users
-- Retention rate
-- Feature adoption
-- Performance metrics
-- Error rates
+# Amplitude
+# View analytics in Amplitude dashboard
 
-## 🆘 Emergency Contacts
+# Test events
+# Use app and check dashboards
+```
 
-### Critical Issues
-1. Check Sentry for crashes
-2. Review user reports
-3. Assess severity
-4. Decide: Rollback or hotfix
+## Status Checks
 
-### Rollback Decision Tree
-- **JS-only bug**: OTA rollback (< 5 min)
-- **Native bug**: Remove from store + hotfix
-- **Data issue**: Backend fix + OTA update
-- **Critical security**: Immediate removal
+```bash
+# Check EAS build queue
+eas build:list --status in-queue
 
-## 📚 Resources
+# Check running builds
+eas build:list --status in-progress
 
-- [EAS Documentation](https://docs.expo.dev/eas/)
-- [Full Deployment Guide](./DEPLOYMENT.md)
-- [Setup Guide](./EAS_SETUP_GUIDE.md)
-- [Deployment Checklist](./scripts/deployment-checklist.md)
+# Check recent completions
+eas build:list --limit 5
 
-## 💡 Tips
+# Check update status
+eas update:list --branch production --limit 5
 
-- Always test on physical devices before production
-- Use preview builds for internal testing
-- Monitor crash reports during rollout
-- Keep CHANGELOG.md updated
-- Tag all production releases in git
-- Backup keystores and certificates
-- Document deployment issues
-- Communicate releases to team
+# Check project configuration
+eas project:info
+```
+
+## Links
+
+- **EAS Dashboard:** https://expo.dev/accounts/[account]/projects/[project]
+- **Sentry:** https://sentry.io/organizations/[org]/projects/
+- **Firebase Console:** https://console.firebase.google.com/
+- **App Store Connect:** https://appstoreconnect.apple.com/
+- **Google Play Console:** https://play.google.com/console/
+- **Amplitude:** https://analytics.amplitude.com/
 
 ---
 
-**Need Help?**
-- Check [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed instructions
-- Run `eas --help` for CLI help
-- Visit https://docs.expo.dev/eas/
+## Quick Tips
+
+1. **Always test preview builds before production**
+2. **Use OTA updates for quick fixes (JS-only)**
+3. **Monitor Sentry after every deployment**
+4. **Start with small staged rollouts (5-10%)**
+5. **Keep backups of all credentials**
+6. **Document every production change**
+7. **Communicate releases to team**
+8. **Have rollback plan ready**
+
+---
+
+For detailed procedures, see [DEPLOYMENT.md](./DEPLOYMENT.md)

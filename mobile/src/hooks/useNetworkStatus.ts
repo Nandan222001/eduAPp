@@ -1,44 +1,49 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import NetInfo, { NetInfoState } from '@react-native-community/netinfo';
+import { useAppDispatch } from '@store/hooks';
+import { setOnlineStatus } from '@store/slices/offlineSlice';
 
 export interface NetworkStatus {
   isConnected: boolean;
-  isInternetReachable: boolean | null;
+  isInternetReachable: boolean;
   type: string | null;
-  details: any | null;
 }
 
 export const useNetworkStatus = () => {
+  const dispatch = useAppDispatch();
   const [networkStatus, setNetworkStatus] = useState<NetworkStatus>({
     isConnected: true,
-    isInternetReachable: null,
+    isInternetReachable: true,
     type: null,
-    details: null,
   });
 
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener((state: NetInfoState) => {
-      setNetworkStatus({
+      const status: NetworkStatus = {
         isConnected: state.isConnected ?? false,
-        isInternetReachable: state.isInternetReachable,
+        isInternetReachable: state.isInternetReachable ?? false,
         type: state.type,
-        details: state.details,
-      });
+      };
+
+      setNetworkStatus(status);
+      dispatch(setOnlineStatus(status.isConnected && status.isInternetReachable));
     });
 
     NetInfo.fetch().then((state: NetInfoState) => {
-      setNetworkStatus({
+      const status: NetworkStatus = {
         isConnected: state.isConnected ?? false,
-        isInternetReachable: state.isInternetReachable,
+        isInternetReachable: state.isInternetReachable ?? false,
         type: state.type,
-        details: state.details,
-      });
+      };
+
+      setNetworkStatus(status);
+      dispatch(setOnlineStatus(status.isConnected && status.isInternetReachable));
     });
 
     return () => {
       unsubscribe();
     };
-  }, []);
+  }, [dispatch]);
 
   return networkStatus;
 };

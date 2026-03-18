@@ -1,71 +1,96 @@
 import { apiClient } from './client';
-import { Notification, NotificationPreferences, NotificationStats } from '@types';
+import { NotificationPreferences } from '../services/notificationService';
 
-export interface NotificationFilter {
-  category?: 'general' | 'academic' | 'attendance' | 'exam' | 'fee' | 'event' | 'assignment';
-  priority?: 'low' | 'medium' | 'high' | 'urgent';
-  isRead?: boolean;
-  startDate?: string;
-  endDate?: string;
-  page?: number;
-  limit?: number;
+export interface Notification {
+  id: number;
+  title: string;
+  message: string;
+  notification_type: string;
+  notification_group: string;
+  priority: string;
+  channel: string;
+  status: string;
+  data?: any;
+  read_at?: string;
+  sent_at?: string;
+  created_at: string;
+  updated_at: string;
 }
 
-export const notificationsApi = {
-  getNotifications: async (filter?: NotificationFilter): Promise<Notification[]> => {
-    const response = await apiClient.get<Notification[]>('/api/v1/notifications', {
-      params: filter,
-    });
-    return response.data;
+export interface NotificationStats {
+  total: number;
+  unread: number;
+  by_channel: Record<string, number>;
+  by_priority: Record<string, number>;
+  by_group: Record<string, number>;
+}
+
+export interface NotificationPreferenceResponse {
+  id: number;
+  user_id: number;
+  email_enabled: boolean;
+  sms_enabled: boolean;
+  push_enabled: boolean;
+  in_app_enabled: boolean;
+  email_types?: Record<string, boolean>;
+  sms_types?: Record<string, boolean>;
+  push_types?: Record<string, boolean>;
+  in_app_types?: Record<string, boolean>;
+  group_preferences?: Record<string, boolean>;
+  minimum_priority: string;
+  quiet_hours_enabled: boolean;
+  quiet_hours_start?: string;
+  quiet_hours_end?: string;
+  quiet_hours_days?: number[];
+  digest_mode: string;
+  digest_channels?: string[];
+  digest_delivery_time?: string;
+  enable_smart_grouping: boolean;
+  grouping_window_minutes: number;
+  dnd_enabled: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export const notificationApi = {
+  getNotifications: async (params?: {
+    status?: string;
+    channel?: string;
+    group?: string;
+    skip?: number;
+    limit?: number;
+  }) => {
+    return apiClient.get<Notification[]>('/api/v1/notifications/', { params });
   },
 
-  getNotificationById: async (notificationId: number): Promise<Notification> => {
-    const response = await apiClient.get<Notification>(`/api/v1/notifications/${notificationId}`);
-    return response.data;
+  getNotificationById: async (id: number) => {
+    return apiClient.get<Notification>(`/api/v1/notifications/${id}`);
   },
 
-  markAsRead: async (notificationId: number | number[]): Promise<void> => {
-    if (Array.isArray(notificationId)) {
-      await apiClient.post('/api/v1/notifications/mark-read', {
-        notificationIds: notificationId,
-      });
-    } else {
-      await apiClient.patch(`/api/v1/notifications/${notificationId}/read`, {});
-    }
+  markAsRead: async (id: number) => {
+    return apiClient.patch<Notification>(`/api/v1/notifications/${id}/read`, {});
   },
 
-  markAllAsRead: async (): Promise<void> => {
-    await apiClient.post('/api/v1/notifications/mark-all-read', {});
+  markAllAsRead: async () => {
+    return apiClient.post<{ message: string }>('/api/v1/notifications/mark-all-read', {});
   },
 
-  deleteNotification: async (notificationId: number): Promise<void> => {
-    await apiClient.delete(`/api/v1/notifications/${notificationId}`);
+  deleteNotification: async (id: number) => {
+    return apiClient.delete<{ message: string }>(`/api/v1/notifications/${id}`);
   },
 
-  getPreferences: async (): Promise<NotificationPreferences> => {
-    const response = await apiClient.get<NotificationPreferences>(
-      '/api/v1/notifications/preferences'
-    );
-    return response.data;
+  getStats: async () => {
+    return apiClient.get<NotificationStats>('/api/v1/notifications/stats');
   },
 
-  updatePreferences: async (
-    preferences: Partial<NotificationPreferences>
-  ): Promise<NotificationPreferences> => {
-    const response = await apiClient.put<NotificationPreferences>(
-      '/api/v1/notifications/preferences',
+  getPreferences: async () => {
+    return apiClient.get<NotificationPreferenceResponse>('/api/v1/notifications/preferences/me');
+  },
+
+  updatePreferences: async (preferences: Partial<NotificationPreferenceResponse>) => {
+    return apiClient.put<NotificationPreferenceResponse>(
+      '/api/v1/notifications/preferences/me',
       preferences
     );
-    return response.data;
-  },
-
-  getStats: async (): Promise<NotificationStats> => {
-    const response = await apiClient.get<NotificationStats>('/api/v1/notifications/stats');
-    return response.data;
-  },
-
-  getUnreadCount: async (): Promise<number> => {
-    const response = await apiClient.get<{ count: number }>('/api/v1/notifications/unread-count');
-    return response.data.count;
   },
 };

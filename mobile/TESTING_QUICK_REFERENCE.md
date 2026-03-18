@@ -1,279 +1,473 @@
-# Testing Quick Reference
+# Testing Quick Reference Guide
 
-A quick reference guide for running tests in the mobile application.
-
-## 🚀 Quick Commands
+## 🚀 Common Commands
 
 ```bash
 # Run all tests
 npm test
 
-# Watch mode (auto-rerun on changes)
+# Run tests in watch mode (development)
 npm run test:watch
 
-# Coverage report
+# Run tests with coverage
 npm run test:coverage
 
-# Specific test suites
-npm run test:unit           # Unit tests only
-npm run test:components     # Component tests only
-npm run test:integration    # Integration tests only
+# Run specific test suites
+npm run test:unit          # Unit tests only
+npm run test:integration   # Integration tests only
+npm run test:components    # Component tests only
+
+# Run specific test file
+npm test -- LoginScreen.test.tsx
+
+# Run tests matching pattern
+npm test -- --testNamePattern="should login"
+
+# Update snapshots
+npm test -- -u
+
+# Debug tests
+npm run test:debug
 
 # E2E tests
-npm run test:e2e:ios        # iOS E2E
-npm run test:e2e:android    # Android E2E
-
-# CI mode
-npm run test:ci
+npm run e2e:build:ios
+npm run e2e:test:ios
+npm run e2e:build:android
+npm run e2e:test:android
 ```
 
-## 📁 File Locations
+## 📝 Writing Tests - Quick Templates
 
+### Unit Test Template
+
+```typescript
+import reducer, { action } from '@store/slices/slice';
+import { createMockStore } from '../utils';
+
+describe('Feature', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('should handle action', () => {
+    const state = reducer(initialState, action(payload));
+    expect(state.property).toEqual(expected);
+  });
+});
 ```
-mobile/
-├── jest.config.js              # Jest configuration
-├── .detoxrc.js                 # Detox configuration
-├── __tests__/                  # All tests
-│   ├── setup.ts                # Test setup
-│   ├── utils/                  # Test utilities
-│   ├── unit/                   # Unit tests
-│   ├── components/             # Component tests
-│   └── integration/            # Integration tests
-└── e2e/                        # E2E tests
+
+### Component Test Template
+
+```typescript
+import { renderWithProviders } from '../utils';
+import { Component } from '@screens/Component';
+
+describe('Component', () => {
+  it('should render correctly', () => {
+    const { getByText } = renderWithProviders(<Component />);
+    expect(getByText('Expected Text')).toBeTruthy();
+  });
+
+  it('should handle user interaction', async () => {
+    const { getByText } = renderWithProviders(<Component />);
+
+    fireEvent.press(getByText('Button'));
+
+    await waitFor(() => {
+      expect(mockFunction).toHaveBeenCalled();
+    });
+  });
+});
 ```
 
-## 🧪 Test Types
-
-### Unit Tests (/__tests__/unit/)
-Test individual functions and modules in isolation.
-
-**Examples:**
-- Redux slices (authSlice, assignmentsSlice)
-- API functions (authApi, assignmentsApi)
-- Utilities (validators, formatters)
-- Services (secureStorage, offlineQueue)
-
-**Run:** `npm run test:unit`
-
-### Component Tests (/__tests__/components/)
-Test React components with user interactions.
-
-**Examples:**
-- LoginScreen
-- HomeScreen
-- AssignmentDetailScreen
-- Button, Input, Card components
-
-**Run:** `npm run test:components`
-
-### Integration Tests (/__tests__/integration/)
-Test complete user flows across multiple components.
-
-**Examples:**
-- Authentication flow
-- Assignment submission
-- Offline synchronization
-
-**Run:** `npm run test:integration`
-
-### E2E Tests (/e2e/)
-Test entire application in simulator/emulator.
-
-**Examples:**
-- Login flow
-- Assignment workflow
-- Navigation paths
-
-**Run:** `npm run test:e2e:ios` or `npm run test:e2e:android`
-
-## 🛠️ Test Utilities
-
-### renderWithProviders
-Render components with Redux, Theme, Navigation, and Query providers.
+### Integration Test Template
 
 ```typescript
 import { renderWithProviders } from '../utils';
 
-const { getByText } = renderWithProviders(<MyComponent />);
-```
+describe('Feature Integration', () => {
+  it('should complete full flow', async () => {
+    // Setup
+    mockApi.method.mockResolvedValueOnce(mockData);
 
-### createMockNavigation
-Create mock navigation for screen components.
+    // Render
+    const { getByText, getByPlaceholderText } = renderWithProviders(<Screen />);
 
-```typescript
-import { createMockNavigation } from '../utils';
-
-const mockNav = createMockNavigation();
-```
-
-### MSW Server
-Mock API responses for tests.
-
-```typescript
-import { server } from '../utils';
-
-beforeAll(() => server.listen());
-afterAll(() => server.close());
-```
-
-## 📊 Coverage
-
-View coverage report:
-```bash
-npm run test:coverage
-open coverage/lcov-report/index.html
-```
-
-**Targets:**
-- Statements: 70%
-- Branches: 65%
-- Functions: 70%
-- Lines: 70%
-
-## 📝 Writing Tests
-
-### Basic Test Structure
-
-```typescript
-describe('Feature Name', () => {
-  it('should do something', () => {
-    // Arrange
-    const input = 'test';
-    
     // Act
-    const result = myFunction(input);
-    
+    fireEvent.changeText(getByPlaceholderText('Input'), 'value');
+    fireEvent.press(getByText('Submit'));
+
     // Assert
-    expect(result).toBe('expected');
+    await waitFor(() => {
+      expect(mockApi.method).toHaveBeenCalled();
+    });
   });
 });
 ```
 
-### Component Test
+### E2E Test Template
 
-```typescript
-import { renderWithProviders } from '../utils';
+```javascript
+describe('Feature E2E', () => {
+  beforeEach(async () => {
+    await device.launchApp();
+  });
 
-it('should render and handle click', () => {
-  const onPress = jest.fn();
-  const { getByText } = renderWithProviders(
-    <Button title="Click" onPress={onPress} />
-  );
-  
-  fireEvent.press(getByText('Click'));
-  expect(onPress).toHaveBeenCalled();
+  it('should complete user journey', async () => {
+    await element(by.id('input')).typeText('value');
+    await element(by.id('button')).tap();
+
+    await waitFor(element(by.id('result')))
+      .toBeVisible()
+      .withTimeout(5000);
+  });
 });
 ```
 
-### Async Test
+## 🔧 Common Test Utilities
+
+### Rendering with Providers
 
 ```typescript
-it('should load data', async () => {
-  const { getByText } = renderWithProviders(<MyComponent />);
-  
-  await waitFor(() => {
-    expect(getByText('Loaded')).toBeTruthy();
-  });
+// Basic rendering
+const { getByText } = renderWithProviders(<Component />);
+
+// With preloaded state
+const { getByText } = renderWithProviders(<Component />, {
+  preloadedState: {
+    auth: createAuthenticatedState(),
+  },
 });
+
+// With custom query client
+const queryClient = createTestQueryClient();
+const { getByText } = renderWithProviders(<Component />, {
+  queryClient,
+});
+```
+
+### Creating Mock Data
+
+```typescript
+// User
+const user = createMockUser();
+const authenticatedUser = createMockUser({ role: 'student' });
+
+// Assignment
+const assignment = createMockAssignment();
+const overdueAssignment = createMockAssignment({
+  status: 'overdue',
+  dueDate: new Date(Date.now() - 86400000).toISOString(),
+});
+
+// Dashboard data
+const dashboardData = createMockDashboardData();
+
+// Notification
+const notification = createMockNotification();
+```
+
+### Mocking APIs
+
+```typescript
+// Setup mock
+mockAuthApi.login.mockResolvedValueOnce({ data: loginResponse });
+
+// Verify call
+expect(mockAuthApi.login).toHaveBeenCalledWith({
+  email: 'test@example.com',
+  password: 'password123',
+});
+
+// Reset mocks
+resetApiMocks();
+```
+
+### Working with Redux Store
+
+```typescript
+// Create store with initial state
+const store = createMockStore({
+  auth: createAuthenticatedState(),
+});
+
+// Get state
+const state = store.getState();
+
+// Dispatch action
+await store.dispatch(login(credentials));
+```
+
+## 🎯 Common Assertions
+
+### Component Rendering
+
+```typescript
+// Element exists
+expect(getByText('Text')).toBeTruthy();
+expect(getByPlaceholderText('Placeholder')).toBeTruthy();
+expect(getByTestId('test-id')).toBeTruthy();
+
+// Element is visible
+expect(element(by.id('element'))).toBeVisible();
+
+// Element has correct value
+expect(input.props.value).toBe('expected');
+
+// Element has correct style
+expect(view.props.style).toMatchObject({ color: 'red' });
+```
+
+### User Interactions
+
+```typescript
+// Text input
+fireEvent.changeText(input, 'new value');
+
+// Button press
+fireEvent.press(button);
+
+// Scroll
+fireEvent.scroll(scrollView, { y: 100 });
+```
+
+### Async Operations
+
+```typescript
+// Wait for element
+await waitFor(() => {
+  expect(getByText('Text')).toBeTruthy();
+});
+
+// Wait with timeout
+await waitFor(
+  () => {
+    expect(element).toBeTruthy();
+  },
+  { timeout: 5000 }
+);
+
+// Find by text (async)
+const element = await findByText('Text');
+```
+
+### Redux State
+
+```typescript
+// State value
+expect(state.auth.isAuthenticated).toBe(true);
+expect(state.user.profile).toEqual(expectedUser);
+
+// Action dispatched
+expect(mockDispatch).toHaveBeenCalledWith(expectedAction);
+```
+
+### API Calls
+
+```typescript
+// Called
+expect(mockApi.method).toHaveBeenCalled();
+
+// Called with args
+expect(mockApi.method).toHaveBeenCalledWith(expectedArgs);
+
+// Call count
+expect(mockApi.method).toHaveBeenCalledTimes(1);
+
+// Not called
+expect(mockApi.method).not.toHaveBeenCalled();
 ```
 
 ## 🐛 Debugging
 
-### Run Single Test File
-```bash
-npm test -- path/to/test.test.ts
+### View Test Output
+
+```typescript
+// Console log
+console.log(screen.debug());
+
+// Get tree structure
+const tree = screen.toJSON();
+console.log(JSON.stringify(tree, null, 2));
+
+// Query helpers
+screen.logTestingPlaygroundURL();
 ```
 
-### Run Tests Matching Pattern
-```bash
-npm test -- -t "pattern"
+### Breakpoints
+
+```typescript
+// In test
+debugger; // Will pause when running test:debug
+
+// In VSCode, set breakpoint and use debug configuration
 ```
 
-### Update Snapshots
-```bash
-npm test -- -u
+### Inspect Redux Store
+
+```typescript
+const { store } = renderWithProviders(<Component />);
+console.log(store.getState());
 ```
 
-### Clear Jest Cache
-```bash
-npx jest --clearCache
+## 🔍 Finding Elements
+
+### By Text
+
+```typescript
+getByText('Exact Text');
+getByText(/pattern/i);
+queryByText('May Not Exist'); // Returns null if not found
+findByText('Async Element'); // Returns promise
 ```
 
-## 📚 Documentation
+### By Placeholder
 
-| Document | Description |
-|----------|-------------|
-| `__tests__/README.md` | Comprehensive testing guide |
-| `__tests__/EXAMPLES.md` | Code examples for all test types |
-| `__tests__/QUICK_START_TESTING.md` | Quick start guide |
-| `TESTING_SUITE_IMPLEMENTATION.md` | Implementation details |
-| `TESTING_IMPLEMENTATION_CHECKLIST.md` | Complete checklist |
+```typescript
+getByPlaceholderText('Enter email');
+```
 
-## 🔥 Common Tasks
+### By Test ID
 
-### Before Committing
+```typescript
+getByTestId('unique-test-id');
+```
+
+### By Role (E2E)
+
+```javascript
+element(by.id('test-id'));
+element(by.text('Text'));
+element(by.label('Label'));
+element(by.type('RCTTextInput'));
+```
+
+## ⚡ Performance Tips
+
+1. Use `screen` instead of destructuring for better performance
+2. Use `queryBy*` when element might not exist
+3. Use `findBy*` for async elements
+4. Clear mocks in `beforeEach` to prevent memory leaks
+5. Use specific queries over generic ones
+
+## 🎨 Best Practices
+
+### DO ✅
+
+- Write clear, descriptive test names
+- Test user behavior, not implementation
+- Use data-testid sparingly (prefer text/label)
+- Mock external dependencies
+- Clean up after tests
+- Test error states and edge cases
+
+### DON'T ❌
+
+- Test implementation details
+- Over-mock (mock only what's necessary)
+- Test libraries/frameworks
+- Write flaky tests
+- Ignore warnings
+- Skip cleanup
+
+## 📊 Coverage Tips
+
 ```bash
+# View coverage report
 npm run test:coverage
-npm run lint
-npm run type-check
+open coverage/lcov-report/index.html
+
+# Check specific file coverage
+npm test -- --coverage --collectCoverageFrom="src/screens/LoginScreen.tsx"
+
+# Coverage in watch mode
+npm test -- --watch --coverage
 ```
 
-### Adding New Feature
-1. Write tests first (TDD)
-2. Implement feature
-3. Run tests
-4. Check coverage
-5. Commit
+## 🆘 Common Issues
 
-### Fixing Bug
-1. Write failing test
-2. Fix bug
-3. Test passes
-4. Verify no regressions
+### Issue: "Cannot find module"
 
-### Reviewing PR
-1. Check tests added
-2. Run tests locally
-3. Review coverage report
-4. Check CI status
+```bash
+# Check jest.config.js moduleNameMapper
+# Ensure it matches tsconfig.json paths
+```
 
-## ⚡ Tips
+### Issue: Tests timeout
 
-1. **Use watch mode** during development
-2. **Run specific tests** to save time
-3. **Check coverage** for gaps
-4. **Mock external deps** properly
-5. **Keep tests focused** and simple
-6. **Update snapshots** carefully
-7. **Write descriptive** test names
+```typescript
+// Increase timeout
+jest.setTimeout(10000);
 
-## 🆘 Troubleshooting
+// Or in specific test
+it('test', async () => {
+  // ...
+}, 10000);
+```
 
-| Issue | Solution |
-|-------|----------|
-| Tests timeout | Increase timeout in jest.config.js |
-| Mock not working | Check module path in jest.config.js |
-| Coverage too low | Run with --coverage to see gaps |
-| E2E tests fail | Rebuild app, check simulator |
-| Flaky tests | Check for race conditions, add waits |
+### Issue: Act warnings
 
-## 🔗 Resources
+```typescript
+// Wrap state updates in act()
+await waitFor(() => {
+  expect(element).toBeTruthy();
+});
+```
 
+### Issue: Network request warnings
+
+```typescript
+// Mock all API calls
+beforeEach(() => {
+  mockApi.method.mockResolvedValue(mockData);
+});
+```
+
+## 📱 E2E Specific
+
+### Common Actions
+
+```javascript
+// Tap
+await element(by.id('button')).tap();
+
+// Type
+await element(by.id('input')).typeText('text');
+
+// Scroll
+await element(by.id('scrollView')).scrollTo('bottom');
+
+// Swipe
+await element(by.id('list')).swipe('down');
+
+// Wait for element
+await waitFor(element(by.id('element')))
+  .toBeVisible()
+  .withTimeout(5000);
+```
+
+### Matchers
+
+```javascript
+// Visibility
+.toBeVisible()
+.toBeNotVisible()
+
+// Existence
+.toExist()
+.toNotExist()
+
+// Value
+.toHaveText('text')
+.toHaveValue('value')
+```
+
+---
+
+**Quick Links:**
+
+- [Full Testing Guide](./TESTING.md)
+- [Test Summary](./TEST_SUMMARY.md)
 - [Jest Docs](https://jestjs.io/)
-- [Testing Library](https://testing-library.com/react-native)
+- [Testing Library Docs](https://testing-library.com/docs/react-native-testing-library/intro/)
 - [Detox Docs](https://wix.github.io/Detox/)
-- [MSW Docs](https://mswjs.io/)
-
-## Summary
-
-**38 files created** with comprehensive testing infrastructure:
-- ✅ 8 unit test files
-- ✅ 6 component test files
-- ✅ 3 integration test files
-- ✅ 3 E2E test suites
-- ✅ 6 test utility modules
-- ✅ 6 documentation files
-- ✅ 5 configuration files
-- ✅ 1 CI/CD workflow
-
-**Ready to test!** 🎉

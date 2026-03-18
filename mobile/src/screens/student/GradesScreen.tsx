@@ -1,518 +1,292 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   StyleSheet,
-  ScrollView,
+  FlatList,
+  TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
-  TouchableOpacity,
-  Modal,
   Dimensions,
-  Alert,
 } from 'react-native';
-import { Text, Card, Button, Icon } from '@rneui/themed';
-import { LineChart, BarChart } from 'react-native-chart-kit';
+import { Text, Card, Icon, ButtonGroup } from '@rneui/themed';
+import { useQuery } from '@tanstack/react-query';
+import { format, parseISO } from 'date-fns';
 import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS } from '@constants';
 import { StudentTabScreenProps } from '@types';
-import {
-  gradesApi,
-  GradeDetail,
-  ExamDetail,
-  PerformanceInsights,
-  GradeDistribution,
-} from '@api/grades';
-import { sharingService } from '@utils';
+import { studentApi } from '../../api/student';
+import { Grade } from '../../types/student';
 
 type Props = StudentTabScreenProps<'Grades'>;
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
+const { width } = Dimensions.get('window');
 
-export const GradesScreen: React.FC<Props> = () => {
-  const [grades, setGrades] = useState<GradeDetail[]>([]);
-  const [exams, setExams] = useState<ExamDetail[]>([]);
-  const [insights, setInsights] = useState<PerformanceInsights | null>(null);
-  const [distribution, setDistribution] = useState<GradeDistribution[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const [selectedTerm, setSelectedTerm] = useState<string>('all');
-  const [selectedSubject, setSelectedSubject] = useState<string>('all');
-  const [selectedGrade, setSelectedGrade] = useState<GradeDetail | null>(null);
-  const [modalVisible, setModalVisible] = useState(false);
+interface GradeCardProps {
+  grade: Grade;
+}
 
-  const fetchData = useCallback(async () => {
-    try {
-      setLoading(true);
-      const [gradesRes, examsRes, insightsRes, distributionRes] = await Promise.all([
-        gradesApi.getGrades({
-          term: selectedTerm !== 'all' ? selectedTerm : undefined,
-          subject: selectedSubject !== 'all' ? selectedSubject : undefined,
-        }),
-        gradesApi.getExams({
-          term: selectedTerm !== 'all' ? selectedTerm : undefined,
-          subject: selectedSubject !== 'all' ? selectedSubject : undefined,
-        }),
-        gradesApi.getPerformanceInsights(selectedTerm !== 'all' ? selectedTerm : undefined),
-        gradesApi.getGradeDistribution(selectedTerm !== 'all' ? selectedTerm : undefined),
-      ]);
-
-      setGrades(gradesRes.data || []);
-      setExams(examsRes.data || []);
-      setInsights(insightsRes.data);
-      setDistribution(distributionRes.data || []);
-    } catch (error) {
-      console.error('Failed to fetch grades:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedTerm, selectedSubject]);
-
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await fetchData();
-    setRefreshing(false);
-  }, [fetchData]);
-
-  React.useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  const subjects = useMemo(() => {
-    const uniqueSubjects = [...new Set(grades.map(g => g.subject))];
-    return ['all', ...uniqueSubjects];
-  }, [grades]);
-
-  const terms = useMemo(() => {
-    const uniqueTerms = [...new Set(grades.map(g => g.term))];
-    return ['all', ...uniqueTerms];
-  }, [grades]);
-
-  const subjectWiseGrades = useMemo(() => {
-    const grouped: Record<string, GradeDetail[]> = {};
-    grades.forEach(grade => {
-      if (!grouped[grade.subject]) {
-        grouped[grade.subject] = [];
-      }
-      grouped[grade.subject].push(grade);
-    });
-    return grouped;
-  }, [grades]);
-
-  const openGradeDetail = (grade: GradeDetail) => {
-    setSelectedGrade(grade);
-    setModalVisible(true);
+const GradeCard: React.FC<GradeCardProps> = ({ grade }) => {
+  const getGradeColor = (gradeValue: string) => {
+    const upperGrade = gradeValue.toUpperCase();
+    if (upperGrade === 'A+' || upperGrade === 'A') return COLORS.success;
+    if (upperGrade === 'A-' || upperGrade === 'B+' || upperGrade === 'B') return COLORS.info;
+    if (upperGrade === 'B-' || upperGrade === 'C+' || upperGrade === 'C') return COLORS.warning;
+    return COLORS.error;
   };
 
-  const closeGradeDetail = () => {
-    setSelectedGrade(null);
-    setModalVisible(false);
-  };
-
-  const handleShareGrades = async () => {
-    try {
-      await sharingService.shareGrades(grades, 'Student Name');
-    } catch (error) {
-      Alert.alert('Error', 'Failed to share grades');
-    }
-  };
-
-  const handleShareGradesAsPDF = async () => {
-    try {
-      await sharingService.shareGradesAsPDF(grades, 'Student Name');
-    } catch (error) {
-      Alert.alert('Error', 'Failed to share grades as PDF');
-    }
-  };
-
-  const getGradeColor = (grade: string) => {
-    switch (grade.toUpperCase()) {
-      case 'A+':
-      case 'A':
-        return COLORS.success;
-      case 'B+':
-      case 'B':
-        return COLORS.info;
-      case 'C+':
-      case 'C':
-        return COLORS.accent;
-      case 'D':
-        return COLORS.warning;
-      default:
-        return COLORS.error;
-    }
-  };
-
-  const renderOverviewCard = () => {
-    if (!insights) return null;
-
-    return (
-      <Card containerStyle={styles.overviewCard}>
-        <Text style={styles.cardTitle}>Performance Overview</Text>
-        <View style={styles.overviewContent}>
-          <View style={styles.overviewItem}>
-            <Text style={styles.overviewValue}>{insights.overallAverage.toFixed(1)}%</Text>
-            <Text style={styles.overviewLabel}>Overall Average</Text>
-          </View>
-          <View style={styles.overviewDivider} />
-          <View style={styles.overviewItem}>
-            <Text style={[styles.overviewValue, { color: getGradeColor(insights.overallGrade) }]}>
-              {insights.overallGrade}
-            </Text>
-            <Text style={styles.overviewLabel}>Current Grade</Text>
-          </View>
-          <View style={styles.overviewDivider} />
-          <View style={styles.overviewItem}>
-            <Text style={styles.overviewValue}>{insights.totalExams}</Text>
-            <Text style={styles.overviewLabel}>Total Exams</Text>
-          </View>
-        </View>
-        <View style={styles.trendContainer}>
-          <Text style={styles.trendLabel}>Trend: </Text>
-          <Text
-            style={[
-              styles.trendValue,
-              {
-                color:
-                  insights.trend === 'improving'
-                    ? COLORS.success
-                    : insights.trend === 'declining'
-                      ? COLORS.error
-                      : COLORS.textSecondary,
-              },
-            ]}
-          >
-            {insights.trend === 'improving' ? '📈' : insights.trend === 'declining' ? '📉' : '➡️'}{' '}
-            {insights.trend.charAt(0).toUpperCase() + insights.trend.slice(1)}
-          </Text>
-        </View>
-      </Card>
-    );
-  };
-
-  const renderDistributionChart = () => {
-    if (distribution.length === 0) return null;
-
-    const chartData = {
-      labels: distribution.map(d => d.grade),
-      datasets: [
-        {
-          data: distribution.map(d => d.count),
-        },
-      ],
-    };
-
-    return (
-      <Card containerStyle={styles.chartCard}>
-        <Text style={styles.cardTitle}>Grade Distribution</Text>
-        <BarChart
-          data={chartData}
-          width={SCREEN_WIDTH - SPACING.md * 4}
-          height={220}
-          yAxisLabel=""
-          yAxisSuffix=""
-          chartConfig={{
-            backgroundColor: COLORS.background,
-            backgroundGradientFrom: COLORS.background,
-            backgroundGradientTo: COLORS.background,
-            decimalPlaces: 0,
-            color: (opacity = 1) => `rgba(59, 130, 246, ${opacity})`,
-            labelColor: (opacity = 1) => `rgba(107, 114, 128, ${opacity})`,
-            style: {
-              borderRadius: BORDER_RADIUS.lg,
-            },
-            propsForLabels: {
-              fontSize: FONT_SIZES.sm,
-            },
-          }}
-          style={styles.chart}
-        />
-      </Card>
-    );
-  };
-
-  const renderPerformanceChart = () => {
-    if (grades.length === 0) return null;
-
-    const sortedGrades = [...grades].sort(
-      (a, b) => new Date(a.examDate).getTime() - new Date(b.examDate).getTime()
-    );
-    const recentGrades = sortedGrades.slice(-6);
-
-    const chartData = {
-      labels: recentGrades.map(g => g.examName.slice(0, 8)),
-      datasets: [
-        {
-          data: recentGrades.map(g => g.percentage),
-          color: (opacity = 1) => `rgba(59, 130, 246, ${opacity})`,
-          strokeWidth: 2,
-        },
-      ],
-    };
-
-    return (
-      <Card containerStyle={styles.chartCard}>
-        <Text style={styles.cardTitle}>Performance Trend</Text>
-        <LineChart
-          data={chartData}
-          width={SCREEN_WIDTH - SPACING.md * 4}
-          height={220}
-          yAxisSuffix="%"
-          chartConfig={{
-            backgroundColor: COLORS.background,
-            backgroundGradientFrom: COLORS.background,
-            backgroundGradientTo: COLORS.background,
-            decimalPlaces: 0,
-            color: (opacity = 1) => `rgba(59, 130, 246, ${opacity})`,
-            labelColor: (opacity = 1) => `rgba(107, 114, 128, ${opacity})`,
-            style: {
-              borderRadius: BORDER_RADIUS.lg,
-            },
-            propsForDots: {
-              r: '6',
-              strokeWidth: '2',
-              stroke: COLORS.primary,
-            },
-            propsForLabels: {
-              fontSize: FONT_SIZES.xs,
-            },
-          }}
-          bezier
-          style={styles.chart}
-        />
-      </Card>
-    );
-  };
-
-  const renderFilters = () => (
-    <View style={styles.filtersContainer}>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        <View style={styles.filterGroup}>
-          <Text style={styles.filterLabel}>Term:</Text>
-          {terms.map(term => (
-            <TouchableOpacity
-              key={term}
-              style={[styles.filterChip, selectedTerm === term && styles.filterChipActive]}
-              onPress={() => setSelectedTerm(term)}
-            >
-              <Text
-                style={[
-                  styles.filterChipText,
-                  selectedTerm === term && styles.filterChipTextActive,
-                ]}
-              >
-                {term === 'all' ? 'All Terms' : term}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </ScrollView>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        <View style={styles.filterGroup}>
-          <Text style={styles.filterLabel}>Subject:</Text>
-          {subjects.map(subject => (
-            <TouchableOpacity
-              key={subject}
-              style={[styles.filterChip, selectedSubject === subject && styles.filterChipActive]}
-              onPress={() => setSelectedSubject(subject)}
-            >
-              <Text
-                style={[
-                  styles.filterChipText,
-                  selectedSubject === subject && styles.filterChipTextActive,
-                ]}
-              >
-                {subject === 'all' ? 'All Subjects' : subject}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </ScrollView>
-    </View>
-  );
-
-  const renderSubjectGrades = (subject: string, subjectGrades: GradeDetail[]) => {
-    const average = subjectGrades.reduce((sum, g) => sum + g.percentage, 0) / subjectGrades.length;
-
-    return (
-      <Card key={subject} containerStyle={styles.subjectCard}>
-        <View style={styles.subjectHeader}>
-          <Text style={styles.subjectName}>{subject}</Text>
-          <View style={styles.subjectStats}>
-            <Text style={styles.subjectAverage}>{average.toFixed(1)}%</Text>
-            <Text style={styles.subjectCount}>{subjectGrades.length} exams</Text>
-          </View>
-        </View>
-        <View style={styles.gradesGrid}>
-          {subjectGrades.map(grade => (
-            <TouchableOpacity
-              key={grade.id}
-              style={styles.gradeCard}
-              onPress={() => openGradeDetail(grade)}
-            >
-              <Text style={styles.gradeExamName} numberOfLines={1}>
-                {grade.examName}
-              </Text>
-              <View style={styles.gradeScoreContainer}>
-                <Text style={styles.gradeScore}>
-                  {grade.obtainedMarks}/{grade.totalMarks}
-                </Text>
-                <Text style={[styles.gradePercentage, { color: getGradeColor(grade.grade) }]}>
-                  {grade.percentage.toFixed(0)}%
-                </Text>
-              </View>
-              <View style={[styles.gradeBadge, { backgroundColor: getGradeColor(grade.grade) }]}>
-                <Text style={styles.gradeBadgeText}>{grade.grade}</Text>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </Card>
-    );
-  };
-
-  const renderGradeDetailModal = () => {
-    if (!selectedGrade) return null;
-
-    return (
-      <Modal
-        visible={modalVisible}
-        animationType="slide"
-        transparent
-        onRequestClose={closeGradeDetail}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Grade Details</Text>
-              <TouchableOpacity onPress={closeGradeDetail}>
-                <Text style={styles.closeButton}>✕</Text>
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView>
-              <View style={styles.modalBody}>
-                <Text style={styles.modalExamName}>{selectedGrade.examName}</Text>
-                <Text style={styles.modalSubject}>{selectedGrade.subject}</Text>
-
-                <View style={styles.modalScoreSection}>
-                  <View
-                    style={[
-                      styles.modalGradeBadge,
-                      { backgroundColor: getGradeColor(selectedGrade.grade) },
-                    ]}
-                  >
-                    <Text style={styles.modalGradeBadgeText}>{selectedGrade.grade}</Text>
-                  </View>
-                  <Text style={styles.modalScore}>
-                    {selectedGrade.obtainedMarks} / {selectedGrade.totalMarks}
-                  </Text>
-                  <Text style={styles.modalPercentage}>{selectedGrade.percentage.toFixed(1)}%</Text>
-                </View>
-
-                {selectedGrade.rank && (
-                  <View style={styles.modalInfoRow}>
-                    <Text style={styles.modalInfoLabel}>Class Rank:</Text>
-                    <Text style={styles.modalInfoValue}>#{selectedGrade.rank}</Text>
-                  </View>
-                )}
-
-                {selectedGrade.classAverage !== undefined && (
-                  <View style={styles.modalInfoRow}>
-                    <Text style={styles.modalInfoLabel}>Class Average:</Text>
-                    <Text style={styles.modalInfoValue}>
-                      {selectedGrade.classAverage.toFixed(1)}%
-                    </Text>
-                  </View>
-                )}
-
-                {selectedGrade.highestMarks !== undefined && (
-                  <View style={styles.modalInfoRow}>
-                    <Text style={styles.modalInfoLabel}>Highest Score:</Text>
-                    <Text style={styles.modalInfoValue}>{selectedGrade.highestMarks}</Text>
-                  </View>
-                )}
-
-                {selectedGrade.lowestMarks !== undefined && (
-                  <View style={styles.modalInfoRow}>
-                    <Text style={styles.modalInfoLabel}>Lowest Score:</Text>
-                    <Text style={styles.modalInfoValue}>{selectedGrade.lowestMarks}</Text>
-                  </View>
-                )}
-
-                <View style={styles.performanceInsightsSection}>
-                  <Text style={styles.insightsTitle}>Performance Insights</Text>
-                  {selectedGrade.classAverage !== undefined && (
-                    <View style={styles.insightCard}>
-                      <Text style={styles.insightLabel}>Performance vs Class</Text>
-                      <Text
-                        style={[
-                          styles.insightValue,
-                          {
-                            color:
-                              selectedGrade.percentage >= selectedGrade.classAverage
-                                ? COLORS.success
-                                : COLORS.error,
-                          },
-                        ]}
-                      >
-                        {selectedGrade.percentage >= selectedGrade.classAverage
-                          ? '📈 Above Average'
-                          : '📉 Below Average'}
-                      </Text>
-                      <Text style={styles.insightDetail}>
-                        {Math.abs(selectedGrade.percentage - selectedGrade.classAverage).toFixed(1)}
-                        %{' '}
-                        {selectedGrade.percentage >= selectedGrade.classAverage ? 'above' : 'below'}{' '}
-                        class average
-                      </Text>
-                    </View>
-                  )}
-                </View>
-
-                {selectedGrade.remarks && (
-                  <View style={styles.remarksSection}>
-                    <Text style={styles.remarksTitle}>Remarks</Text>
-                    <Text style={styles.remarksText}>{selectedGrade.remarks}</Text>
-                  </View>
-                )}
-
-                {selectedGrade.teacherComments && (
-                  <View style={styles.commentsSection}>
-                    <Text style={styles.commentsTitle}>Teacher Comments</Text>
-                    <Text style={styles.commentsText}>{selectedGrade.teacherComments}</Text>
-                  </View>
-                )}
-              </View>
-            </ScrollView>
-
-            <Button
-              title="Close"
-              onPress={closeGradeDetail}
-              buttonStyle={styles.closeModalButton}
-            />
-          </View>
-        </View>
-      </Modal>
-    );
+  const getPercentageColor = (percentage: number) => {
+    if (percentage >= 90) return COLORS.success;
+    if (percentage >= 75) return COLORS.info;
+    if (percentage >= 60) return COLORS.warning;
+    return COLORS.error;
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text h3 style={styles.headerTitle}>
-          Grades
-        </Text>
-        <View style={styles.headerActions}>
-          <TouchableOpacity onPress={handleShareGrades} style={styles.headerButton}>
-            <Icon name="share-2" type="feather" size={24} color={COLORS.primary} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={handleShareGradesAsPDF} style={styles.headerButton}>
-            <Icon name="download" type="feather" size={24} color={COLORS.primary} />
-          </TouchableOpacity>
+    <Card containerStyle={styles.gradeCard}>
+      <View style={styles.gradeCardHeader}>
+        <View style={styles.gradeCardHeaderLeft}>
+          <Text style={styles.examName}>{grade.examName}</Text>
+          <Text style={styles.subjectName}>{grade.subject}</Text>
+        </View>
+        <View style={styles.gradeCircle}>
+          <Text style={[styles.gradeValue, { color: getGradeColor(grade.grade) }]}>
+            {grade.grade}
+          </Text>
         </View>
       </View>
-      <ScrollView
-        style={styles.content}
-        contentContainerStyle={styles.contentContainer}
+
+      <View style={styles.gradeCardBody}>
+        <View style={styles.scoreRow}>
+          <View style={styles.scoreItem}>
+            <Text style={styles.scoreLabel}>Score</Text>
+            <Text style={styles.scoreValue}>
+              {grade.obtainedMarks}/{grade.totalMarks}
+            </Text>
+          </View>
+          <View style={styles.scoreItem}>
+            <Text style={styles.scoreLabel}>Percentage</Text>
+            <Text style={[styles.scoreValue, { color: getPercentageColor(grade.percentage) }]}>
+              {grade.percentage.toFixed(1)}%
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.examDateRow}>
+          <Icon name="calendar" type="feather" size={14} color={COLORS.textSecondary} />
+          <Text style={styles.examDate}>{format(parseISO(grade.examDate), 'MMM dd, yyyy')}</Text>
+        </View>
+
+        {grade.remarks && (
+          <View style={styles.remarksContainer}>
+            <Text style={styles.remarksLabel}>Remarks:</Text>
+            <Text style={styles.remarksText}>{grade.remarks}</Text>
+          </View>
+        )}
+      </View>
+    </Card>
+  );
+};
+
+interface PerformanceChartProps {
+  grades: Grade[];
+}
+
+const PerformanceChart: React.FC<PerformanceChartProps> = ({ grades }) => {
+  const chartData = useMemo(() => {
+    const subjectAverages = grades.reduce(
+      (acc, grade) => {
+        if (!acc[grade.subject]) {
+          acc[grade.subject] = { total: 0, count: 0 };
+        }
+        acc[grade.subject].total += grade.percentage;
+        acc[grade.subject].count += 1;
+        return acc;
+      },
+      {} as Record<string, { total: number; count: number }>
+    );
+
+    return Object.entries(subjectAverages).map(([subject, data]) => ({
+      subject,
+      average: data.total / data.count,
+    }));
+  }, [grades]);
+
+  const maxPercentage = 100;
+  const chartWidth = width - SPACING.md * 4;
+
+  return (
+    <Card containerStyle={styles.chartCard}>
+      <Text style={styles.chartTitle}>Performance Overview</Text>
+      <View style={styles.chartContainer}>
+        {chartData.map((item, index) => {
+          const barHeight = (item.average / maxPercentage) * 150;
+          const barColor =
+            item.average >= 75
+              ? COLORS.success
+              : item.average >= 60
+                ? COLORS.warning
+                : COLORS.error;
+
+          return (
+            <View key={index} style={styles.chartBarContainer}>
+              <View style={styles.barWrapper}>
+                <View style={[styles.chartBar, { height: barHeight, backgroundColor: barColor }]}>
+                  <Text style={styles.barValueText}>{item.average.toFixed(0)}%</Text>
+                </View>
+              </View>
+              <Text style={styles.barLabel} numberOfLines={2}>
+                {item.subject}
+              </Text>
+            </View>
+          );
+        })}
+      </View>
+    </Card>
+  );
+};
+
+interface StatsSummaryProps {
+  grades: Grade[];
+}
+
+const StatsSummary: React.FC<StatsSummaryProps> = ({ grades }) => {
+  const stats = useMemo(() => {
+    if (grades.length === 0) {
+      return { average: 0, highest: 0, lowest: 0, totalExams: 0 };
+    }
+
+    const percentages = grades.map(g => g.percentage);
+    return {
+      average: percentages.reduce((sum, p) => sum + p, 0) / percentages.length,
+      highest: Math.max(...percentages),
+      lowest: Math.min(...percentages),
+      totalExams: grades.length,
+    };
+  }, [grades]);
+
+  return (
+    <Card containerStyle={styles.statsCard}>
+      <View style={styles.statsGrid}>
+        <View style={styles.statItem}>
+          <Icon name="trending-up" type="feather" size={24} color={COLORS.primary} />
+          <Text style={styles.statValue}>{stats.average.toFixed(1)}%</Text>
+          <Text style={styles.statLabel}>Average</Text>
+        </View>
+        <View style={styles.statItem}>
+          <Icon name="arrow-up" type="feather" size={24} color={COLORS.success} />
+          <Text style={styles.statValue}>{stats.highest.toFixed(1)}%</Text>
+          <Text style={styles.statLabel}>Highest</Text>
+        </View>
+        <View style={styles.statItem}>
+          <Icon name="arrow-down" type="feather" size={24} color={COLORS.error} />
+          <Text style={styles.statValue}>{stats.lowest.toFixed(1)}%</Text>
+          <Text style={styles.statLabel}>Lowest</Text>
+        </View>
+        <View style={styles.statItem}>
+          <Icon name="file-text" type="feather" size={24} color={COLORS.info} />
+          <Text style={styles.statValue}>{stats.totalExams}</Text>
+          <Text style={styles.statLabel}>Total Exams</Text>
+        </View>
+      </View>
+    </Card>
+  );
+};
+
+export const GradesScreen: React.FC<Props> = ({ navigation }) => {
+  const [selectedTerm, setSelectedTerm] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const terms = ['All', 'Term 1', 'Term 2', 'Term 3'];
+  const termParam =
+    selectedTerm === 0 ? undefined : terms[selectedTerm].toLowerCase().replace(' ', '_');
+
+  const {
+    data: grades,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
+    queryKey: ['grades', termParam],
+    queryFn: async () => {
+      const response = await studentApi.getGrades({ term: termParam });
+      return response.data;
+    },
+    staleTime: 5 * 60 * 1000,
+    retry: 3,
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
+  });
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  };
+
+  const handleRetry = () => {
+    refetch();
+  };
+
+  const renderHeader = () => (
+    <>
+      <ButtonGroup
+        buttons={terms}
+        selectedIndex={selectedTerm}
+        onPress={setSelectedTerm}
+        containerStyle={styles.termButtonGroup}
+        selectedButtonStyle={styles.selectedTermButton}
+        textStyle={styles.termButtonText}
+      />
+      {grades && grades.length > 0 && (
+        <>
+          <StatsSummary grades={grades} />
+          <PerformanceChart grades={grades} />
+        </>
+      )}
+    </>
+  );
+
+  if (isLoading && !refreshing) {
+    return (
+      <View style={styles.centerContainer}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+        <Text style={styles.loadingText}>Loading grades...</Text>
+      </View>
+    );
+  }
+
+  if (isError) {
+    return (
+      <View style={styles.centerContainer}>
+        <Icon name="alert-circle" type="feather" size={48} color={COLORS.error} />
+        <Text style={styles.errorText}>Failed to load grades</Text>
+        <TouchableOpacity onPress={handleRetry} style={styles.retryButton}>
+          <Icon name="refresh-cw" type="feather" size={20} color={COLORS.background} />
+          <Text style={styles.retryButtonText}>Retry</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  if (!grades || grades.length === 0) {
+    return (
+      <View style={styles.container}>
+        {renderHeader()}
+        <View style={styles.centerContainer}>
+          <Icon name="award" type="feather" size={48} color={COLORS.textSecondary} />
+          <Text style={styles.emptyText}>No grades available</Text>
+          <Text style={styles.emptySubtext}>Your grades will appear here once published</Text>
+        </View>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.container}>
+      <FlatList
+        data={grades}
+        keyExtractor={item => item.id.toString()}
+        renderItem={({ item }) => <GradeCard grade={item} />}
+        ListHeaderComponent={renderHeader}
+        contentContainerStyle={styles.listContent}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -521,35 +295,7 @@ export const GradesScreen: React.FC<Props> = () => {
             colors={[COLORS.primary]}
           />
         }
-      >
-        {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={COLORS.primary} />
-            <Text style={styles.loadingText}>Loading grades...</Text>
-          </View>
-        ) : (
-          <>
-            {renderOverviewCard()}
-            {renderPerformanceChart()}
-            {renderDistributionChart()}
-            {renderFilters()}
-            {Object.keys(subjectWiseGrades).length > 0 ? (
-              Object.entries(subjectWiseGrades).map(([subject, subjectGrades]) =>
-                renderSubjectGrades(subject, subjectGrades)
-              )
-            ) : (
-              <View style={styles.emptyContainer}>
-                <Text style={styles.emptyIcon}>📊</Text>
-                <Text style={styles.emptyText}>No grades available</Text>
-                <Text style={styles.emptySubtext}>
-                  Grades will appear here once exams are graded
-                </Text>
-              </View>
-            )}
-          </>
-        )}
-      </ScrollView>
-      {renderGradeDetailModal()}
+      />
     </View>
   );
 };
@@ -559,386 +305,228 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.surface,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: SPACING.md,
-    paddingTop: SPACING.md,
-    paddingBottom: SPACING.sm,
-    backgroundColor: COLORS.background,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  headerTitle: {
-    fontSize: FONT_SIZES.xl,
-    fontWeight: 'bold',
-    color: COLORS.text,
-  },
-  headerActions: {
-    flexDirection: 'row',
-    gap: SPACING.sm,
-  },
-  headerButton: {
-    padding: SPACING.xs,
-  },
-  content: {
-    flex: 1,
-  },
-  contentContainer: {
+  listContent: {
     padding: SPACING.md,
   },
-  loadingContainer: {
+  centerContainer: {
     flex: 1,
-    alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: SPACING.xxl,
+    alignItems: 'center',
+    padding: SPACING.xl,
   },
   loadingText: {
+    fontSize: FONT_SIZES.md,
+    color: COLORS.textSecondary,
     marginTop: SPACING.md,
-    fontSize: FONT_SIZES.md,
-    color: COLORS.textSecondary,
   },
-  overviewCard: {
-    borderRadius: BORDER_RADIUS.lg,
-    padding: SPACING.md,
-    marginBottom: SPACING.md,
-  },
-  cardTitle: {
+  errorText: {
     fontSize: FONT_SIZES.lg,
-    fontWeight: 'bold',
-    color: COLORS.text,
-    marginBottom: SPACING.md,
-  },
-  overviewContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: SPACING.md,
-  },
-  overviewItem: {
-    alignItems: 'center',
-  },
-  overviewValue: {
-    fontSize: FONT_SIZES.xxl,
-    fontWeight: 'bold',
-    color: COLORS.primary,
-    marginBottom: SPACING.xs,
-  },
-  overviewLabel: {
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.textSecondary,
-  },
-  overviewDivider: {
-    width: 1,
-    backgroundColor: COLORS.border,
-  },
-  trendContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: SPACING.md,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-  },
-  trendLabel: {
-    fontSize: FONT_SIZES.md,
-    color: COLORS.textSecondary,
-  },
-  trendValue: {
-    fontSize: FONT_SIZES.md,
-    fontWeight: '600',
-  },
-  chartCard: {
-    borderRadius: BORDER_RADIUS.lg,
-    padding: SPACING.md,
-    marginBottom: SPACING.md,
-  },
-  chart: {
-    marginVertical: SPACING.sm,
-    borderRadius: BORDER_RADIUS.lg,
-  },
-  filtersContainer: {
-    marginBottom: SPACING.md,
-    gap: SPACING.sm,
-  },
-  filterGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.sm,
-  },
-  filterLabel: {
-    fontSize: FONT_SIZES.sm,
-    fontWeight: '600',
-    color: COLORS.text,
-    marginRight: SPACING.xs,
-  },
-  filterChip: {
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    borderRadius: BORDER_RADIUS.full,
-    backgroundColor: COLORS.background,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  filterChipActive: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
-  },
-  filterChipText: {
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.text,
-  },
-  filterChipTextActive: {
-    color: COLORS.background,
-    fontWeight: '600',
-  },
-  subjectCard: {
-    borderRadius: BORDER_RADIUS.lg,
-    padding: SPACING.md,
-    marginBottom: SPACING.md,
-  },
-  subjectHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: SPACING.md,
-    paddingBottom: SPACING.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  subjectName: {
-    fontSize: FONT_SIZES.lg,
-    fontWeight: 'bold',
-    color: COLORS.text,
-  },
-  subjectStats: {
-    alignItems: 'flex-end',
-  },
-  subjectAverage: {
-    fontSize: FONT_SIZES.lg,
-    fontWeight: 'bold',
-    color: COLORS.primary,
-  },
-  subjectCount: {
-    fontSize: FONT_SIZES.xs,
-    color: COLORS.textSecondary,
-  },
-  gradesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: SPACING.sm,
-  },
-  gradeCard: {
-    width: (SCREEN_WIDTH - SPACING.md * 5) / 2,
-    backgroundColor: COLORS.surface,
-    borderRadius: BORDER_RADIUS.lg,
-    padding: SPACING.md,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  gradeExamName: {
-    fontSize: FONT_SIZES.sm,
-    fontWeight: '600',
-    color: COLORS.text,
-    marginBottom: SPACING.xs,
-  },
-  gradeScoreContainer: {
+    color: COLORS.error,
+    marginTop: SPACING.md,
     marginBottom: SPACING.sm,
-  },
-  gradeScore: {
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.textSecondary,
-    marginBottom: 2,
-  },
-  gradePercentage: {
-    fontSize: FONT_SIZES.lg,
-    fontWeight: 'bold',
-  },
-  gradeBadge: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: 4,
-    borderRadius: BORDER_RADIUS.sm,
-  },
-  gradeBadgeText: {
-    fontSize: FONT_SIZES.sm,
-    fontWeight: 'bold',
-    color: COLORS.background,
-  },
-  emptyContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: SPACING.xxl * 2,
-  },
-  emptyIcon: {
-    fontSize: 64,
-    marginBottom: SPACING.md,
   },
   emptyText: {
     fontSize: FONT_SIZES.lg,
+    color: COLORS.textSecondary,
+    marginTop: SPACING.md,
     fontWeight: '600',
-    color: COLORS.text,
-    marginBottom: SPACING.xs,
   },
   emptySubtext: {
     fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
-    textAlign: 'center',
+    marginTop: SPACING.xs,
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: COLORS.background,
-    borderTopLeftRadius: BORDER_RADIUS.xl,
-    borderTopRightRadius: BORDER_RADIUS.xl,
-    maxHeight: '90%',
-    paddingBottom: SPACING.lg,
-  },
-  modalHeader: {
+  retryButton: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    padding: SPACING.md,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  modalTitle: {
-    fontSize: FONT_SIZES.xl,
-    fontWeight: 'bold',
-    color: COLORS.text,
-  },
-  closeButton: {
-    fontSize: FONT_SIZES.xxl,
-    color: COLORS.textSecondary,
-    padding: SPACING.sm,
-  },
-  modalBody: {
-    padding: SPACING.md,
-  },
-  modalExamName: {
-    fontSize: FONT_SIZES.xl,
-    fontWeight: 'bold',
-    color: COLORS.text,
-    marginBottom: SPACING.xs,
-  },
-  modalSubject: {
-    fontSize: FONT_SIZES.md,
-    color: COLORS.textSecondary,
-    marginBottom: SPACING.lg,
-  },
-  modalScoreSection: {
-    alignItems: 'center',
-    padding: SPACING.lg,
-    backgroundColor: COLORS.surface,
-    borderRadius: BORDER_RADIUS.lg,
-    marginBottom: SPACING.lg,
-  },
-  modalGradeBadge: {
+    marginTop: SPACING.md,
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.sm,
-    borderRadius: BORDER_RADIUS.full,
-    marginBottom: SPACING.md,
+    backgroundColor: COLORS.primary,
+    borderRadius: BORDER_RADIUS.md,
+    gap: SPACING.sm,
   },
-  modalGradeBadgeText: {
-    fontSize: FONT_SIZES.xxl,
-    fontWeight: 'bold',
+  retryButtonText: {
     color: COLORS.background,
+    fontSize: FONT_SIZES.md,
+    fontWeight: '600',
   },
-  modalScore: {
+  termButtonGroup: {
+    marginBottom: SPACING.md,
+    borderRadius: BORDER_RADIUS.md,
+  },
+  selectedTermButton: {
+    backgroundColor: COLORS.primary,
+  },
+  termButtonText: {
+    fontSize: FONT_SIZES.sm,
+  },
+  statsCard: {
+    borderRadius: BORDER_RADIUS.lg,
+    marginBottom: SPACING.md,
+    padding: SPACING.md,
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-around',
+  },
+  statItem: {
+    alignItems: 'center',
+    width: '25%',
+    marginBottom: SPACING.sm,
+  },
+  statValue: {
     fontSize: FONT_SIZES.xl,
     fontWeight: 'bold',
     color: COLORS.text,
-    marginBottom: SPACING.xs,
+    marginTop: SPACING.xs,
   },
-  modalPercentage: {
+  statLabel: {
+    fontSize: FONT_SIZES.xs,
+    color: COLORS.textSecondary,
+    marginTop: 4,
+  },
+  chartCard: {
+    borderRadius: BORDER_RADIUS.lg,
+    marginBottom: SPACING.md,
+    padding: SPACING.md,
+  },
+  chartTitle: {
     fontSize: FONT_SIZES.lg,
-    color: COLORS.textSecondary,
-  },
-  modalInfoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: SPACING.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  modalInfoLabel: {
-    fontSize: FONT_SIZES.md,
-    color: COLORS.textSecondary,
-  },
-  modalInfoValue: {
-    fontSize: FONT_SIZES.md,
     fontWeight: '600',
-    color: COLORS.text,
-  },
-  performanceInsightsSection: {
-    marginTop: SPACING.lg,
-  },
-  insightsTitle: {
-    fontSize: FONT_SIZES.lg,
-    fontWeight: 'bold',
     color: COLORS.text,
     marginBottom: SPACING.md,
   },
-  insightCard: {
-    backgroundColor: COLORS.surface,
-    padding: SPACING.md,
+  chartContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'flex-end',
+    height: 180,
+  },
+  chartBarContainer: {
+    flex: 1,
+    alignItems: 'center',
+    marginHorizontal: 4,
+  },
+  barWrapper: {
+    height: 150,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    width: '100%',
+  },
+  chartBar: {
+    width: '100%',
+    borderTopLeftRadius: BORDER_RADIUS.sm,
+    borderTopRightRadius: BORDER_RADIUS.sm,
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    paddingTop: 4,
+    minHeight: 30,
+  },
+  barValueText: {
+    color: COLORS.background,
+    fontSize: FONT_SIZES.xs,
+    fontWeight: '600',
+  },
+  barLabel: {
+    fontSize: FONT_SIZES.xs,
+    color: COLORS.textSecondary,
+    marginTop: SPACING.xs,
+    textAlign: 'center',
+    height: 28,
+  },
+  gradeCard: {
     borderRadius: BORDER_RADIUS.lg,
-    marginBottom: SPACING.sm,
+    marginBottom: SPACING.md,
+    padding: SPACING.md,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
-  insightLabel: {
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.textSecondary,
-    marginBottom: SPACING.xs,
+  gradeCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.md,
   },
-  insightValue: {
-    fontSize: FONT_SIZES.md,
-    fontWeight: 'bold',
-    marginBottom: SPACING.xs,
+  gradeCardHeaderLeft: {
+    flex: 1,
   },
-  insightDetail: {
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.textSecondary,
-  },
-  remarksSection: {
-    marginTop: SPACING.lg,
-  },
-  remarksTitle: {
-    fontSize: FONT_SIZES.md,
+  examName: {
+    fontSize: FONT_SIZES.lg,
     fontWeight: '600',
     color: COLORS.text,
+    marginBottom: 4,
+  },
+  subjectName: {
+    fontSize: FONT_SIZES.md,
+    color: COLORS.primary,
+    fontWeight: '500',
+  },
+  gradeCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: COLORS.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: COLORS.border,
+  },
+  gradeValue: {
+    fontSize: FONT_SIZES.xl,
+    fontWeight: 'bold',
+  },
+  gradeCardBody: {
+    gap: SPACING.sm,
+  },
+  scoreRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
     marginBottom: SPACING.sm,
+  },
+  scoreItem: {
+    alignItems: 'center',
+  },
+  scoreLabel: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textSecondary,
+    marginBottom: 4,
+  },
+  scoreValue: {
+    fontSize: FONT_SIZES.lg,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  examDateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+  },
+  examDate: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textSecondary,
+  },
+  remarksContainer: {
+    marginTop: SPACING.xs,
+    padding: SPACING.sm,
+    backgroundColor: COLORS.surface,
+    borderRadius: BORDER_RADIUS.md,
+    borderLeftWidth: 3,
+    borderLeftColor: COLORS.info,
+  },
+  remarksLabel: {
+    fontSize: FONT_SIZES.sm,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginBottom: 4,
   },
   remarksText: {
     fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
-    backgroundColor: COLORS.surface,
-    padding: SPACING.md,
-    borderRadius: BORDER_RADIUS.lg,
-  },
-  commentsSection: {
-    marginTop: SPACING.md,
-  },
-  commentsTitle: {
-    fontSize: FONT_SIZES.md,
-    fontWeight: '600',
-    color: COLORS.text,
-    marginBottom: SPACING.sm,
-  },
-  commentsText: {
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.textSecondary,
-    backgroundColor: COLORS.surface,
-    padding: SPACING.md,
-    borderRadius: BORDER_RADIUS.lg,
-  },
-  closeModalButton: {
-    backgroundColor: COLORS.primary,
-    borderRadius: BORDER_RADIUS.lg,
-    marginHorizontal: SPACING.md,
-    marginTop: SPACING.md,
+    lineHeight: 18,
   },
 });

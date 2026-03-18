@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Alert } from 'react-native';
 import { Text, Input, Button, Icon } from '@rneui/themed';
+import { useRouter } from 'expo-router';
 import { authApi } from '@api/auth';
 import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS } from '@constants';
-import { AuthStackScreenProps } from '@types';
 
-type Props = AuthStackScreenProps<'ForgotPassword'>;
-
-export const ForgotPasswordScreen: React.FC<Props> = ({ navigation }) => {
+export const ForgotPasswordScreen: React.FC = () => {
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
@@ -31,7 +30,7 @@ export const ForgotPasswordScreen: React.FC<Props> = ({ navigation }) => {
       Alert.alert('Success', 'Password reset instructions have been sent to your email', [
         {
           text: 'OK',
-          onPress: () => navigation.goBack(),
+          onPress: () => router.back(),
         },
       ]);
     } catch (error: any) {
@@ -91,7 +90,7 @@ export const ForgotPasswordScreen: React.FC<Props> = ({ navigation }) => {
           <Button
             title="Back to Login"
             type="clear"
-            onPress={() => navigation.goBack()}
+            onPress={() => router.back()}
             titleStyle={styles.backButtonText}
             containerStyle={styles.backButton}
           />

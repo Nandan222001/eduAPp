@@ -1,178 +1,83 @@
 import * as BackgroundFetch from 'expo-background-fetch';
 import * as TaskManager from 'expo-task-manager';
 import { offlineQueueManager } from './offlineQueue';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const BACKGROUND_SYNC_TASK = 'background-sync-task';
-const LAST_SYNC_KEY = '@last_background_sync';
-
-export interface BackgroundSyncResult {
-  success: boolean;
-  processedCount: number;
-  failedCount: number;
-  timestamp: number;
-  error?: string;
-}
 
 TaskManager.defineTask(BACKGROUND_SYNC_TASK, async () => {
-  console.log('[BackgroundSync] Task started');
-
   try {
-    const queueState = offlineQueueManager.getQueueState();
+    console.log('Background sync task started');
 
-    if (queueState.pendingCount === 0) {
-      console.log('[BackgroundSync] No pending requests to sync');
-      return BackgroundFetch.BackgroundFetchResult.NoData;
+    if (offlineQueueManager.isConnected()) {
+      await offlineQueueManager.syncQueue();
+      console.log('Background sync completed successfully');
+      return BackgroundFetch.BackgroundFetchResult.NewData;
     }
 
-    const beforeCount = queueState.pendingCount;
-    await offlineQueueManager.processQueue();
-    const afterState = offlineQueueManager.getQueueState();
-    const processedCount = beforeCount - afterState.pendingCount;
-
-    const result: BackgroundSyncResult = {
-      success: true,
-      processedCount,
-      failedCount: afterState.failedCount,
-      timestamp: Date.now(),
-    };
-
-    await AsyncStorage.setItem(LAST_SYNC_KEY, JSON.stringify(result));
-
-    console.log(`[BackgroundSync] Synced ${processedCount} requests`);
-
-    return processedCount > 0
-      ? BackgroundFetch.BackgroundFetchResult.NewData
-      : BackgroundFetch.BackgroundFetchResult.NoData;
-  } catch (error: any) {
-    console.error('[BackgroundSync] Task failed:', error);
-
-    const result: BackgroundSyncResult = {
-      success: false,
-      processedCount: 0,
-      failedCount: 0,
-      timestamp: Date.now(),
-      error: error.message,
-    };
-
-    await AsyncStorage.setItem(LAST_SYNC_KEY, JSON.stringify(result));
-
+    console.log('Device offline, skipping sync');
+    return BackgroundFetch.BackgroundFetchResult.NoData;
+  } catch (error) {
+    console.error('Background sync failed:', error);
     return BackgroundFetch.BackgroundFetchResult.Failed;
   }
 });
 
-class BackgroundSyncService {
-  private isRegistered: boolean = false;
+export class BackgroundSyncService {
+  private static isRegistered: boolean = false;
 
-  async registerBackgroundSync(): Promise<void> {
+  static async register(): Promise<void> {
     if (this.isRegistered) {
-      console.log('[BackgroundSync] Already registered');
+      console.log('Background sync already registered');
       return;
     }
 
     try {
       const status = await BackgroundFetch.getStatusAsync();
-      console.log('[BackgroundSync] Status:', status);
 
       if (status === BackgroundFetch.BackgroundFetchStatus.Available) {
         await BackgroundFetch.registerTaskAsync(BACKGROUND_SYNC_TASK, {
-          minimumInterval: 15 * 60, // 15 minutes
+          minimumInterval: 15 * 60,
           stopOnTerminate: false,
           startOnBoot: true,
         });
 
         this.isRegistered = true;
-        console.log('[BackgroundSync] Registered successfully');
+        console.log('Background sync registered successfully');
       } else {
-        console.warn('[BackgroundSync] Background fetch not available');
+        console.warn('Background fetch not available:', status);
       }
     } catch (error) {
-      console.error('[BackgroundSync] Failed to register:', error);
-      throw error;
+      console.error('Failed to register background sync:', error);
     }
   }
 
-  async unregisterBackgroundSync(): Promise<void> {
+  static async unregister(): Promise<void> {
     try {
       await BackgroundFetch.unregisterTaskAsync(BACKGROUND_SYNC_TASK);
       this.isRegistered = false;
-      console.log('[BackgroundSync] Unregistered successfully');
+      console.log('Background sync unregistered');
     } catch (error) {
-      console.error('[BackgroundSync] Failed to unregister:', error);
+      console.error('Failed to unregister background sync:', error);
     }
   }
 
-  async getStatus(): Promise<BackgroundFetch.BackgroundFetchStatus> {
-    return await BackgroundFetch.getStatusAsync();
-  }
-
-  async isTaskRegistered(): Promise<boolean> {
-    return await TaskManager.isTaskRegisteredAsync(BACKGROUND_SYNC_TASK);
-  }
-
-  async getLastSyncResult(): Promise<BackgroundSyncResult | null> {
+  static async isTaskRegistered(): Promise<boolean> {
     try {
-      const resultData = await AsyncStorage.getItem(LAST_SYNC_KEY);
-      if (resultData) {
-        return JSON.parse(resultData);
-      }
+      const tasks = await TaskManager.getRegisteredTasksAsync();
+      return tasks.some(task => task.taskName === BACKGROUND_SYNC_TASK);
     } catch (error) {
-      console.error('[BackgroundSync] Failed to get last sync result:', error);
+      console.error('Failed to check task registration:', error);
+      return false;
     }
-    return null;
   }
 
-  async triggerManualSync(): Promise<BackgroundSyncResult> {
-    console.log('[BackgroundSync] Manual sync triggered');
-
+  static async triggerManualSync(): Promise<void> {
     try {
-      const queueState = offlineQueueManager.getQueueState();
-      const beforeCount = queueState.pendingCount;
-
-      if (beforeCount === 0) {
-        const result: BackgroundSyncResult = {
-          success: true,
-          processedCount: 0,
-          failedCount: 0,
-          timestamp: Date.now(),
-        };
-
-        await AsyncStorage.setItem(LAST_SYNC_KEY, JSON.stringify(result));
-        return result;
-      }
-
-      await offlineQueueManager.processQueue();
-      const afterState = offlineQueueManager.getQueueState();
-      const processedCount = beforeCount - afterState.pendingCount;
-
-      const result: BackgroundSyncResult = {
-        success: true,
-        processedCount,
-        failedCount: afterState.failedCount,
-        timestamp: Date.now(),
-      };
-
-      await AsyncStorage.setItem(LAST_SYNC_KEY, JSON.stringify(result));
-
-      console.log(`[BackgroundSync] Manual sync completed: ${processedCount} requests`);
-
-      return result;
-    } catch (error: any) {
-      console.error('[BackgroundSync] Manual sync failed:', error);
-
-      const result: BackgroundSyncResult = {
-        success: false,
-        processedCount: 0,
-        failedCount: 0,
-        timestamp: Date.now(),
-        error: error.message,
-      };
-
-      await AsyncStorage.setItem(LAST_SYNC_KEY, JSON.stringify(result));
-
-      return result;
+      await offlineQueueManager.syncQueue();
+      console.log('Manual sync completed');
+    } catch (error) {
+      console.error('Manual sync failed:', error);
+      throw error;
     }
   }
 }
-
-export const backgroundSyncService = new BackgroundSyncService();

@@ -6,3 +6,7 @@ export { AIPredictionWidget } from './AIPredictionWidget';
 export { WeakAreasPanel } from './WeakAreasPanel';
 export { StreakTracker } from './StreakTracker';
 export { GamificationWidget } from './GamificationWidget';
+export { AIFeaturesQuickAccess } from './AIFeaturesQuickAccess';
+export { QuickGamificationWidget } from './QuickGamificationWidget';
+export { ActiveGoalsWidget } from './ActiveGoalsWidget';
+export { BadgeUnlockAnimation } from './BadgeUnlockAnimation';

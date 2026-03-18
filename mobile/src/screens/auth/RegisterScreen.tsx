@@ -1,11 +1,10 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Text } from '@rneui/themed';
-import { AuthStackScreenProps } from '@types';
+import { useRouter } from 'expo-router';
 
-type Props = AuthStackScreenProps<'Register'>;
-
-export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
+export const RegisterScreen: React.FC = () => {
+  const router = useRouter();
   return (
     <View style={styles.container}>
       <Text h3>Register Screen</Text>

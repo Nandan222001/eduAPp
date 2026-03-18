@@ -1,120 +1,57 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   View,
+  StyleSheet,
   ScrollView,
   RefreshControl,
-  StyleSheet,
-  Image,
   TouchableOpacity,
-  Alert,
+  Modal,
+  FlatList,
+  Dimensions,
 } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
-import { Text, Icon } from '@rneui/themed';
-import { ParentTabScreenProps } from '@types';
-import { Card } from '@components';
-import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS } from '@constants';
-import {
-  parentsApi,
-  Child,
-  ChildOverview,
-  TodayAttendance,
-  RecentGrade,
-  PendingAssignment,
-  FeePaymentStatus,
-  MessagePreview,
-} from '@api/parents';
+import { Text, Card, Icon, Badge } from '@rneui/themed';
+import { useParentDashboard } from '@hooks/useParentQueries';
+import { LoadingState } from '@components/shared/LoadingState';
+import { ErrorState } from '@components/shared/ErrorState';
+import { EmptyState } from '@components/shared/EmptyState';
+import { COLORS, SPACING } from '@constants';
 
-type Props = ParentTabScreenProps<'Dashboard'>;
-
-export const DashboardScreen: React.FC<Props> = ({ navigation }) => {
-  const [refreshing, setRefreshing] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [children, setChildren] = useState<Child[]>([]);
+export const DashboardScreen = () => {
   const [selectedChildId, setSelectedChildId] = useState<number | null>(null);
-  const [childOverview, setChildOverview] = useState<ChildOverview | null>(null);
-  const [todayAttendance, setTodayAttendance] = useState<TodayAttendance | null>(null);
-  const [recentGrades, setRecentGrades] = useState<RecentGrade[]>([]);
-  const [pendingAssignments, setPendingAssignments] = useState<PendingAssignment[]>([]);
-  const [feeStatus, setFeeStatus] = useState<FeePaymentStatus | null>(null);
-  const [messages, setMessages] = useState<MessagePreview[]>([]);
+  const [selectorVisible, setSelectorVisible] = useState(false);
+  const { data, isLoading, isError, error, refetch, isRefetching } = useParentDashboard();
 
-  const fetchDashboardData = useCallback(async () => {
-    try {
-      const dashboardResponse = await parentsApi.getDashboard();
-      const childrenData = dashboardResponse.data.children;
-      setChildren(childrenData);
-
-      if (childrenData.length > 0 && !selectedChildId) {
-        setSelectedChildId(childrenData[0].id);
-      }
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-      Alert.alert('Error', 'Failed to load dashboard data');
+  React.useEffect(() => {
+    if (data?.children && data.children.length > 0 && !selectedChildId) {
+      setSelectedChildId(data.children[0].id);
     }
-  }, [selectedChildId]);
+  }, [data?.children, selectedChildId]);
 
-  const fetchChildData = useCallback(async (childId: number) => {
-    try {
-      const [
-        overviewResponse,
-        attendanceResponse,
-        gradesResponse,
-        assignmentsResponse,
-        feesResponse,
-        messagesResponse,
-      ] = await Promise.all([
-        parentsApi.getChildOverview(childId),
-        parentsApi.getTodayAttendance(childId),
-        parentsApi.getRecentGrades(childId),
-        parentsApi.getPendingAssignments(childId),
-        parentsApi.getOutstandingFees(),
-        parentsApi.getMessages(),
-      ]);
+  if (isLoading) {
+    return <LoadingState message="Loading dashboard..." />;
+  }
 
-      setChildOverview(overviewResponse.data);
-      setTodayAttendance(attendanceResponse.data);
-      setRecentGrades(gradesResponse.data);
-      setPendingAssignments(assignmentsResponse.data);
-      setFeeStatus(feesResponse.data);
-      setMessages(messagesResponse.data);
-    } catch (error) {
-      console.error('Error fetching child data:', error);
-      Alert.alert('Error', 'Failed to load child data');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  if (isError) {
+    return (
+      <ErrorState
+        message={error?.message || 'Failed to load dashboard'}
+        onRetry={() => refetch()}
+      />
+    );
+  }
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, [fetchDashboardData]);
+  if (!data || data.children.length === 0) {
+    return <EmptyState title="No Children" message="No children found" />;
+  }
 
-  useEffect(() => {
-    if (selectedChildId) {
-      setLoading(true);
-      fetchChildData(selectedChildId);
-    }
-  }, [selectedChildId, fetchChildData]);
+  const selectedChild = data.children.find(c => c.id === selectedChildId);
+  const selectedChildAttendance = data.aggregatedAttendance.find(
+    a => a.childId === selectedChildId
+  );
+  const selectedChildGrades = data.recentGrades.filter(g => g.childId === selectedChildId);
+  const selectedChildFees = data.feePayments.find(f => f.childId === selectedChildId);
 
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await fetchDashboardData();
-    if (selectedChildId) {
-      await fetchChildData(selectedChildId);
-    }
-    setRefreshing(false);
-  }, [selectedChildId, fetchDashboardData, fetchChildData]);
-
-  const handleChildChange = (childId: number) => {
-    setSelectedChildId(childId);
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  };
-
-  const getAttendanceStatusColor = (status: string) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
       case 'present':
         return COLORS.success;
@@ -127,680 +64,524 @@ export const DashboardScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
-  const getAttendanceStatusIcon = (status: string) => {
+  const getFeeStatusColor = (status: string) => {
     switch (status) {
-      case 'present':
-        return 'check-circle';
-      case 'absent':
-        return 'close-circle';
-      case 'late':
-        return 'time';
+      case 'paid':
+        return COLORS.success;
+      case 'pending':
+        return COLORS.warning;
+      case 'overdue':
+        return COLORS.error;
       default:
-        return 'help-circle';
+        return COLORS.textSecondary;
     }
   };
 
-  if (loading && !refreshing) {
-    return (
-      <View style={styles.centerContainer}>
-        <Text>Loading dashboard...</Text>
-      </View>
-    );
-  }
-
-  if (children.length === 0) {
-    return (
-      <View style={styles.centerContainer}>
-        <Text>No children found</Text>
-      </View>
-    );
-  }
-
   return (
-    <View style={styles.container}>
-      <ScrollView
-        style={styles.scrollView}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />
-        }
+    <ScrollView
+      style={styles.container}
+      refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
+    >
+      <Card containerStyle={styles.card}>
+        <Card.Title>Select Child</Card.Title>
+        <Card.Divider />
+        <TouchableOpacity style={styles.selector} onPress={() => setSelectorVisible(true)}>
+          <View style={styles.selectorContent}>
+            {selectedChild ? (
+              <>
+                <Text style={styles.selectedText}>
+                  {selectedChild.firstName} {selectedChild.lastName}
+                </Text>
+                <Text style={styles.selectedSubtext}>
+                  {selectedChild.grade} - {selectedChild.section}
+                </Text>
+              </>
+            ) : (
+              <Text style={styles.placeholderText}>Select a child</Text>
+            )}
+          </View>
+          <Icon name="arrow-drop-down" type="material" color={COLORS.textSecondary} size={24} />
+        </TouchableOpacity>
+      </Card>
+
+      <Modal
+        visible={selectorVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSelectorVisible(false)}
       >
-        <View style={styles.header}>
-          <Text h3 style={styles.headerTitle}>
-            Parent Dashboard
-          </Text>
-        </View>
-
-        <View style={styles.childSelector}>
-          <Text style={styles.childSelectorLabel}>Select Child</Text>
-          <View style={styles.pickerContainer}>
-            <Picker
-              selectedValue={selectedChildId}
-              onValueChange={itemValue => handleChildChange(itemValue as number)}
-              style={styles.picker}
-            >
-              {children.map(child => (
-                <Picker.Item
-                  key={child.id}
-                  label={`${child.firstName} ${child.lastName}`}
-                  value={child.id}
-                />
-              ))}
-            </Picker>
-          </View>
-        </View>
-
-        {todayAttendance?.status === 'absent' && (
-          <Card style={styles.alertCard}>
-            <View style={styles.alertContent}>
-              <Icon name="alert-circle" type="ionicon" color={COLORS.error} size={24} />
-              <View style={styles.alertTextContainer}>
-                <Text style={styles.alertTitle}>Absent Today</Text>
-                <Text style={styles.alertMessage}>
-                  {childOverview?.firstName} was marked absent today
-                </Text>
-              </View>
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setSelectorVisible(false)}
+        >
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Child</Text>
+              <TouchableOpacity onPress={() => setSelectorVisible(false)}>
+                <Icon name="close" type="material" color={COLORS.text} size={24} />
+              </TouchableOpacity>
             </View>
-          </Card>
-        )}
-
-        {childOverview && (
-          <Card style={styles.overviewCard}>
-            <View style={styles.overviewHeader}>
-              {childOverview.profilePhoto ? (
-                <Image source={{ uri: childOverview.profilePhoto }} style={styles.profilePhoto} />
-              ) : (
-                <View style={[styles.profilePhoto, styles.profilePhotoPlaceholder]}>
-                  <Icon name="person" type="ionicon" color={COLORS.textSecondary} size={40} />
-                </View>
-              )}
-              <View style={styles.overviewInfo}>
-                <Text style={styles.childName}>
-                  {childOverview.firstName} {childOverview.lastName}
-                </Text>
-                <Text style={styles.studentId}>ID: {childOverview.studentId}</Text>
-                {childOverview.grade && (
-                  <Text style={styles.gradeSection}>
-                    Grade {childOverview.grade}
-                    {childOverview.section && ` - ${childOverview.section}`}
-                  </Text>
-                )}
-              </View>
-            </View>
-
-            <View style={styles.statsContainer}>
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>
-                  {childOverview.attendancePercentage.toFixed(1)}%
-                </Text>
-                <Text style={styles.statLabel}>Attendance</Text>
-              </View>
-              <View style={styles.statDivider} />
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>
-                  {childOverview.rank}/{childOverview.totalStudents}
-                </Text>
-                <Text style={styles.statLabel}>Rank</Text>
-              </View>
-              <View style={styles.statDivider} />
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>{childOverview.averageScore.toFixed(1)}%</Text>
-                <Text style={styles.statLabel}>Avg Score</Text>
-              </View>
-            </View>
-          </Card>
-        )}
-
-        {todayAttendance && (
-          <Card style={styles.card}>
-            <View style={styles.cardHeader}>
-              <Text style={styles.cardTitle}>Today&apos;s Attendance</Text>
-            </View>
-            <View style={styles.attendanceStatus}>
-              <Icon
-                name={getAttendanceStatusIcon(todayAttendance.status)}
-                type="ionicon"
-                color={getAttendanceStatusColor(todayAttendance.status)}
-                size={32}
-              />
-              <View style={styles.attendanceInfo}>
-                <Text
-                  style={[
-                    styles.attendanceStatusText,
-                    { color: getAttendanceStatusColor(todayAttendance.status) },
-                  ]}
-                >
-                  {todayAttendance.status.charAt(0).toUpperCase() + todayAttendance.status.slice(1)}
-                </Text>
-                {todayAttendance.markedAt && (
-                  <Text style={styles.attendanceTime}>
-                    Marked at{' '}
-                    {new Date(todayAttendance.markedAt).toLocaleTimeString('en-US', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </Text>
-                )}
-                {todayAttendance.remarks && (
-                  <Text style={styles.attendanceRemarks}>{todayAttendance.remarks}</Text>
-                )}
-              </View>
-            </View>
-          </Card>
-        )}
-
-        <Card style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>Recent Grades</Text>
-            <TouchableOpacity
-              onPress={() =>
-                navigation.navigate('Grades', { childId: selectedChildId?.toString() })
-              }
-            >
-              <Text style={styles.viewAllLink}>View All</Text>
-            </TouchableOpacity>
-          </View>
-          {recentGrades.length > 0 ? (
-            <View style={styles.gradesTable}>
-              <View style={styles.tableHeader}>
-                <Text style={[styles.tableHeaderText, styles.subjectColumn]}>Subject</Text>
-                <Text style={[styles.tableHeaderText, styles.scoreColumn]}>Score</Text>
-                <Text style={[styles.tableHeaderText, styles.gradeColumn]}>Grade</Text>
-              </View>
-              {recentGrades.map(grade => (
-                <View key={grade.id} style={styles.tableRow}>
-                  <View style={styles.subjectColumn}>
-                    <Text style={styles.tableText}>{grade.subject}</Text>
-                    <Text style={styles.examName}>{grade.examName}</Text>
-                  </View>
-                  <Text style={[styles.tableText, styles.scoreColumn]}>
-                    {grade.obtainedMarks}/{grade.totalMarks}
-                  </Text>
-                  <Text style={[styles.tableText, styles.gradeColumn, styles.gradeText]}>
-                    {grade.grade}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          ) : (
-            <Text style={styles.emptyText}>No recent grades</Text>
-          )}
-        </Card>
-
-        <Card style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>Pending Assignments</Text>
-          </View>
-          {pendingAssignments.length > 0 ? (
-            <View style={styles.assignmentsList}>
-              {pendingAssignments.map(assignment => (
+            <FlatList
+              data={data.children}
+              keyExtractor={item => item.id.toString()}
+              renderItem={({ item }) => (
                 <TouchableOpacity
-                  key={assignment.id}
-                  style={styles.assignmentItem}
-                  onPress={() =>
-                    navigation.navigate('AssignmentDetail', {
-                      assignmentId: assignment.id.toString(),
-                    })
-                  }
+                  style={[styles.optionItem, item.id === selectedChildId && styles.selectedOption]}
+                  onPress={() => {
+                    setSelectedChildId(item.id);
+                    setSelectorVisible(false);
+                  }}
                 >
-                  <View style={styles.assignmentInfo}>
-                    <Text style={styles.assignmentTitle}>{assignment.title}</Text>
-                    <Text style={styles.assignmentSubject}>{assignment.subject}</Text>
-                    <View style={styles.assignmentMeta}>
-                      <Icon name="calendar" type="ionicon" color={COLORS.textSecondary} size={14} />
-                      <Text style={styles.assignmentDueDate}>
-                        Due: {formatDate(assignment.dueDate)}
-                      </Text>
-                    </View>
+                  <View style={styles.optionContent}>
+                    <Text
+                      style={[
+                        styles.optionText,
+                        item.id === selectedChildId && styles.selectedOptionText,
+                      ]}
+                    >
+                      {item.firstName} {item.lastName}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.optionSubtext,
+                        item.id === selectedChildId && styles.selectedOptionSubtext,
+                      ]}
+                    >
+                      {item.grade} - {item.section}
+                    </Text>
                   </View>
-                  {assignment.status === 'overdue' && (
-                    <View style={styles.overdueTag}>
-                      <Text style={styles.overdueText}>Overdue</Text>
-                    </View>
+                  {item.id === selectedChildId && (
+                    <Icon name="check" type="material" color={COLORS.primary} size={24} />
                   )}
                 </TouchableOpacity>
-              ))}
-            </View>
-          ) : (
-            <Text style={styles.emptyText}>No pending assignments</Text>
-          )}
-        </Card>
-
-        {feeStatus && feeStatus.totalOutstanding > 0 && (
-          <Card style={styles.card}>
-            <View style={styles.cardHeader}>
-              <Text style={styles.cardTitle}>Fee Payment Status</Text>
-            </View>
-            <View style={styles.feeStatusContainer}>
-              <View style={styles.feeOutstanding}>
-                <Text style={styles.feeAmount}>
-                  {feeStatus.currency} {feeStatus.totalOutstanding.toFixed(2)}
-                </Text>
-                <Text style={styles.feeLabel}>Total Outstanding</Text>
-                {feeStatus.dueDate && (
-                  <Text style={styles.feeDueDate}>Due: {formatDate(feeStatus.dueDate)}</Text>
-                )}
-              </View>
-              {feeStatus.fees.slice(0, 3).map(fee => (
-                <View key={fee.id} style={styles.feeItem}>
-                  <View style={styles.feeItemInfo}>
-                    <Text style={styles.feeDescription}>{fee.description}</Text>
-                    <Text style={styles.feeItemDate}>Due: {formatDate(fee.dueDate)}</Text>
-                  </View>
-                  <Text style={styles.feeItemAmount}>
-                    {feeStatus.currency} {fee.amount.toFixed(2)}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          </Card>
-        )}
-
-        <Card style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>Teacher Communication</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Messages')}>
-              <Text style={styles.viewAllLink}>View All</Text>
-            </TouchableOpacity>
+              )}
+            />
           </View>
-          {messages.length > 0 ? (
-            <View style={styles.messagesList}>
-              {messages.slice(0, 3).map(message => (
-                <TouchableOpacity
-                  key={message.id}
-                  style={styles.messageItem}
-                  onPress={() =>
-                    navigation.navigate('MessageDetail', { messageId: message.id.toString() })
-                  }
-                >
-                  <View style={styles.messageHeader}>
-                    <View style={styles.messageHeaderLeft}>
-                      <Text style={styles.messageSender}>{message.senderName}</Text>
-                      {!message.isRead && <View style={styles.unreadDot} />}
-                    </View>
-                    <Text style={styles.messageDate}>{formatDate(message.sentAt)}</Text>
-                  </View>
-                  <Text style={styles.messageSubject}>{message.subject}</Text>
-                  <Text style={styles.messagePreview} numberOfLines={2}>
-                    {message.preview}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          ) : (
-            <Text style={styles.emptyText}>No messages</Text>
-          )}
-        </Card>
+        </TouchableOpacity>
+      </Modal>
 
-        <View style={styles.bottomSpacing} />
-      </ScrollView>
-    </View>
+      {selectedChild && (
+        <Card containerStyle={styles.card}>
+          <Card.Title>Student Information</Card.Title>
+          <Card.Divider />
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Name:</Text>
+            <Text style={styles.value}>
+              {selectedChild.firstName} {selectedChild.lastName}
+            </Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Student ID:</Text>
+            <Text style={styles.value}>{selectedChild.studentId}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Grade:</Text>
+            <Text style={styles.value}>
+              {selectedChild.grade} - {selectedChild.section}
+            </Text>
+          </View>
+        </Card>
+      )}
+
+      {selectedChildAttendance && (
+        <Card containerStyle={styles.card}>
+          <View style={styles.cardHeader}>
+            <Card.Title style={styles.cardTitle}>Attendance Overview</Card.Title>
+            <Badge
+              value={selectedChildAttendance.todayStatus.toUpperCase()}
+              badgeStyle={{
+                backgroundColor: getStatusColor(selectedChildAttendance.todayStatus),
+              }}
+            />
+          </View>
+          <Card.Divider />
+          <View style={styles.attendanceContainer}>
+            <View style={styles.attendanceCircle}>
+              <Text h2 style={styles.percentageText}>
+                {selectedChildAttendance.percentage.toFixed(1)}%
+              </Text>
+              <Text style={styles.attendanceLabel}>Overall Attendance</Text>
+            </View>
+          </View>
+        </Card>
+      )}
+
+      {data.todayAlerts && data.todayAlerts.length > 0 && (
+        <Card containerStyle={[styles.card, styles.alertCard]}>
+          <View style={styles.cardHeader}>
+            <Card.Title style={styles.cardTitle}>Today&apos;s Alerts</Card.Title>
+            <Badge value={data.todayAlerts.length} status="error" />
+          </View>
+          <Card.Divider />
+          {data.todayAlerts.map((alert, index) => (
+            <View key={index} style={styles.alertItem}>
+              <Icon
+                name="warning"
+                type="material"
+                color={alert.status === 'absent' ? COLORS.error : COLORS.warning}
+                size={20}
+              />
+              <View style={styles.alertContent}>
+                <Text style={styles.alertText}>
+                  {alert.childName} - {alert.status.toUpperCase()}
+                </Text>
+                {alert.subject && <Text style={styles.alertSubject}>Subject: {alert.subject}</Text>}
+                {alert.remarks && <Text style={styles.alertRemarks}>{alert.remarks}</Text>}
+              </View>
+            </View>
+          ))}
+        </Card>
+      )}
+
+      {selectedChildGrades && selectedChildGrades.length > 0 && (
+        <Card containerStyle={styles.card}>
+          <Card.Title>Recent Grades</Card.Title>
+          <Card.Divider />
+          {selectedChildGrades.slice(0, 5).map(grade => (
+            <View key={grade.examDate + grade.subject} style={styles.gradeItem}>
+              <View style={styles.gradeHeader}>
+                <Text style={styles.gradeSubject}>{grade.subject}</Text>
+                <Badge
+                  value={grade.grade}
+                  badgeStyle={{
+                    backgroundColor:
+                      grade.percentage >= 80
+                        ? COLORS.success
+                        : grade.percentage >= 60
+                          ? COLORS.warning
+                          : COLORS.error,
+                  }}
+                />
+              </View>
+              <Text style={styles.gradeExam}>{grade.examName}</Text>
+              <View style={styles.gradeScores}>
+                <Text style={styles.gradeScore}>
+                  {grade.obtainedMarks}/{grade.totalMarks}
+                </Text>
+                <Text style={styles.gradePercentage}>{grade.percentage.toFixed(1)}%</Text>
+              </View>
+              <Text style={styles.gradeDate}>{new Date(grade.examDate).toLocaleDateString()}</Text>
+            </View>
+          ))}
+        </Card>
+      )}
+
+      {selectedChildFees && (
+        <Card containerStyle={styles.card}>
+          <View style={styles.cardHeader}>
+            <Card.Title style={styles.cardTitle}>Fee Payment Status</Card.Title>
+            <Badge
+              value={selectedChildFees.status.status.toUpperCase()}
+              badgeStyle={{
+                backgroundColor: getFeeStatusColor(selectedChildFees.status.status),
+              }}
+            />
+          </View>
+          <Card.Divider />
+          <View style={styles.feeRow}>
+            <Text style={styles.feeLabel}>Total Fees:</Text>
+            <Text style={styles.feeValue}>₹{selectedChildFees.status.totalFees}</Text>
+          </View>
+          <View style={styles.feeRow}>
+            <Text style={styles.feeLabel}>Paid Amount:</Text>
+            <Text style={[styles.feeValue, { color: COLORS.success }]}>
+              ₹{selectedChildFees.status.paidAmount}
+            </Text>
+          </View>
+          <View style={styles.feeRow}>
+            <Text style={styles.feeLabel}>Pending Amount:</Text>
+            <Text
+              style={[
+                styles.feeValue,
+                {
+                  color: selectedChildFees.status.pendingAmount > 0 ? COLORS.error : COLORS.success,
+                },
+              ]}
+            >
+              ₹{selectedChildFees.status.pendingAmount}
+            </Text>
+          </View>
+          <View style={styles.feeRow}>
+            <Text style={styles.feeLabel}>Due Date:</Text>
+            <Text style={styles.feeValue}>
+              {new Date(selectedChildFees.status.dueDate).toLocaleDateString()}
+            </Text>
+          </View>
+        </Card>
+      )}
+
+      <Card containerStyle={styles.card}>
+        <Card.Title>All Children Overview</Card.Title>
+        <Card.Divider />
+        {data.aggregatedAttendance.map(attendance => (
+          <TouchableOpacity
+            key={attendance.childId}
+            style={styles.childOverviewItem}
+            onPress={() => setSelectedChildId(attendance.childId)}
+          >
+            <View style={styles.childOverviewInfo}>
+              <Text style={styles.childOverviewName}>{attendance.childName}</Text>
+              <Text style={styles.childOverviewAttendance}>
+                Attendance: {attendance.percentage.toFixed(1)}%
+              </Text>
+            </View>
+            <Badge
+              value={attendance.todayStatus}
+              badgeStyle={{
+                backgroundColor: getStatusColor(attendance.todayStatus),
+              }}
+            />
+          </TouchableOpacity>
+        ))}
+      </Card>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.surface,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  centerContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  header: {
-    padding: SPACING.lg,
-    paddingTop: SPACING.xl,
     backgroundColor: COLORS.background,
-  },
-  headerTitle: {
-    marginBottom: 0,
-  },
-  childSelector: {
-    marginHorizontal: SPACING.lg,
-    marginVertical: SPACING.md,
-  },
-  childSelectorLabel: {
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.textSecondary,
-    marginBottom: SPACING.xs,
-    fontWeight: '500',
-  },
-  pickerContainer: {
-    backgroundColor: COLORS.background,
-    borderRadius: BORDER_RADIUS.md,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    overflow: 'hidden',
-  },
-  picker: {
-    height: 50,
-  },
-  alertCard: {
-    margin: SPACING.lg,
-    marginBottom: SPACING.md,
-    backgroundColor: '#FEE2E2',
-    borderLeftWidth: 4,
-    borderLeftColor: COLORS.error,
-  },
-  alertContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  alertTextContainer: {
-    flex: 1,
-    marginLeft: SPACING.md,
-  },
-  alertTitle: {
-    fontSize: FONT_SIZES.md,
-    fontWeight: '600',
-    color: COLORS.error,
-    marginBottom: SPACING.xs,
-  },
-  alertMessage: {
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.text,
-  },
-  overviewCard: {
-    margin: SPACING.lg,
-    marginTop: SPACING.md,
-  },
-  overviewHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: SPACING.lg,
-  },
-  profilePhoto: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-  },
-  profilePhotoPlaceholder: {
-    backgroundColor: COLORS.surface,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  overviewInfo: {
-    flex: 1,
-    marginLeft: SPACING.md,
-  },
-  childName: {
-    fontSize: FONT_SIZES.xl,
-    fontWeight: '600',
-    color: COLORS.text,
-    marginBottom: SPACING.xs,
-  },
-  studentId: {
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.textSecondary,
-    marginBottom: SPACING.xs,
-  },
-  gradeSection: {
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.textSecondary,
-  },
-  statsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingTop: SPACING.lg,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-  },
-  statItem: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  statDivider: {
-    width: 1,
-    backgroundColor: COLORS.border,
-  },
-  statValue: {
-    fontSize: FONT_SIZES.xxl,
-    fontWeight: '700',
-    color: COLORS.primary,
-    marginBottom: SPACING.xs,
-  },
-  statLabel: {
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.textSecondary,
   },
   card: {
-    marginHorizontal: SPACING.lg,
-    marginBottom: SPACING.md,
+    borderRadius: 8,
+    marginHorizontal: SPACING.md,
+    marginVertical: SPACING.sm,
+  },
+  alertCard: {
+    borderColor: COLORS.error,
+    borderWidth: 1,
+  },
+  selector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 8,
+    backgroundColor: COLORS.background,
+  },
+  selectorContent: {
+    flex: 1,
+  },
+  selectedText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  selectedSubtext: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  placeholderText: {
+    fontSize: 16,
+    color: COLORS.textSecondary,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: COLORS.background,
+    borderRadius: 12,
+    width: Dimensions.get('window').width * 0.85,
+    maxHeight: Dimensions.get('window').height * 0.6,
+    overflow: 'hidden',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: SPACING.md,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  optionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.md,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  selectedOption: {
+    backgroundColor: COLORS.surface,
+  },
+  optionContent: {
+    flex: 1,
+  },
+  optionText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: COLORS.text,
+  },
+  optionSubtext: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  selectedOptionText: {
+    color: COLORS.primary,
+    fontWeight: '600',
+  },
+  selectedOptionSubtext: {
+    color: COLORS.primary,
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
   },
   cardTitle: {
-    fontSize: FONT_SIZES.lg,
-    fontWeight: '600',
-    color: COLORS.text,
+    marginBottom: 0,
+    flex: 1,
   },
-  viewAllLink: {
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.primary,
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: SPACING.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  label: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
     fontWeight: '500',
   },
-  attendanceStatus: {
-    flexDirection: 'row',
+  value: {
+    fontSize: 14,
+    color: COLORS.text,
+    fontWeight: '600',
+  },
+  attendanceContainer: {
+    alignItems: 'center',
+    paddingVertical: SPACING.lg,
+  },
+  attendanceCircle: {
     alignItems: 'center',
   },
-  attendanceInfo: {
-    flex: 1,
-    marginLeft: SPACING.md,
+  percentageText: {
+    color: COLORS.primary,
+    fontWeight: 'bold',
   },
-  attendanceStatusText: {
-    fontSize: FONT_SIZES.lg,
-    fontWeight: '600',
-    marginBottom: SPACING.xs,
-  },
-  attendanceTime: {
-    fontSize: FONT_SIZES.sm,
+  attendanceLabel: {
+    fontSize: 14,
     color: COLORS.textSecondary,
-    marginBottom: SPACING.xs,
+    marginTop: SPACING.sm,
   },
-  attendanceRemarks: {
-    fontSize: FONT_SIZES.sm,
+  alertItem: {
+    flexDirection: 'row',
+    paddingVertical: SPACING.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  alertContent: {
+    flex: 1,
+    marginLeft: SPACING.sm,
+  },
+  alertText: {
+    fontSize: 14,
+    fontWeight: '600',
     color: COLORS.text,
+  },
+  alertSubject: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  alertRemarks: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    marginTop: 2,
     fontStyle: 'italic',
   },
-  gradesTable: {
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-  },
-  tableHeader: {
-    flexDirection: 'row',
+  gradeItem: {
     paddingVertical: SPACING.sm,
-    backgroundColor: COLORS.surface,
-  },
-  tableHeaderText: {
-    fontSize: FONT_SIZES.sm,
-    fontWeight: '600',
-    color: COLORS.textSecondary,
-  },
-  tableRow: {
-    flexDirection: 'row',
-    paddingVertical: SPACING.md,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
-    alignItems: 'center',
   },
-  subjectColumn: {
-    flex: 2,
-  },
-  scoreColumn: {
-    flex: 1,
-    textAlign: 'center',
-  },
-  gradeColumn: {
-    flex: 1,
-    textAlign: 'center',
-  },
-  tableText: {
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.text,
-  },
-  examName: {
-    fontSize: FONT_SIZES.xs,
-    color: COLORS.textSecondary,
-    marginTop: SPACING.xs,
-  },
-  gradeText: {
-    fontWeight: '600',
-    color: COLORS.primary,
-  },
-  assignmentsList: {
-    gap: SPACING.sm,
-  },
-  assignmentItem: {
+  gradeHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    paddingVertical: SPACING.md,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  assignmentInfo: {
-    flex: 1,
-  },
-  assignmentTitle: {
-    fontSize: FONT_SIZES.md,
-    fontWeight: '500',
-    color: COLORS.text,
-    marginBottom: SPACING.xs,
-  },
-  assignmentSubject: {
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.textSecondary,
-    marginBottom: SPACING.xs,
-  },
-  assignmentMeta: {
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: SPACING.xs,
   },
-  assignmentDueDate: {
-    fontSize: FONT_SIZES.xs,
+  gradeSubject: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  gradeExam: {
+    fontSize: 14,
     color: COLORS.textSecondary,
+    marginTop: 4,
   },
-  overdueTag: {
-    backgroundColor: COLORS.error,
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs,
-    borderRadius: BORDER_RADIUS.sm,
+  gradeScores: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 4,
   },
-  overdueText: {
-    fontSize: FONT_SIZES.xs,
-    color: COLORS.background,
+  gradeScore: {
+    fontSize: 14,
+    color: COLORS.text,
+    fontWeight: '500',
+  },
+  gradePercentage: {
+    fontSize: 14,
+    color: COLORS.primary,
     fontWeight: '600',
   },
-  feeStatusContainer: {
-    gap: SPACING.md,
+  gradeDate: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    marginTop: 4,
   },
-  feeOutstanding: {
-    alignItems: 'center',
-    paddingVertical: SPACING.lg,
-    backgroundColor: COLORS.surface,
-    borderRadius: BORDER_RADIUS.md,
-  },
-  feeAmount: {
-    fontSize: FONT_SIZES.xxxl,
-    fontWeight: '700',
-    color: COLORS.error,
-    marginBottom: SPACING.xs,
+  feeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: SPACING.sm,
   },
   feeLabel: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: 14,
     color: COLORS.textSecondary,
-    marginBottom: SPACING.xs,
-  },
-  feeDueDate: {
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.error,
     fontWeight: '500',
   },
-  feeItem: {
+  feeValue: {
+    fontSize: 14,
+    color: COLORS.text,
+    fontWeight: '600',
+  },
+  childOverviewItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: SPACING.sm,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-  },
-  feeItemInfo: {
-    flex: 1,
-  },
-  feeDescription: {
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.text,
-    marginBottom: SPACING.xs,
-  },
-  feeItemDate: {
-    fontSize: FONT_SIZES.xs,
-    color: COLORS.textSecondary,
-  },
-  feeItemAmount: {
-    fontSize: FONT_SIZES.md,
-    fontWeight: '600',
-    color: COLORS.error,
-  },
-  messagesList: {
-    gap: SPACING.sm,
-  },
-  messageItem: {
-    paddingVertical: SPACING.md,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
-  messageHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: SPACING.xs,
+  childOverviewInfo: {
+    flex: 1,
   },
-  messageHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.xs,
-  },
-  messageSender: {
-    fontSize: FONT_SIZES.sm,
+  childOverviewName: {
+    fontSize: 16,
     fontWeight: '600',
     color: COLORS.text,
   },
-  unreadDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: COLORS.primary,
-  },
-  messageDate: {
-    fontSize: FONT_SIZES.xs,
+  childOverviewAttendance: {
+    fontSize: 14,
     color: COLORS.textSecondary,
-  },
-  messageSubject: {
-    fontSize: FONT_SIZES.md,
-    fontWeight: '500',
-    color: COLORS.text,
-    marginBottom: SPACING.xs,
-  },
-  messagePreview: {
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.textSecondary,
-    lineHeight: 20,
-  },
-  emptyText: {
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-    paddingVertical: SPACING.lg,
-  },
-  bottomSpacing: {
-    height: SPACING.xl,
+    marginTop: 4,
   },
 });

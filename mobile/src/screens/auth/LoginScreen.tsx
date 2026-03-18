@@ -9,17 +9,16 @@ import {
   Alert,
 } from 'react-native';
 import { Text, Input, Button, Icon } from '@rneui/themed';
+import { useRouter } from 'expo-router';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { useAppDispatch, useAppSelector } from '@store/hooks';
 import { login, enableBiometric, disableBiometric, loadStoredAuth } from '@store/slices/authSlice';
 import { secureStorage } from '@utils/secureStorage';
 import { authService } from '@utils/authService';
 import { STORAGE_KEYS, COLORS, SPACING, FONT_SIZES, BORDER_RADIUS } from '@constants';
-import { AuthStackScreenProps } from '@types';
 
-type Props = AuthStackScreenProps<'Login'>;
-
-export const LoginScreen: React.FC<Props> = ({ navigation }) => {
+export const LoginScreen: React.FC = () => {
+  const router = useRouter();
   const dispatch = useAppDispatch();
   const { isLoading, error, biometricEnabled } = useAppSelector(state => state.auth);
 
@@ -125,11 +124,11 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const handleForgotPassword = () => {
-    navigation.navigate('ForgotPassword');
+    router.push('/(auth)/forgot-password');
   };
 
   const handleRegister = () => {
-    navigation.navigate('Register');
+    router.push('/(auth)/register');
   };
 
   const toggleBiometric = async () => {

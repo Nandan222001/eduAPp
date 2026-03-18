@@ -16,12 +16,9 @@ import { format, isPast, parseISO } from 'date-fns';
 import * as DocumentPicker from 'expo-document-picker';
 import { Camera, CameraType } from 'expo-camera';
 import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS } from '@constants';
-import { MainStackScreenProps } from '@types';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { assignmentsApi, SubmitAssignmentData } from '../../api/assignments';
-import { cameraService, documentScanner, DocumentPage } from '@utils';
-import { ImageViewer, DocumentScanner } from '@components/shared';
-
-type Props = MainStackScreenProps<'AssignmentDetail'>;
+import { LoadingState, ErrorState } from '../../components';
 
 interface AttachmentFile {
   uri: string;
@@ -31,17 +28,15 @@ interface AttachmentFile {
   base64?: string;
 }
 
-export const AssignmentDetailScreen: React.FC<Props> = ({ navigation, route }) => {
-  const { assignmentId } = route.params;
+export const AssignmentDetailScreen: React.FC = () => {
+  const router = useRouter();
+  const { id: assignmentId } = useLocalSearchParams();
   const queryClient = useQueryClient();
 
   const [comments, setComments] = useState('');
   const [attachments, setAttachments] = useState<AttachmentFile[]>([]);
   const [showCamera, setShowCamera] = useState(false);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
-  const [showDocumentScanner, setShowDocumentScanner] = useState(false);
-  const [showImageViewer, setShowImageViewer] = useState(false);
-  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [cameraPermission, requestCameraPermission] = Camera.useCameraPermissions();
   const cameraRef = React.useRef<Camera>(null);
 
@@ -49,13 +44,17 @@ export const AssignmentDetailScreen: React.FC<Props> = ({ navigation, route }) =
     data: assignment,
     isLoading,
     isError,
+    error,
     refetch,
   } = useQuery({
     queryKey: ['assignment', assignmentId],
     queryFn: async () => {
-      const response = await assignmentsApi.getAssignmentDetail(assignmentId);
+      const response = await assignmentsApi.getAssignmentDetail(String(assignmentId));
       return response.data;
     },
+    enabled: !!assignmentId,
+    retry: 3,
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
   const submitMutation = useMutation({
@@ -133,53 +132,25 @@ export const AssignmentDetailScreen: React.FC<Props> = ({ navigation, route }) =
   const handleCameraCapture = async () => {
     if (cameraRef.current) {
       try {
-        const photo = await cameraService.capturePhoto(cameraRef, {
+        const photo = await cameraRef.current.takePictureAsync({
           quality: 0.8,
           base64: true,
-          autoEdgeDetection: true,
         });
 
-        if (photo) {
-          const photoAttachment: AttachmentFile = {
-            uri: photo.uri,
-            name: `photo_${Date.now()}.jpg`,
-            type: 'image/jpeg',
-            size: 0,
-            base64: photo.base64,
-          };
+        const photoAttachment: AttachmentFile = {
+          uri: photo.uri,
+          name: `photo_${Date.now()}.jpg`,
+          type: 'image/jpeg',
+          size: 0,
+          base64: photo.base64,
+        };
 
-          setAttachments([...attachments, photoAttachment]);
-          setShowCamera(false);
-        }
+        setAttachments([...attachments, photoAttachment]);
+        setShowCamera(false);
       } catch (error) {
         Alert.alert('Error', 'Failed to capture photo');
       }
     }
-  };
-
-  const handleDocumentScan = () => {
-    setShowDocumentScanner(true);
-  };
-
-  const handleDocumentScanComplete = (pages: DocumentPage[]) => {
-    const documentAttachments = pages.map((page, index) => ({
-      uri: page.uri,
-      name: `scanned_document_page_${index + 1}_${Date.now()}.jpg`,
-      type: 'image/jpeg',
-      size: 0,
-    }));
-
-    setAttachments([...attachments, ...documentAttachments]);
-    setShowDocumentScanner(false);
-  };
-
-  const handleViewImage = (index: number) => {
-    setSelectedImageIndex(index);
-    setShowImageViewer(true);
-  };
-
-  const getImageAttachments = () => {
-    return attachments.filter(att => att.type.startsWith('image/')).map(att => att.uri);
   };
 
   const handleRemoveAttachment = (index: number) => {
@@ -194,7 +165,7 @@ export const AssignmentDetailScreen: React.FC<Props> = ({ navigation, route }) =
 
     try {
       const submitData: SubmitAssignmentData = {
-        assignmentId: parseInt(assignmentId),
+        assignmentId: parseInt(String(assignmentId)),
         comments: comments || undefined,
         attachments: await Promise.all(
           attachments.map(async file => {
@@ -251,22 +222,16 @@ export const AssignmentDetailScreen: React.FC<Props> = ({ navigation, route }) =
   };
 
   if (isLoading) {
-    return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
-      </View>
-    );
+    return <LoadingState message="Loading assignment..." />;
   }
 
   if (isError || !assignment) {
     return (
-      <View style={styles.centerContainer}>
-        <Icon name="alert-circle" type="feather" size={48} color={COLORS.error} />
-        <Text style={styles.errorText}>Failed to load assignment</Text>
-        <TouchableOpacity onPress={() => refetch()} style={styles.retryButton}>
-          <Text style={styles.retryButtonText}>Retry</Text>
-        </TouchableOpacity>
-      </View>
+      <ErrorState
+        title="Failed to load assignment"
+        message={(error as any)?.message || 'Please check your connection and try again'}
+        onRetry={() => refetch()}
+      />
     );
   }
 
@@ -400,23 +365,16 @@ export const AssignmentDetailScreen: React.FC<Props> = ({ navigation, route }) =
 
             <View style={styles.attachmentButtons}>
               <Button
-                title="Document"
-                icon={<Icon name="file" type="feather" size={18} color={COLORS.background} />}
+                title="Pick Document"
+                icon={<Icon name="file" type="feather" size={20} color={COLORS.background} />}
                 onPress={handlePickDocument}
                 buttonStyle={styles.pickButton}
                 containerStyle={styles.buttonContainer}
               />
               <Button
-                title="Camera"
-                icon={<Icon name="camera" type="feather" size={18} color={COLORS.background} />}
+                title="Take Photo"
+                icon={<Icon name="camera" type="feather" size={20} color={COLORS.background} />}
                 onPress={handleTakePhoto}
-                buttonStyle={styles.pickButton}
-                containerStyle={styles.buttonContainer}
-              />
-              <Button
-                title="Scan"
-                icon={<Icon name="maximize" type="feather" size={18} color={COLORS.background} />}
-                onPress={handleDocumentScan}
                 buttonStyle={styles.pickButton}
                 containerStyle={styles.buttonContainer}
               />
@@ -427,13 +385,7 @@ export const AssignmentDetailScreen: React.FC<Props> = ({ navigation, route }) =
                 <Text style={styles.subsectionTitle}>Selected Files:</Text>
                 {attachments.map((file, index) => (
                   <View key={index} style={styles.attachmentItem}>
-                    {file.type.startsWith('image/') ? (
-                      <TouchableOpacity onPress={() => handleViewImage(index)}>
-                        <Icon name="image" type="feather" size={20} color={COLORS.primary} />
-                      </TouchableOpacity>
-                    ) : (
-                      <Icon name="file" type="feather" size={20} color={COLORS.primary} />
-                    )}
+                    <Icon name="file" type="feather" size={20} color={COLORS.primary} />
                     <Text style={styles.attachmentName} numberOfLines={1}>
                       {file.name}
                     </Text>
@@ -497,28 +449,13 @@ export const AssignmentDetailScreen: React.FC<Props> = ({ navigation, route }) =
               title="Close"
               onPress={() => {
                 setShowSubmitModal(false);
-                navigation.goBack();
+                router.back();
               }}
               buttonStyle={styles.modalButton}
             />
           </View>
         </View>
       </Modal>
-
-      <DocumentScanner
-        visible={showDocumentScanner}
-        onClose={() => setShowDocumentScanner(false)}
-        onComplete={handleDocumentScanComplete}
-        multiPage={true}
-        title="Scan Homework"
-      />
-
-      <ImageViewer
-        visible={showImageViewer}
-        images={getImageAttachments()}
-        initialIndex={selectedImageIndex}
-        onClose={() => setShowImageViewer(false)}
-      />
     </View>
   );
 };

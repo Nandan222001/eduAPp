@@ -9,62 +9,15 @@ export interface Profile {
   phone?: string;
 }
 
-export interface StudentProfile {
-  id: number;
-  userId: number;
-  firstName: string;
-  lastName: string;
-  email: string;
-  studentId: string;
-  rollNumber?: string;
-  dateOfBirth?: string;
-  phone?: string;
-  profilePhoto?: string;
-  address?: string;
-  classId?: number;
-  className?: string;
-  sectionId?: number;
-  sectionName?: string;
-  admissionDate?: string;
-  bloodGroup?: string;
-  gender?: string;
-  parentName?: string;
-  parentPhone?: string;
-  parentEmail?: string;
-}
-
-export interface PerformanceSummary {
-  overallPercentage: number;
-  overallGrade: string;
-  rank?: number;
-  totalStudents?: number;
-  subjectPerformance: SubjectPerformance[];
-  trend: 'improving' | 'stable' | 'declining';
-  attendancePercentage: number;
-  assignmentCompletionRate: number;
-  recentExams: RecentExam[];
-  strengths: string[];
-  weaknesses: string[];
-}
-
-export interface SubjectPerformance {
-  subjectId: number;
-  subjectName: string;
-  averageScore: number;
-  totalTests: number;
-  bestScore: number;
-  worstScore: number;
-  trend: 'up' | 'down' | 'stable';
-}
-
-export interface RecentExam {
-  id: number;
-  examName: string;
-  subject: string;
-  totalMarks: number;
-  obtainedMarks: number;
+export interface AttendanceSummary {
+  totalClasses: number;
+  attendedClasses: number;
   percentage: number;
-  date: string;
+  todayStatus: 'present' | 'absent' | 'late' | 'not_marked';
+  recentAttendance: {
+    date: string;
+    status: 'present' | 'absent' | 'late';
+  }[];
 }
 
 export interface Assignment {
@@ -94,11 +47,13 @@ export interface Grade {
   id: number;
   examName: string;
   subject: string;
+  subjectCode?: string;
   totalMarks: number;
   obtainedMarks: number;
   percentage: number;
   grade: string;
   examDate: string;
+  term?: string;
   remarks?: string;
 }
 
@@ -121,4 +76,245 @@ export interface WeakArea {
   difficulty: 'easy' | 'medium' | 'hard';
   recommendedResources: number;
   lastPracticed?: string;
+}
+
+export interface GamificationData {
+  totalPoints: number;
+  currentLevel: number;
+  nextLevelPoints: number;
+  rank: number;
+  totalStudents: number;
+  badges: Badge[];
+  recentAchievements: Achievement[];
+  streak: StreakData;
+  activeGoalsCount?: number;
+}
+
+export interface Badge {
+  id: number;
+  name: string;
+  description: string;
+  icon: string;
+  earnedAt: string;
+  rarity: 'common' | 'rare' | 'epic' | 'legendary';
+}
+
+export interface Achievement {
+  id: number;
+  title: string;
+  description: string;
+  pointsEarned: number;
+  achievedAt: string;
+}
+
+export interface StreakData {
+  currentStreak: number;
+  longestStreak: number;
+  lastActivityDate: string;
+  streakType: 'daily_login' | 'assignment_submission' | 'study_time';
+}
+
+export interface TopicProbability {
+  topic: string;
+  subject: string;
+  probability: number;
+  confidence: number;
+  lastSeen?: string;
+}
+
+export interface PredictedQuestionBlueprint {
+  category: string;
+  questionCount: number;
+  difficulty: 'easy' | 'medium' | 'hard';
+  topics: string[];
+  weight: number;
+}
+
+export interface FocusArea {
+  id: string;
+  subject: string;
+  topic: string;
+  priority: 'high' | 'medium' | 'low';
+  mastery: number;
+  recommendedStudyTime: number;
+  resources: {
+    id: string;
+    title: string;
+    type: 'video' | 'article' | 'quiz' | 'practice';
+    url: string;
+  }[];
+}
+
+export interface AIPredictionDashboardData {
+  topicProbabilities: TopicProbability[];
+  questionBlueprint: PredictedQuestionBlueprint[];
+  focusAreas: FocusArea[];
+  overallReadiness: number;
+  lastAnalyzed: string;
+}
+
+export interface MistakeAnalysis {
+  type: string;
+  description: string;
+  severity: 'low' | 'medium' | 'high';
+  location: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+}
+
+export interface RemedialSuggestion {
+  id: string;
+  topic: string;
+  suggestion: string;
+  resources: {
+    title: string;
+    type: string;
+    url: string;
+  }[];
+}
+
+export interface HomeworkScanResult {
+  id: string;
+  imageUrl: string;
+  subject?: string;
+  topic?: string;
+  overallScore: number;
+  mistakes: MistakeAnalysis[];
+  remedialSuggestions: RemedialSuggestion[];
+  processedAt: string;
+  feedback: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: string;
+  isVoice?: boolean;
+}
+
+export interface StudyPlan {
+  id: string;
+  title: string;
+  subject: string;
+  duration: number;
+  tasks: {
+    id: string;
+    title: string;
+    completed: boolean;
+    estimatedTime: number;
+  }[];
+  createdAt: string;
+}
+
+export interface DailyBriefing {
+  date: string;
+  upcomingTests: {
+    subject: string;
+    date: string;
+    daysRemaining: number;
+  }[];
+  pendingAssignments: number;
+  focusTopics: string[];
+  motivationalMessage: string;
+}
+
+export interface GamificationDetails {
+  totalPoints: number;
+  currentLevel: number;
+  nextLevelPoints: number;
+  pointsToNextLevel: number;
+  rank: number;
+  totalStudents: number;
+  badges: BadgeDetail[];
+  recentAchievements: Achievement[];
+  streak: StreakData;
+  streakCalendar: StreakCalendarDay[];
+  pointsHistory: PointsHistoryEntry[];
+}
+
+export interface BadgeDetail {
+  id: number;
+  name: string;
+  description: string;
+  icon: string;
+  earnedAt: string | null;
+  rarity: 'common' | 'rare' | 'epic' | 'legendary';
+  progress?: number;
+  total?: number;
+  category: string;
+  unlocked: boolean;
+}
+
+export interface StreakCalendarDay {
+  date: string;
+  count: number;
+  type: 'login' | 'assignment' | 'study' | 'goal';
+}
+
+export interface PointsHistoryEntry {
+  date: string;
+  points: number;
+  reason: string;
+  type: 'earned' | 'spent';
+}
+
+export interface LeaderboardEntry {
+  rank: number;
+  studentId: number;
+  studentName: string;
+  avatar?: string;
+  points: number;
+  level: number;
+  badges: number;
+  trend: 'up' | 'down' | 'same';
+  isCurrentUser: boolean;
+}
+
+export interface Goal {
+  id: number;
+  title: string;
+  description: string;
+  type: 'specific' | 'measurable' | 'achievable' | 'relevant' | 'time-bound';
+  category: 'academic' | 'attendance' | 'behavior' | 'extracurricular' | 'personal';
+  targetValue: number;
+  currentValue: number;
+  unit: string;
+  startDate: string;
+  endDate: string;
+  status: 'active' | 'completed' | 'failed' | 'abandoned';
+  milestones: GoalMilestone[];
+  createdAt: string;
+  updatedAt: string;
+  completedAt?: string;
+  reward?: {
+    points: number;
+    badge?: string;
+  };
+}
+
+export interface GoalMilestone {
+  id: number;
+  title: string;
+  targetValue: number;
+  achieved: boolean;
+  achievedAt?: string;
+}
+
+export interface CreateGoalRequest {
+  title: string;
+  description: string;
+  type: 'specific' | 'measurable' | 'achievable' | 'relevant' | 'time-bound';
+  category: 'academic' | 'attendance' | 'behavior' | 'extracurricular' | 'personal';
+  targetValue: number;
+  unit: string;
+  startDate: string;
+  endDate: string;
+  milestones?: {
+    title: string;
+    targetValue: number;
+  }[];
 }

@@ -1,176 +1,263 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   StyleSheet,
   ScrollView,
+  TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
-  TouchableOpacity,
-  Dimensions,
 } from 'react-native';
-import { Text, Card } from '@rneui/themed';
-import { format, addDays, startOfWeek, endOfWeek, isSameDay, parseISO } from 'date-fns';
-import { GestureHandlerRootView, Swipeable } from 'react-native-gesture-handler';
+import { Text, Card, Icon, Badge } from '@rneui/themed';
+import { useQuery } from '@tanstack/react-query';
+import { format, parse } from 'date-fns';
 import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS } from '@constants';
 import { StudentTabScreenProps } from '@types';
-import { scheduleApi, TimetableEntry } from '@api/schedule';
+import { studentApi, TimetableEntry } from '../../api/student';
 
 type Props = StudentTabScreenProps<'Schedule'>;
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
-const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+interface TimetableCardProps {
+  entry: TimetableEntry;
+  isCurrentClass: boolean;
+}
 
-export const ScheduleScreen: React.FC<Props> = () => {
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [timetable, setTimetable] = useState<TimetableEntry[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const scrollViewRef = useRef<ScrollView>(null);
-
-  const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
-  const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
-
-  const fetchTimetable = useCallback(async () => {
-    try {
-      setLoading(true);
-      const response = await scheduleApi.getTimetable({
-        weekStart: format(weekStart, 'yyyy-MM-dd'),
-        weekEnd: format(weekEnd, 'yyyy-MM-dd'),
-      });
-      setTimetable(response.data || []);
-    } catch (error) {
-      console.error('Failed to fetch timetable:', error);
-    } finally {
-      setLoading(false);
+const TimetableCard: React.FC<TimetableCardProps> = ({ entry, isCurrentClass }) => {
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case 'lecture':
+        return COLORS.primary;
+      case 'lab':
+        return COLORS.success;
+      case 'tutorial':
+        return COLORS.warning;
+      case 'exam':
+        return COLORS.error;
+      default:
+        return COLORS.info;
     }
-  }, [weekStart, weekEnd]);
-
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await fetchTimetable();
-    setRefreshing(false);
-  }, [fetchTimetable]);
-
-  React.useEffect(() => {
-    fetchTimetable();
-  }, [fetchTimetable]);
-
-  const navigateWeek = (direction: 'prev' | 'next') => {
-    const newDate = direction === 'prev' ? addDays(selectedDate, -7) : addDays(selectedDate, 7);
-    setSelectedDate(newDate);
   };
 
-  const getDaySchedule = (date: Date) => {
-    const dayOfWeek = format(date, 'EEEE');
-    return timetable
-      .filter(entry => entry.dayOfWeek === dayOfWeek)
-      .sort((a, b) => a.startTime.localeCompare(b.startTime));
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case 'lecture':
+        return 'book-open';
+      case 'lab':
+        return 'cpu';
+      case 'tutorial':
+        return 'edit';
+      case 'exam':
+        return 'clipboard';
+      default:
+        return 'calendar';
+    }
   };
-
-  const renderDayHeader = (date: Date) => {
-    const isToday = isSameDay(date, new Date());
-    const isSelected = isSameDay(date, selectedDate);
-
-    return (
-      <TouchableOpacity
-        key={date.toISOString()}
-        style={[
-          styles.dayHeader,
-          isToday && styles.dayHeaderToday,
-          isSelected && styles.dayHeaderSelected,
-        ]}
-        onPress={() => setSelectedDate(date)}
-      >
-        <Text style={[styles.dayHeaderText, (isToday || isSelected) && styles.dayHeaderTextActive]}>
-          {format(date, 'EEE')}
-        </Text>
-        <Text style={[styles.dayHeaderDate, (isToday || isSelected) && styles.dayHeaderDateActive]}>
-          {format(date, 'd')}
-        </Text>
-        {isToday && <View style={styles.todayDot} />}
-      </TouchableOpacity>
-    );
-  };
-
-  const renderClassCard = (entry: TimetableEntry) => {
-    const getTypeColor = (type?: string) => {
-      switch (type) {
-        case 'lab':
-          return COLORS.secondary;
-        case 'tutorial':
-          return COLORS.accent;
-        case 'practical':
-          return COLORS.warning;
-        default:
-          return COLORS.primary;
-      }
-    };
-
-    return (
-      <Card key={entry.id} containerStyle={styles.classCard}>
-        <View style={styles.classCardContent}>
-          <View style={[styles.typeIndicator, { backgroundColor: getTypeColor(entry.type) }]} />
-          <View style={styles.classInfo}>
-            <View style={styles.classHeader}>
-              <Text style={styles.subjectName}>{entry.subject}</Text>
-              {entry.type && (
-                <View style={[styles.typeBadge, { backgroundColor: getTypeColor(entry.type) }]}>
-                  <Text style={styles.typeBadgeText}>{entry.type.toUpperCase()}</Text>
-                </View>
-              )}
-            </View>
-            {entry.subjectCode && <Text style={styles.subjectCode}>{entry.subjectCode}</Text>}
-            <View style={styles.classDetails}>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailIcon}>🕒</Text>
-                <Text style={styles.detailText}>
-                  {entry.startTime} - {entry.endTime}
-                </Text>
-              </View>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailIcon}>📍</Text>
-                <Text style={styles.detailText}>{entry.room}</Text>
-              </View>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailIcon}>👨‍🏫</Text>
-                <Text style={styles.detailText}>{entry.teacherName}</Text>
-              </View>
-            </View>
-          </View>
-        </View>
-      </Card>
-    );
-  };
-
-  const weekDates = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
-  const todaySchedule = getDaySchedule(selectedDate);
 
   return (
-    <GestureHandlerRootView style={styles.container}>
-      <View style={styles.header}>
-        <View style={styles.weekNavigator}>
-          <TouchableOpacity style={styles.navButton} onPress={() => navigateWeek('prev')}>
-            <Text style={styles.navButtonText}>‹</Text>
-          </TouchableOpacity>
-          <Text style={styles.weekTitle}>
-            {format(weekStart, 'MMM d')} - {format(weekEnd, 'MMM d, yyyy')}
-          </Text>
-          <TouchableOpacity style={styles.navButton} onPress={() => navigateWeek('next')}>
-            <Text style={styles.navButtonText}>›</Text>
-          </TouchableOpacity>
+    <Card containerStyle={[styles.timetableCard, isCurrentClass && styles.currentClassCard]}>
+      <View style={styles.cardHeader}>
+        <View style={styles.cardHeaderLeft}>
+          <View style={styles.subjectRow}>
+            <Icon
+              name={getTypeIcon(entry.type)}
+              type="feather"
+              size={20}
+              color={getTypeColor(entry.type)}
+            />
+            <Text style={styles.subjectName}>{entry.subject}</Text>
+          </View>
+          <Text style={styles.subjectCode}>{entry.subjectCode}</Text>
         </View>
+        <Badge
+          value={entry.type.toUpperCase()}
+          badgeStyle={[styles.typeBadge, { backgroundColor: getTypeColor(entry.type) }]}
+          textStyle={styles.typeBadgeText}
+        />
+      </View>
+
+      <View style={styles.cardBody}>
+        <View style={styles.infoRow}>
+          <Icon name="clock" type="feather" size={16} color={COLORS.textSecondary} />
+          <Text style={styles.infoText}>
+            {entry.startTime} - {entry.endTime}
+          </Text>
+        </View>
+
+        <View style={styles.infoRow}>
+          <Icon name="user" type="feather" size={16} color={COLORS.textSecondary} />
+          <Text style={styles.infoText}>{entry.teacher}</Text>
+        </View>
+
+        <View style={styles.infoRow}>
+          <Icon name="map-pin" type="feather" size={16} color={COLORS.textSecondary} />
+          <Text style={styles.infoText}>{entry.room}</Text>
+        </View>
+      </View>
+
+      {isCurrentClass && (
+        <View style={styles.currentClassBanner}>
+          <Icon name="activity" type="feather" size={16} color={COLORS.background} />
+          <Text style={styles.currentClassText}>In Progress</Text>
+        </View>
+      )}
+    </Card>
+  );
+};
+
+interface DayScheduleProps {
+  day: string;
+  entries: TimetableEntry[];
+  currentDay: string;
+}
+
+const DaySchedule: React.FC<DayScheduleProps> = ({ day, entries, currentDay }) => {
+  const isToday = day === currentDay;
+  const now = new Date();
+  const currentTime = format(now, 'HH:mm');
+
+  const sortedEntries = useMemo(() => {
+    return [...entries].sort((a, b) => {
+      const timeA = parse(a.startTime, 'HH:mm', new Date());
+      const timeB = parse(b.startTime, 'HH:mm', new Date());
+      return timeA.getTime() - timeB.getTime();
+    });
+  }, [entries]);
+
+  const isCurrentClass = (entry: TimetableEntry) => {
+    if (!isToday) return false;
+    return currentTime >= entry.startTime && currentTime <= entry.endTime;
+  };
+
+  if (entries.length === 0) {
+    return (
+      <View style={styles.emptyDayContainer}>
+        <Icon name="coffee" type="feather" size={32} color={COLORS.textSecondary} />
+        <Text style={styles.emptyDayText}>No classes scheduled</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.dayScheduleContainer}>
+      {sortedEntries.map(entry => (
+        <TimetableCard key={entry.id} entry={entry} isCurrentClass={isCurrentClass(entry)} />
+      ))}
+    </View>
+  );
+};
+
+export const ScheduleScreen: React.FC<Props> = ({ navigation }) => {
+  const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+  const [refreshing, setRefreshing] = useState(false);
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+
+  const {
+    data: timetableData,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
+    queryKey: ['timetable'],
+    queryFn: async () => {
+      const response = await studentApi.getTimetable();
+      return response.data;
+    },
+    staleTime: 10 * 60 * 1000,
+    retry: 3,
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
+  });
+
+  const entriesByDay = useMemo(() => {
+    if (!timetableData?.entries) return {};
+
+    return timetableData.entries.reduce(
+      (acc, entry) => {
+        if (!acc[entry.day]) {
+          acc[entry.day] = [];
+        }
+        acc[entry.day].push(entry);
+        return acc;
+      },
+      {} as Record<string, TimetableEntry[]>
+    );
+  }, [timetableData]);
+
+  const displayDay = selectedDay || timetableData?.currentDay || daysOfWeek[0];
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  };
+
+  const handleRetry = () => {
+    refetch();
+  };
+
+  const handleDayPress = (day: string) => {
+    setSelectedDay(day);
+  };
+
+  if (isLoading && !refreshing) {
+    return (
+      <View style={styles.centerContainer}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+        <Text style={styles.loadingText}>Loading schedule...</Text>
+      </View>
+    );
+  }
+
+  if (isError) {
+    return (
+      <View style={styles.centerContainer}>
+        <Icon name="alert-circle" type="feather" size={48} color={COLORS.error} />
+        <Text style={styles.errorText}>Failed to load schedule</Text>
+        <TouchableOpacity onPress={handleRetry} style={styles.retryButton}>
+          <Icon name="refresh-cw" type="feather" size={20} color={COLORS.background} />
+          <Text style={styles.retryButtonText}>Retry</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.header}>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          style={styles.daysScroll}
-          contentContainerStyle={styles.daysScrollContent}
+          contentContainerStyle={styles.dayTabsContainer}
         >
-          {weekDates.map(renderDayHeader)}
+          {daysOfWeek.map(day => {
+            const isSelected = day === displayDay;
+            const isCurrentDay = day === timetableData?.currentDay;
+            const hasClasses = entriesByDay[day]?.length > 0;
+
+            return (
+              <TouchableOpacity
+                key={day}
+                style={[
+                  styles.dayTab,
+                  isSelected && styles.dayTabSelected,
+                  isCurrentDay && styles.dayTabCurrent,
+                ]}
+                onPress={() => handleDayPress(day)}
+              >
+                <Text style={[styles.dayTabText, isSelected && styles.dayTabTextSelected]}>
+                  {day.substring(0, 3)}
+                </Text>
+                {hasClasses && (
+                  <View
+                    style={[styles.dayTabIndicator, isSelected && styles.dayTabIndicatorSelected]}
+                  />
+                )}
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
       </View>
 
       <ScrollView
-        ref={scrollViewRef}
         style={styles.content}
         contentContainerStyle={styles.contentContainer}
         refreshControl={
@@ -182,27 +269,20 @@ export const ScheduleScreen: React.FC<Props> = () => {
           />
         }
       >
-        {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={COLORS.primary} />
-            <Text style={styles.loadingText}>Loading schedule...</Text>
-          </View>
-        ) : todaySchedule.length > 0 ? (
-          <>
-            <Text style={styles.sectionTitle}>{format(selectedDate, 'EEEE, MMMM d, yyyy')}</Text>
-            {todaySchedule.map(renderClassCard)}
-          </>
-        ) : (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyIcon}>📅</Text>
-            <Text style={styles.emptyText}>No classes scheduled</Text>
-            <Text style={styles.emptySubtext}>
-              {isSameDay(selectedDate, new Date()) ? 'Enjoy your free day!' : 'for this day'}
-            </Text>
-          </View>
-        )}
+        <View style={styles.dayHeader}>
+          <Text style={styles.dayTitle}>{displayDay}</Text>
+          {displayDay === timetableData?.currentDay && (
+            <Badge value="Today" badgeStyle={styles.todayBadge} />
+          )}
+        </View>
+
+        <DaySchedule
+          day={displayDay}
+          entries={entriesByDay[displayDay] || []}
+          currentDay={timetableData?.currentDay || ''}
+        />
       </ScrollView>
-    </GestureHandlerRootView>
+    </View>
   );
 };
 
@@ -211,81 +291,85 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.surface,
   },
-  header: {
-    backgroundColor: COLORS.background,
-    paddingBottom: SPACING.md,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.surface,
+    padding: SPACING.xl,
   },
-  weekNavigator: {
+  loadingText: {
+    fontSize: FONT_SIZES.md,
+    color: COLORS.textSecondary,
+    marginTop: SPACING.md,
+  },
+  errorText: {
+    fontSize: FONT_SIZES.lg,
+    color: COLORS.error,
+    marginTop: SPACING.md,
+    marginBottom: SPACING.sm,
+  },
+  retryButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: SPACING.md,
-    paddingTop: SPACING.md,
-    paddingBottom: SPACING.sm,
-  },
-  navButton: {
-    width: 40,
-    height: 40,
-    borderRadius: BORDER_RADIUS.full,
-    backgroundColor: COLORS.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  navButtonText: {
-    fontSize: FONT_SIZES.xxl,
-    color: COLORS.primary,
-    fontWeight: 'bold',
-  },
-  weekTitle: {
-    fontSize: FONT_SIZES.md,
-    fontWeight: '600',
-    color: COLORS.text,
-  },
-  daysScroll: {
-    paddingHorizontal: SPACING.md,
-  },
-  daysScrollContent: {
+    marginTop: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.sm,
+    backgroundColor: COLORS.primary,
+    borderRadius: BORDER_RADIUS.md,
     gap: SPACING.sm,
   },
-  dayHeader: {
+  retryButtonText: {
+    color: COLORS.background,
+    fontSize: FONT_SIZES.md,
+    fontWeight: '600',
+  },
+  header: {
+    backgroundColor: COLORS.background,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  dayTabsContainer: {
+    paddingHorizontal: SPACING.sm,
     paddingVertical: SPACING.sm,
+    gap: SPACING.xs,
+  },
+  dayTab: {
     paddingHorizontal: SPACING.md,
-    borderRadius: BORDER_RADIUS.lg,
+    paddingVertical: SPACING.sm,
+    borderRadius: BORDER_RADIUS.md,
     alignItems: 'center',
     minWidth: 60,
-    backgroundColor: COLORS.surface,
   },
-  dayHeaderToday: {
-    backgroundColor: COLORS.primary + '20',
-  },
-  dayHeaderSelected: {
+  dayTabSelected: {
     backgroundColor: COLORS.primary,
   },
-  dayHeaderText: {
+  dayTabCurrent: {
+    borderWidth: 2,
+    borderColor: COLORS.primary,
+  },
+  dayTabText: {
     fontSize: FONT_SIZES.sm,
     fontWeight: '600',
     color: COLORS.textSecondary,
-    marginBottom: 4,
   },
-  dayHeaderTextActive: {
+  dayTabTextSelected: {
     color: COLORS.background,
   },
-  dayHeaderDate: {
-    fontSize: FONT_SIZES.lg,
-    fontWeight: 'bold',
-    color: COLORS.text,
-  },
-  dayHeaderDateActive: {
-    color: COLORS.background,
-  },
-  todayDot: {
-    width: 6,
-    height: 6,
-    borderRadius: BORDER_RADIUS.full,
-    backgroundColor: COLORS.primary,
+  dayTabIndicator: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: COLORS.textSecondary,
     marginTop: 4,
+  },
+  dayTabIndicatorSelected: {
+    backgroundColor: COLORS.background,
   },
   content: {
     flex: 1,
@@ -293,107 +377,106 @@ const styles = StyleSheet.create({
   contentContainer: {
     padding: SPACING.md,
   },
-  sectionTitle: {
-    fontSize: FONT_SIZES.lg,
-    fontWeight: 'bold',
-    color: COLORS.text,
-    marginBottom: SPACING.md,
-  },
-  classCard: {
-    borderRadius: BORDER_RADIUS.lg,
-    padding: 0,
-    margin: 0,
-    marginBottom: SPACING.md,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  classCardContent: {
-    flexDirection: 'row',
-    padding: SPACING.md,
-  },
-  typeIndicator: {
-    width: 4,
-    borderRadius: BORDER_RADIUS.sm,
-    marginRight: SPACING.md,
-  },
-  classInfo: {
-    flex: 1,
-  },
-  classHeader: {
+  dayHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: SPACING.xs,
+    marginBottom: SPACING.md,
   },
-  subjectName: {
-    fontSize: FONT_SIZES.lg,
+  dayTitle: {
+    fontSize: FONT_SIZES.xxl,
     fontWeight: 'bold',
     color: COLORS.text,
-    flex: 1,
   },
-  typeBadge: {
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: 4,
-    borderRadius: BORDER_RADIUS.sm,
-    marginLeft: SPACING.sm,
+  todayBadge: {
+    backgroundColor: COLORS.primary,
   },
-  typeBadgeText: {
-    fontSize: FONT_SIZES.xs,
-    fontWeight: '600',
-    color: COLORS.background,
+  dayScheduleContainer: {
+    gap: SPACING.md,
   },
-  subjectCode: {
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.textSecondary,
-    marginBottom: SPACING.sm,
-  },
-  classDetails: {
-    gap: SPACING.xs,
-  },
-  detailRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  detailIcon: {
-    fontSize: FONT_SIZES.md,
-    marginRight: SPACING.sm,
-  },
-  detailText: {
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.textSecondary,
-  },
-  loadingContainer: {
-    flex: 1,
+  emptyDayContainer: {
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: SPACING.xxl,
   },
-  loadingText: {
-    marginTop: SPACING.md,
+  emptyDayText: {
     fontSize: FONT_SIZES.md,
     color: COLORS.textSecondary,
+    marginTop: SPACING.md,
   },
-  emptyContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: SPACING.xxl * 2,
+  timetableCard: {
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.md,
+    marginBottom: 0,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
-  emptyIcon: {
-    fontSize: 64,
+  currentClassCard: {
+    borderLeftWidth: 4,
+    borderLeftColor: COLORS.success,
+    backgroundColor: '#F0FDF4',
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
     marginBottom: SPACING.md,
   },
-  emptyText: {
+  cardHeaderLeft: {
+    flex: 1,
+  },
+  subjectRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    marginBottom: 4,
+  },
+  subjectName: {
     fontSize: FONT_SIZES.lg,
     fontWeight: '600',
     color: COLORS.text,
-    marginBottom: SPACING.xs,
   },
-  emptySubtext: {
+  subjectCode: {
     fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
+    marginLeft: 28,
+  },
+  typeBadge: {
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 4,
+  },
+  typeBadgeText: {
+    fontSize: FONT_SIZES.xs,
+    fontWeight: '600',
+  },
+  cardBody: {
+    gap: SPACING.sm,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+  },
+  infoText: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textSecondary,
+  },
+  currentClassBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.xs,
+    marginTop: SPACING.md,
+    paddingVertical: SPACING.xs,
+    backgroundColor: COLORS.success,
+    borderRadius: BORDER_RADIUS.md,
+  },
+  currentClassText: {
+    fontSize: FONT_SIZES.sm,
+    fontWeight: '600',
+    color: COLORS.background,
   },
 });
