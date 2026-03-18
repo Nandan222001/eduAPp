@@ -4,10 +4,10 @@ import { Text } from '@rneui/themed';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Card } from '../Card';
 import { COLORS, SPACING, FONT_SIZES } from '@constants';
-import { GamificationData } from '../../types/student';
+import { GamificationStats, Badge, Achievement } from '../../types/gamification';
 
 interface GamificationWidgetProps {
-  gamification?: GamificationData;
+  gamification?: GamificationStats;
   isLoading?: boolean;
 }
 
@@ -26,9 +26,10 @@ export const GamificationWidget: React.FC<GamificationWidgetProps> = ({
 
   if (!gamification) return null;
 
-  const levelProgress =
-    ((gamification.totalPoints % gamification.nextLevelPoints) / gamification.nextLevelPoints) *
-    100;
+  const levelProgress = gamification.nextLevelPoints
+    ? ((gamification.totalPoints % gamification.nextLevelPoints) / gamification.nextLevelPoints) *
+      100
+    : 0;
 
   const getRarityColor = (rarity: string) => {
     switch (rarity) {
@@ -71,7 +72,7 @@ export const GamificationWidget: React.FC<GamificationWidgetProps> = ({
           <Text style={styles.sectionTitle}>Recent Badges</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             <View style={styles.badgesContainer}>
-              {gamification.badges.slice(0, 5).map(badge => (
+              {gamification.badges?.slice(0, 5).map((badge: Badge) => (
                 <View
                   key={badge.id}
                   style={[styles.badgeCard, { borderColor: getRarityColor(badge.rarity) }]}
@@ -97,7 +98,7 @@ export const GamificationWidget: React.FC<GamificationWidgetProps> = ({
       {gamification.recentAchievements && gamification.recentAchievements.length > 0 && (
         <>
           <Text style={styles.sectionTitle}>Recent Achievements</Text>
-          {gamification.recentAchievements.slice(0, 3).map(achievement => (
+          {gamification.recentAchievements.slice(0, 3).map((achievement: Achievement) => (
             <View key={achievement.id} style={styles.achievementItem}>
               <Icon name="check-circle" size={20} color={COLORS.success} />
               <View style={styles.achievementContent}>

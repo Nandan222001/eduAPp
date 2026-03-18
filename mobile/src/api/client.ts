@@ -3,6 +3,7 @@ import axios, {
   AxiosRequestConfig,
   AxiosResponse,
   InternalAxiosRequestConfig,
+  AxiosError,
 } from 'axios';
 import { API_URL } from '@env';
 import { secureStorage } from '@utils/secureStorage';
@@ -21,10 +22,29 @@ const onTokenRefreshed = (token: string) => {
   refreshSubscribers = [];
 };
 
+export interface RetryConfig {
+  maxRetries?: number;
+  retryDelay?: number;
+  retryableStatuses?: number[];
+}
+
+export interface RequestConfig extends AxiosRequestConfig {
+  retry?: RetryConfig;
+  timeout?: number;
+}
+
+const DEFAULT_RETRY_CONFIG: RetryConfig = {
+  maxRetries: 3,
+  retryDelay: 1000,
+  retryableStatuses: [408, 429, 500, 502, 503, 504],
+};
+
 class ApiClient {
   private instance: AxiosInstance;
+  private defaultRetryConfig: RetryConfig;
 
   constructor() {
+    this.defaultRetryConfig = DEFAULT_RETRY_CONFIG;
     this.instance = axios.create({
       baseURL: API_URL,
       timeout: API_TIMEOUT,
@@ -107,53 +127,108 @@ class ApiClient {
           }
         }
 
+        if (this.shouldRetry(error, originalRequest)) {
+          return this.retryRequest(originalRequest);
+        }
+
         return Promise.reject(this.handleError(error));
       }
     );
   }
 
-  private handleError(error: any): ApiError {
-    if (error.response) {
-      return {
-        message: error.response.data?.message || 'An error occurred',
-        errors: error.response.data?.errors,
-        status: error.response.status,
-      };
-    } else if (error.request) {
-      return {
-        message: 'Network error. Please check your connection.',
-        status: 0,
-      };
-    } else {
-      return {
-        message: error.message || 'An unexpected error occurred',
-      };
+  private shouldRetry(error: AxiosError, config: any): boolean {
+    if (
+      !config ||
+      config._retryCount >= (config.retry?.maxRetries || this.defaultRetryConfig.maxRetries!)
+    ) {
+      return false;
     }
+
+    if (error.code === 'ECONNABORTED' && error.message.includes('timeout')) {
+      return true;
+    }
+
+    if (!error.response) {
+      return true;
+    }
+
+    const retryableStatuses =
+      config.retry?.retryableStatuses || this.defaultRetryConfig.retryableStatuses!;
+    return retryableStatuses.includes(error.response.status);
   }
 
-  async get<T>(url: string, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
+  private async retryRequest(config: any): Promise<any> {
+    config._retryCount = config._retryCount || 0;
+    config._retryCount += 1;
+
+    const retryDelay = config.retry?.retryDelay || this.defaultRetryConfig.retryDelay!;
+    const delay = retryDelay * Math.pow(2, config._retryCount - 1);
+
+    await new Promise(resolve => setTimeout(resolve, delay));
+
+    return this.instance(config);
+  }
+
+  private handleError(error: any): ApiError {
+    if (axios.isAxiosError(error)) {
+      if (error.response) {
+        return {
+          message: error.response.data?.message || 'An error occurred',
+          errors: error.response.data?.errors,
+          status: error.response.status,
+        };
+      } else if (error.request) {
+        if (error.code === 'ECONNABORTED') {
+          return {
+            message: 'Request timeout. Please try again.',
+            status: 408,
+          };
+        }
+        if (error.code === 'ERR_NETWORK') {
+          return {
+            message: 'Network error. Please check your connection.',
+            status: 0,
+          };
+        }
+        return {
+          message: 'Network error. Please check your connection.',
+          status: 0,
+        };
+      }
+    }
+
+    return {
+      message: error.message || 'An unexpected error occurred',
+    };
+  }
+
+  async get<T>(url: string, config?: RequestConfig): Promise<ApiResponse<T>> {
     const response: AxiosResponse<ApiResponse<T>> = await this.instance.get(url, config);
     return response.data;
   }
 
-  async post<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
+  async post<T>(url: string, data?: any, config?: RequestConfig): Promise<ApiResponse<T>> {
     const response: AxiosResponse<ApiResponse<T>> = await this.instance.post(url, data, config);
     return response.data;
   }
 
-  async put<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
+  async put<T>(url: string, data?: any, config?: RequestConfig): Promise<ApiResponse<T>> {
     const response: AxiosResponse<ApiResponse<T>> = await this.instance.put(url, data, config);
     return response.data;
   }
 
-  async patch<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
+  async patch<T>(url: string, data?: any, config?: RequestConfig): Promise<ApiResponse<T>> {
     const response: AxiosResponse<ApiResponse<T>> = await this.instance.patch(url, data, config);
     return response.data;
   }
 
-  async delete<T>(url: string, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
+  async delete<T>(url: string, config?: RequestConfig): Promise<ApiResponse<T>> {
     const response: AxiosResponse<ApiResponse<T>> = await this.instance.delete(url, config);
     return response.data;
+  }
+
+  setDefaultRetryConfig(config: Partial<RetryConfig>) {
+    this.defaultRetryConfig = { ...this.defaultRetryConfig, ...config };
   }
 }
 

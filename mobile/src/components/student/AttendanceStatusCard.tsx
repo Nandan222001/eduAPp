@@ -3,7 +3,7 @@ import { View, StyleSheet } from 'react-native';
 import { Text } from '@rneui/themed';
 import { Card } from '../Card';
 import { COLORS, SPACING, FONT_SIZES } from '@constants';
-import { AttendanceSummary } from '../../types/student';
+import { AttendanceSummary } from '../../types/attendance';
 
 interface AttendanceStatusCardProps {
   attendance?: AttendanceSummary;

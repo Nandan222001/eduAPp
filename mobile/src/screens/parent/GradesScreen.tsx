@@ -421,9 +421,7 @@ export const GradesScreen: React.FC<Props> = ({ route }) => {
             <Card style={styles.card}>
               <View style={styles.summaryContainer}>
                 <View style={styles.summaryItem}>
-                  <Text style={styles.summaryValue}>
-                    {gradesData.overallAverage.toFixed(1)}%
-                  </Text>
+                  <Text style={styles.summaryValue}>{gradesData.overallAverage.toFixed(1)}%</Text>
                   <Text style={styles.summaryLabel}>Overall Average</Text>
                 </View>
                 {gradesData.currentRank && <View style={styles.summaryDivider} />}

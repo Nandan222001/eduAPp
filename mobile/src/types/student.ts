@@ -9,15 +9,62 @@ export interface Profile {
   phone?: string;
 }
 
-export interface AttendanceSummary {
-  totalClasses: number;
-  attendedClasses: number;
+export interface StudentProfile {
+  id: number;
+  userId: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  studentId: string;
+  rollNumber?: string;
+  dateOfBirth?: string;
+  phone?: string;
+  profilePhoto?: string;
+  address?: string;
+  classId?: number;
+  className?: string;
+  sectionId?: number;
+  sectionName?: string;
+  admissionDate?: string;
+  bloodGroup?: string;
+  gender?: string;
+  parentName?: string;
+  parentPhone?: string;
+  parentEmail?: string;
+}
+
+export interface PerformanceSummary {
+  overallPercentage: number;
+  overallGrade: string;
+  rank?: number;
+  totalStudents?: number;
+  subjectPerformance: SubjectPerformance[];
+  trend: 'improving' | 'stable' | 'declining';
+  attendancePercentage: number;
+  assignmentCompletionRate: number;
+  recentExams: RecentExam[];
+  strengths: string[];
+  weaknesses: string[];
+}
+
+export interface SubjectPerformance {
+  subjectId: number;
+  subjectName: string;
+  averageScore: number;
+  totalTests: number;
+  bestScore: number;
+  worstScore: number;
+  trend: 'up' | 'down' | 'stable';
+}
+
+export interface RecentExam {
+  id: number;
+  examName: string;
+  subject: string;
+  totalMarks: number;
+  obtainedMarks: number;
   percentage: number;
-  todayStatus: 'present' | 'absent' | 'late' | 'not_marked';
-  recentAttendance: {
-    date: string;
-    status: 'present' | 'absent' | 'late';
-  }[];
+  date: string;
 }
 
 export interface Assignment {
@@ -74,39 +121,4 @@ export interface WeakArea {
   difficulty: 'easy' | 'medium' | 'hard';
   recommendedResources: number;
   lastPracticed?: string;
-}
-
-export interface GamificationData {
-  totalPoints: number;
-  currentLevel: number;
-  nextLevelPoints: number;
-  rank: number;
-  totalStudents: number;
-  badges: Badge[];
-  recentAchievements: Achievement[];
-  streak: StreakData;
-}
-
-export interface Badge {
-  id: number;
-  name: string;
-  description: string;
-  icon: string;
-  earnedAt: string;
-  rarity: 'common' | 'rare' | 'epic' | 'legendary';
-}
-
-export interface Achievement {
-  id: number;
-  title: string;
-  description: string;
-  pointsEarned: number;
-  achievedAt: string;
-}
-
-export interface StreakData {
-  currentStreak: number;
-  longestStreak: number;
-  lastActivityDate: string;
-  streakType: 'daily_login' | 'assignment_submission' | 'study_time';
 }

@@ -1,5 +1,12 @@
 export * from './navigation';
 export * from './student';
+export * from './attendance';
+export * from './examinations';
+export * from './notifications';
+export * from './gamification';
+export * from './studyMaterials';
+export * from './doubts';
+export * from './fees';
 
 export interface User {
   id: number;

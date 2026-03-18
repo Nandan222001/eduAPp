@@ -1,13 +1,7 @@
 import { apiClient } from './client';
-import {
-  Profile,
-  AttendanceSummary,
-  Assignment,
-  Grade,
-  AIPrediction,
-  WeakArea,
-  GamificationData,
-} from '../types/student';
+import { Profile, Assignment, Grade, AIPrediction, WeakArea } from '../types/student';
+import { AttendanceSummary } from '../types/attendance';
+import { GamificationStats } from '../types/gamification';
 
 export const studentApi = {
   getProfile: async () => {
@@ -35,6 +29,6 @@ export const studentApi = {
   },
 
   getGamification: async () => {
-    return apiClient.get<GamificationData>('/api/v1/gamification');
+    return apiClient.get<GamificationStats>('/api/v1/gamification');
   },
 };

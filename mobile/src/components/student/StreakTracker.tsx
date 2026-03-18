@@ -4,10 +4,10 @@ import { Text } from '@rneui/themed';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Card } from '../Card';
 import { COLORS, SPACING, FONT_SIZES } from '@constants';
-import { StreakData } from '../../types/student';
+import { Streak } from '../../types/gamification';
 
 interface StreakTrackerProps {
-  streak?: StreakData;
+  streak?: Streak;
   isLoading?: boolean;
 }
 

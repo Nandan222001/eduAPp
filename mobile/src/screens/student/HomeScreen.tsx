@@ -118,7 +118,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
         </View>
         <View style={styles.halfWidth}>
           <StreakTracker
-            streak={gamificationQuery.data?.streak}
+            streak={gamificationQuery.data?.streaks?.[0]}
             isLoading={gamificationQuery.isLoading}
           />
         </View>
