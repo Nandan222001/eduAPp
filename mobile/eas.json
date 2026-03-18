@@ -1,16 +1,23 @@
 {
   "cli": {
-    "version": ">= 5.9.0"
+    "version": ">= 5.9.0",
+    "appVersionSource": "remote"
   },
   "build": {
     "development": {
+      "description": "Development build with dev client for local testing",
       "developmentClient": true,
       "distribution": "internal",
       "ios": {
-        "resourceClass": "m-medium"
+        "resourceClass": "m-medium",
+        "simulator": true,
+        "buildConfiguration": "Debug",
+        "autoIncrement": true
       },
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleDebug",
+        "autoIncrement": true
       },
       "env": {
         "APP_ENV": "development"
@@ -18,43 +25,162 @@
       "channel": "development"
     },
     "preview": {
+      "description": "Preview build for internal testing (TestFlight/Internal Testing)",
       "distribution": "internal",
       "ios": {
         "simulator": false,
-        "resourceClass": "m-medium"
+        "resourceClass": "m-medium",
+        "buildConfiguration": "Release",
+        "autoIncrement": true,
+        "bundleIdentifier": "com.edu.mobile"
       },
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease",
+        "autoIncrement": true
       },
       "env": {
         "APP_ENV": "staging"
       },
       "channel": "preview"
     },
-    "production": {
+    "staging": {
+      "description": "Staging build for pre-production testing",
+      "distribution": "internal",
       "ios": {
-        "resourceClass": "m-medium"
+        "simulator": false,
+        "resourceClass": "m-medium",
+        "buildConfiguration": "Release",
+        "autoIncrement": true,
+        "bundleIdentifier": "com.edu.mobile.staging"
       },
       "android": {
-        "buildType": "aab"
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease",
+        "autoIncrement": true,
+        "applicationId": "com.edu.mobile.staging"
+      },
+      "env": {
+        "APP_ENV": "staging"
+      },
+      "channel": "staging"
+    },
+    "production": {
+      "description": "Production build for App Store and Google Play",
+      "distribution": "store",
+      "ios": {
+        "resourceClass": "m-medium",
+        "buildConfiguration": "Release",
+        "autoIncrement": "buildNumber",
+        "bundleIdentifier": "com.edu.mobile"
+      },
+      "android": {
+        "buildType": "aab",
+        "gradleCommand": ":app:bundleRelease",
+        "autoIncrement": "versionCode"
       },
       "env": {
         "APP_ENV": "production"
       },
       "channel": "production"
+    },
+    "production-ios": {
+      "description": "Production iOS build for App Store",
+      "extends": "production",
+      "ios": {
+        "resourceClass": "m-medium",
+        "buildConfiguration": "Release",
+        "autoIncrement": "buildNumber",
+        "bundleIdentifier": "com.edu.mobile"
+      }
+    },
+    "production-android": {
+      "description": "Production Android build for Google Play",
+      "extends": "production",
+      "android": {
+        "buildType": "aab",
+        "gradleCommand": ":app:bundleRelease",
+        "autoIncrement": "versionCode"
+      }
     }
   },
   "submit": {
-    "production": {
+    "development": {
+      "description": "Development submission (not typically used)"
+    },
+    "preview": {
+      "description": "Preview submission to TestFlight and Internal Testing",
       "ios": {
-        "appleId": "your-apple-id@example.com",
-        "ascAppId": "your-asc-app-id",
-        "appleTeamId": "your-team-id"
+        "appleId": "${APPLE_ID}",
+        "ascAppId": "${ASC_APP_ID}",
+        "appleTeamId": "${APPLE_TEAM_ID}",
+        "sku": "edu-mobile-preview"
       },
       "android": {
-        "serviceAccountKeyPath": "./service-account-key.json",
-        "track": "internal"
+        "serviceAccountKeyPath": "${GOOGLE_SERVICE_ACCOUNT_KEY_PATH}",
+        "track": "internal",
+        "releaseStatus": "draft"
       }
+    },
+    "staging": {
+      "description": "Staging submission to TestFlight and Internal Testing",
+      "ios": {
+        "appleId": "${APPLE_ID}",
+        "ascAppId": "${ASC_APP_ID_STAGING}",
+        "appleTeamId": "${APPLE_TEAM_ID}",
+        "sku": "edu-mobile-staging"
+      },
+      "android": {
+        "serviceAccountKeyPath": "${GOOGLE_SERVICE_ACCOUNT_KEY_PATH}",
+        "track": "internal",
+        "releaseStatus": "draft"
+      }
+    },
+    "production": {
+      "description": "Production submission to App Store and Google Play",
+      "ios": {
+        "appleId": "${APPLE_ID}",
+        "ascAppId": "${ASC_APP_ID}",
+        "appleTeamId": "${APPLE_TEAM_ID}",
+        "sku": "edu-mobile",
+        "language": "en-US",
+        "companyName": "EDU Mobile Inc",
+        "appName": "EDU Mobile"
+      },
+      "android": {
+        "serviceAccountKeyPath": "${GOOGLE_SERVICE_ACCOUNT_KEY_PATH}",
+        "track": "production",
+        "releaseStatus": "completed",
+        "rolloutFraction": 0.1
+      }
+    },
+    "production-full": {
+      "description": "Production submission with full rollout",
+      "extends": "production",
+      "android": {
+        "serviceAccountKeyPath": "${GOOGLE_SERVICE_ACCOUNT_KEY_PATH}",
+        "track": "production",
+        "releaseStatus": "completed",
+        "rolloutFraction": 1.0
+      }
+    }
+  },
+  "update": {
+    "development": {
+      "description": "OTA updates for development channel",
+      "channel": "development"
+    },
+    "preview": {
+      "description": "OTA updates for preview channel",
+      "channel": "preview"
+    },
+    "staging": {
+      "description": "OTA updates for staging channel",
+      "channel": "staging"
+    },
+    "production": {
+      "description": "OTA updates for production channel",
+      "channel": "production"
     }
   }
 }

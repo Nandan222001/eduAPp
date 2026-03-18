@@ -21,7 +21,10 @@
       "buildNumber": "1",
       "associatedDomains": [
         "applinks:edu.app"
-      ]
+      ],
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -46,7 +49,8 @@
             "DEFAULT"
           ]
         }
-      ]
+      ],
+      "permissions": []
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -107,6 +111,12 @@
           "sounds": [],
           "mode": "production"
         }
+      ],
+      [
+        "expo-updates",
+        {
+          "username": "your-expo-username"
+        }
       ]
     ],
     "extra": {
@@ -119,6 +129,16 @@
       "color": "#2089dc",
       "androidMode": "default",
       "androidCollapsedTitle": "EDU Mobile"
-    }
+    },
+    "updates": {
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0,
+      "url": "https://u.expo.dev/your-project-id"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "owner": "your-expo-username"
   }
 }

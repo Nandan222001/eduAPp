@@ -91,3 +91,27 @@ images/
 # Sentry
 sentry.properties
 .sentryclirc
+
+# EAS Build & Deployment
+*.keystore
+!debug.keystore
+*.jks
+*.p12
+*.mobileprovision
+*.cer
+*.certSigningRequest
+service-account-key.json
+google-services.json
+GoogleService-Info.plist
+.eas-build-*
+eas-build-*.tar.gz
+rollback-log.txt
+
+# Store Assets (large binary files - use Git LFS or external storage)
+store/ios/screenshots/**/*.png
+store/ios/screenshots/**/*.jpg
+store/android/screenshots/**/*.png
+store/android/screenshots/**/*.jpg
+store/assets/*.png
+store/assets/*.jpg
+!store/assets/.gitkeep
