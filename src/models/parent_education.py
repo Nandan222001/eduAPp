@@ -131,7 +131,7 @@ class ParentCourseBadge(Base):
     badge_description = Column(Text, nullable=True)
     badge_icon_url = Column(String(1000), nullable=True)
     
-    metadata = Column(JSON, nullable=True)
+    metadata_json = Column('metadata', JSON, nullable=True)
     
     earned_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     
@@ -283,7 +283,7 @@ class ParentLearningActivity(Base):
     time_spent_minutes = Column(Integer, default=0, nullable=False)
     completed = Column(Boolean, default=False, nullable=False)
     
-    metadata = Column(JSON, nullable=True)
+    metadata_json = Column('metadata', JSON, nullable=True)
     
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)

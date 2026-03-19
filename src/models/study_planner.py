@@ -46,7 +46,7 @@ class StudyPlan(Base):
     calendar_sync_url = Column(String(500), nullable=True)
     adaptive_rescheduling_enabled = Column(Boolean, default=True, nullable=False)
     last_rescheduled_at = Column(DateTime, nullable=True)
-    metadata = Column(JSON, nullable=True)
+    metadata_json = Column('metadata', JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     
@@ -129,7 +129,7 @@ class DailyStudyTask(Base):
     rescheduled_to_date = Column(Date, nullable=True)
     rescheduled_reason = Column(Text, nullable=True)
     calendar_event_id = Column(String(200), nullable=True)
-    metadata = Column(JSON, nullable=True)
+    metadata_json = Column('metadata', JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     
@@ -205,7 +205,7 @@ class StudyProgress(Base):
     completion_rate = Column(Numeric(5, 2), nullable=False)
     adherence_score = Column(Numeric(5, 2), nullable=True)
     productivity_score = Column(Numeric(5, 2), nullable=True)
-    metadata = Column(JSON, nullable=True)
+    metadata_json = Column('metadata', JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     
@@ -282,7 +282,7 @@ class QuestionRecommendation(Base):
     last_performance = Column(Numeric(5, 2), nullable=True)
     is_completed = Column(Boolean, default=False, nullable=False, index=True)
     completed_at = Column(DateTime, nullable=True)
-    metadata = Column(JSON, nullable=True)
+    metadata_json = Column('metadata', JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     

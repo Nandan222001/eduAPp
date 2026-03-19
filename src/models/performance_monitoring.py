@@ -38,9 +38,10 @@ class APIPerformanceMetric(Base):
     request_size_bytes = Column(Integer, nullable=True)
     response_size_bytes = Column(Integer, nullable=True)
     user_id = Column(Integer, nullable=True, index=True)
-    institution_id = Column(Integer, nullable=True, index=True)
-    error_message = Column(Text, nullable=True)
-    metadata = Column(JSON, nullable=True)
+        institution_id = Column(Integer, nullable=True, index=True)
+        error_message = Column(Text, nullable=True)
+        # avoid using attribute name `metadata` (reserved by SQLAlchemy declarative base)
+        metadata_json = Column('metadata', JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     __table_args__ = (
@@ -107,8 +108,8 @@ class TaskQueueMetric(Base):
     retries = Column(Integer, default=0, nullable=False)
     worker_name = Column(String(100), nullable=True)
     error_message = Column(Text, nullable=True)
-    institution_id = Column(Integer, nullable=True, index=True)
-    metadata = Column(JSON, nullable=True)
+        institution_id = Column(Integer, nullable=True, index=True)
+        metadata_json = Column('metadata', JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     __table_args__ = (
@@ -160,7 +161,7 @@ class PerformanceAlert(Base):
     acknowledged_by = Column(Integer, nullable=True)
     acknowledged_at = Column(DateTime, nullable=True)
     resolved_at = Column(DateTime, nullable=True)
-    metadata = Column(JSON, nullable=True)
+        metadata_json = Column('metadata', JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     __table_args__ = (

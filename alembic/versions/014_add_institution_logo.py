@@ -9,7 +9,7 @@ from alembic import op
 import sqlalchemy as sa
 
 revision = '014'
-down_revision = '013'
+down_revision = '013_create_parent_linking_tables'
 branch_labels = None
 depends_on = None
 

@@ -1,3 +1,4 @@
+revision = '024_create_document_vault'
 """create document vault tables
 
 Revision ID: 024_create_document_vault

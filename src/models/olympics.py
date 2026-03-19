@@ -180,7 +180,7 @@ class CompetitionLeaderboard(Base):
     rankings = Column(JSON, nullable=False)
     last_updated = Column(DateTime, default=datetime.utcnow, nullable=False)
     total_participants = Column(Integer, default=0, nullable=False)
-    metadata = Column(JSON, nullable=True)
+    metadata_json = Column('metadata', JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     

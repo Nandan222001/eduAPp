@@ -6,7 +6,7 @@ from src.models.permission import Permission
 from src.models.subscription import Subscription
 from src.models.audit_log import AuditLog
 from src.models.password_reset_token import PasswordResetToken
-from src.models.academic import AcademicYear, Grade, Section, Subject, GradeSubject, Chapter, Topic
+from src.models.academic import AcademicYear, Grade, Section, Subject, GradeSubject, Chapter, Topic, DayOfWeek
 from src.models.teacher import Teacher, TeacherSubject
 from src.models.student import Student, Parent, StudentParent
 from src.models.attendance import Attendance, AttendanceCorrection, AttendanceSummary, AttendanceStatus, CorrectionStatus
@@ -32,8 +32,8 @@ from src.models.study_planner import (
     StudyPlanStatus, TaskStatus, TaskPriority
 )
 from src.models.analytics import (
-    AnalyticsCache, StudentPerformanceMetrics, ClassPerformanceMetrics,
-    InstitutionPerformanceMetrics, GeneratedReport, ReportType, ReportStatus
+    AnalyticsEvent, PerformanceMetric, UserSession,
+    FeatureUsage, UserRetention
 )
 from src.models.study_material import (
     StudyMaterial, MaterialBookmark, MaterialAccessLog, MaterialShare, MaterialTag,
@@ -47,7 +47,7 @@ from src.models.transport import TransportRoute, RouteStop, StudentTransport, Ro
 from src.models.event import Event, EventRSVP, EventPhoto, EventType, EventStatus, RSVPStatus
 from src.models.timetable import (
     TimetableTemplate, PeriodSlot, Timetable, TimetableEntry,
-    DayOfWeek, PeriodType
+    PeriodType
 )
 from src.models.doubt import (
     DoubtPost, DoubtAnswer, DoubtVote, AnswerVote, DoubtBookmark, DoubtComment,
@@ -283,13 +283,11 @@ __all__ = [
     "StudyPlanStatus",
     "TaskStatus",
     "TaskPriority",
-    "AnalyticsCache",
-    "StudentPerformanceMetrics",
-    "ClassPerformanceMetrics",
-    "InstitutionPerformanceMetrics",
-    "GeneratedReport",
-    "ReportType",
-    "ReportStatus",
+    "AnalyticsEvent",
+    "PerformanceMetric",
+    "UserSession",
+    "FeatureUsage",
+    "UserRetention",
     "StudyMaterial",
     "MaterialBookmark",
     "MaterialAccessLog",

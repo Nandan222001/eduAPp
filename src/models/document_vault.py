@@ -28,7 +28,7 @@ class FamilyDocument(Base):
     uploaded_by_role = Column(String(50), nullable=True)
     
     ocr_text = Column(Text, nullable=True)
-    metadata = Column(JSONB, nullable=True)
+    metadata_json = Column('metadata', JSONB, nullable=True)
     
     is_sensitive = Column(Boolean, default=True, nullable=False)
     is_archived = Column(Boolean, default=False, nullable=False, index=True)
@@ -68,7 +68,7 @@ class DocumentAccessLog(Base):
     access_granted = Column(Boolean, default=True, nullable=False)
     denial_reason = Column(String(255), nullable=True)
     
-    metadata = Column(JSONB, nullable=True)
+    metadata_json = Column('metadata', JSONB, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
     
     document = relationship("FamilyDocument", back_populates="access_logs")
@@ -94,7 +94,7 @@ class DocumentShare(Base):
     expiry_date = Column(DateTime, nullable=True, index=True)
     is_active = Column(Boolean, default=True, nullable=False, index=True)
     
-    metadata = Column(JSONB, nullable=True)
+    metadata_json = Column('metadata', JSONB, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     revoked_at = Column(DateTime, nullable=True)

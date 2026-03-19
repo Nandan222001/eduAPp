@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 revision = 'add_push_devices'
-down_revision = None
+down_revision = '005'
 branch_labels = None
 depends_on = None
 

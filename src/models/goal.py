@@ -94,7 +94,7 @@ class Goal(Base):
     subject_id = Column(Integer, ForeignKey('subjects.id', ondelete='SET NULL'), nullable=True, index=True)
     grade_id = Column(Integer, ForeignKey('grades.id', ondelete='SET NULL'), nullable=True, index=True)
     
-    metadata = Column(JSON, nullable=True)
+    metadata_json = Column('metadata', JSON, nullable=True)
     
     completed_at = Column(DateTime, nullable=True)
     last_calculated_at = Column(DateTime, nullable=True)

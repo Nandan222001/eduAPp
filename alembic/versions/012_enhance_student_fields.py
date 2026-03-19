@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = '012_enhance_student_fields'
-down_revision = '011_create_weakness_detection_tables'
+down_revision = '011'
 branch_labels = None
 depends_on = None
 

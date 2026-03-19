@@ -9,8 +9,8 @@ from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
-revision = '004_create_subscription_billing_tables'
-down_revision = '003_create_password_reset_tokens'
+revision = '004'
+down_revision = '003'
 branch_label = None
 depends_on = None
 

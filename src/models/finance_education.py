@@ -155,7 +155,7 @@ class WalletTransaction(Base):
     balance_after = Column(Numeric(12, 2), nullable=False)
     is_recurring = Column(Boolean, default=False, nullable=False)
     recurring_frequency = Column(String(50), nullable=True)
-    metadata = Column(JSON, nullable=True)
+    metadata_json = Column('metadata', JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     
     institution = relationship("Institution")
@@ -186,7 +186,7 @@ class InvestmentHolding(Base):
     gain_loss = Column(Numeric(12, 2), default=0, nullable=False)
     gain_loss_percentage = Column(Numeric(5, 2), default=0, nullable=False)
     purchase_date = Column(DateTime, default=datetime.utcnow, nullable=False)
-    metadata = Column(JSON, nullable=True)
+    metadata_json = Column('metadata', JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     
@@ -247,7 +247,7 @@ class ChallengeParticipation(Base):
     completed_at = Column(DateTime, nullable=True)
     points_earned = Column(Integer, default=0, nullable=False)
     rank = Column(Integer, nullable=True)
-    metadata = Column(JSON, nullable=True)
+    metadata_json = Column('metadata', JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     
@@ -303,7 +303,7 @@ class ChallengeLeaderboard(Base):
     rank = Column(Integer, nullable=False)
     score = Column(Integer, nullable=False)
     completion_time_minutes = Column(Integer, nullable=True)
-    metadata = Column(JSON, nullable=True)
+    metadata_json = Column('metadata', JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     

@@ -11,7 +11,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = 'create_study_materials'
-down_revision = None  # Update this to the latest revision in your alembic chain
+down_revision = '005'
 branch_labels = None
 depends_on = None
 

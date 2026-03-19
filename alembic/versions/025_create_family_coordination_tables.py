@@ -11,7 +11,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = '025_family_coordination'
-down_revision = '024_create_document_vault_tables'
+down_revision = '024_create_document_vault'
 branch_labels = None
 depends_on = None
 

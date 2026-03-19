@@ -21,7 +21,7 @@ class HomeworkScan(Base):
     confidence_score = Column(Numeric(5, 2), nullable=True)
     processing_status = Column(String(50), default='pending', nullable=False, index=True)
     error_message = Column(Text, nullable=True)
-    metadata = Column(JSON, nullable=True)
+    metadata_json = Column('metadata', JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     

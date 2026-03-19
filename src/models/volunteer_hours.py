@@ -45,7 +45,7 @@ class VolunteerHourLog(Base):
     verified_at = Column(DateTime, nullable=True)
     verified_by = Column(Integer, ForeignKey('teachers.id', ondelete='SET NULL'), nullable=True, index=True)
     attachments = Column(JSON, nullable=True)
-    metadata = Column(JSON, nullable=True)
+    metadata_json = Column('metadata', JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     
@@ -139,7 +139,7 @@ class ParentVolunteerBadge(Base):
     academic_year_id = Column(Integer, ForeignKey('academic_years.id', ondelete='CASCADE'), nullable=False, index=True)
     earned_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     hours_at_earning = Column(Numeric(8, 2), nullable=False)
-    metadata = Column(JSON, nullable=True)
+    metadata_json = Column('metadata', JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     
     institution = relationship("Institution")
@@ -204,7 +204,7 @@ class VolunteerCertificate(Base):
     is_tax_deductible = Column(Boolean, default=False, nullable=False)
     tax_year = Column(Integer, nullable=True)
     notes = Column(Text, nullable=True)
-    metadata = Column(JSON, nullable=True)
+    metadata_json = Column('metadata', JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     

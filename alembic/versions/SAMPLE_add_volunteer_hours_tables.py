@@ -11,7 +11,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = 'volunteer_hours_001'
-down_revision = None  # Replace with your actual previous revision
+down_revision = '013_create_parent_linking_tables'
 branch_labels = None
 depends_on = None
 
@@ -21,23 +21,23 @@ def upgrade():
     activity_type_enum = postgresql.ENUM(
         'classroom_help', 'event_support', 'fundraising', 
         'field_trip_chaperone', 'committee_work',
-        name='activitytype'
+        name='activitytype', create_type=False
     )
-    activity_type_enum.create(op.get_bind())
+    activity_type_enum.create(op.get_bind(), checkfirst=True)
     
     # Create verification status enum
     verification_status_enum = postgresql.ENUM(
         'pending', 'approved', 'rejected',
-        name='verificationstatus'
+        name='verificationstatus', create_type=False
     )
-    verification_status_enum.create(op.get_bind())
+    verification_status_enum.create(op.get_bind(), checkfirst=True)
     
     # Create badge tier enum
     badge_tier_enum = postgresql.ENUM(
         'bronze', 'silver', 'gold', 'platinum',
-        name='badgetier'
+        name='badgetier', create_type=False
     )
-    badge_tier_enum.create(op.get_bind())
+    badge_tier_enum.create(op.get_bind(), checkfirst=True)
     
     # Create volunteer_hour_logs table
     op.create_table(

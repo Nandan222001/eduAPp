@@ -101,7 +101,7 @@ class UserBadge(Base):
     badge_id = Column(Integer, ForeignKey('badges.id', ondelete='CASCADE'), nullable=False, index=True)
     earned_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     points_awarded = Column(Integer, default=0, nullable=False)
-    metadata = Column(JSON, nullable=True)
+    metadata_json = Column('metadata', JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     
     institution = relationship("Institution")
@@ -157,7 +157,7 @@ class PointHistory(Base):
     description = Column(Text, nullable=True)
     reference_id = Column(Integer, nullable=True)
     reference_type = Column(String(50), nullable=True)
-    metadata = Column(JSON, nullable=True)
+    metadata_json = Column('metadata', JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     
     institution = relationship("Institution")
@@ -211,7 +211,7 @@ class UserAchievement(Base):
     is_completed = Column(Boolean, default=False, nullable=False)
     completed_at = Column(DateTime, nullable=True)
     times_completed = Column(Integer, default=0, nullable=False)
-    metadata = Column(JSON, nullable=True)
+    metadata_json = Column('metadata', JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     
@@ -276,7 +276,7 @@ class LeaderboardEntry(Base):
     rank = Column(Integer, nullable=False)
     score = Column(Integer, nullable=False)
     previous_rank = Column(Integer, nullable=True)
-    metadata = Column(JSON, nullable=True)
+    metadata_json = Column('metadata', JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     
@@ -304,7 +304,7 @@ class StreakTracker(Base):
     current_streak = Column(Integer, default=0, nullable=False)
     longest_streak = Column(Integer, default=0, nullable=False)
     last_activity_date = Column(DateTime, nullable=True)
-    metadata = Column(JSON, nullable=True)
+    metadata_json = Column('metadata', JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     

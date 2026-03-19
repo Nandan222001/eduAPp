@@ -1,3 +1,4 @@
+revision = '008'
 """create examination tables
 
 Revision ID: 008

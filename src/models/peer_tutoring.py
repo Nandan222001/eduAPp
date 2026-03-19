@@ -154,7 +154,7 @@ class TutoringSession(Base):
     flagged_reason = Column(Text, nullable=True)
     cancellation_reason = Column(Text, nullable=True)
     cancelled_by = Column(Integer, ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
-    metadata = Column(JSON, nullable=True)
+    metadata_json = Column('metadata', JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     
@@ -321,7 +321,7 @@ class TutorIncentive(Base):
     is_redeemed = Column(Boolean, default=False, nullable=False)
     redeemed_at = Column(DateTime, nullable=True)
     requirements_met = Column(JSON, nullable=True)
-    metadata = Column(JSON, nullable=True)
+    metadata_json = Column('metadata', JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     
@@ -346,7 +346,7 @@ class TutorPointHistory(Base):
     points = Column(Integer, nullable=False)
     reason = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
-    metadata = Column(JSON, nullable=True)
+    metadata_json = Column('metadata', JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     
     institution = relationship("Institution")
@@ -409,7 +409,7 @@ class TutorLeaderboard(Base):
     sessions_count = Column(Integer, default=0, nullable=False)
     total_hours = Column(Numeric(10, 2), default=0, nullable=False)
     average_rating = Column(Numeric(3, 2), default=0, nullable=False)
-    metadata = Column(JSON, nullable=True)
+    metadata_json = Column('metadata', JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     
@@ -441,7 +441,7 @@ class MatchingPreference(Base):
     language_preference = Column(String(50), nullable=True)
     special_requirements = Column(Text, nullable=True)
     auto_match = Column(Boolean, default=True, nullable=False)
-    metadata = Column(JSON, nullable=True)
+    metadata_json = Column('metadata', JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     

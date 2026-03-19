@@ -17,7 +17,6 @@ import { Card, Input, Button } from '@components';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { profileApi, UpdateProfileRequest, ChangePasswordRequest } from '@api/profile';
 import * as ImagePicker from 'expo-image-picker';
-import ImageCropPicker from 'react-native-image-crop-picker';
 import { biometricsService } from '@utils';
 
 type Props = StudentTabScreenProps<'Profile'>;
@@ -158,7 +157,17 @@ export const ProfileScreen: React.FC<Props> = () => {
   };
 
   const pickImageWithCrop = async (fromCamera: boolean = false) => {
+    // Dynamically import the native image cropper only on native platforms.
+    if (Platform.OS === 'web') {
+      // Web: fallback to Expo image picker
+      return pickImageWithExpo(fromCamera);
+    }
+
     try {
+      // Dynamic import prevents bundlers from loading native-only modules on web
+      // eslint-disable-next-line @typescript-eslint/no-var-requires, global-require
+      const ImageCropPicker = (await import('react-native-image-crop-picker')).default;
+
       const result = fromCamera
         ? await ImageCropPicker.openCamera({
             width: 400,
@@ -175,17 +184,21 @@ export const ProfileScreen: React.FC<Props> = () => {
             compressImageQuality: 0.8,
           });
 
-      if (result && result.path) {
-        uploadPhotoMutation.mutate(result.path);
+      if (result && (result as any).path) {
+        uploadPhotoMutation.mutate((result as any).path);
       }
     } catch (error: any) {
       if (
-        error.message !== 'User cancelled image selection' &&
-        error.code !== 'E_PICKER_CANCELLED'
+        error?.message === 'User cancelled image selection' ||
+        error?.code === 'E_PICKER_CANCELLED'
       ) {
-        console.error('Image picker error:', error);
-        pickImageWithExpo(fromCamera);
+        // user cancelled - do nothing
+        return;
       }
+
+      console.error('Image picker error:', error);
+      // Fallback to Expo image picker on failure
+      return pickImageWithExpo(fromCamera);
     }
   };
 

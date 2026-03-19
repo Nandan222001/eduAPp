@@ -217,7 +217,7 @@ class ExternalContent(Base):
     view_count = Column(Integer, default=0, nullable=False)
     recommendation_count = Column(Integer, default=0, nullable=False)
     
-    metadata = Column(ARRAY(String), nullable=True)
+    metadata_json = Column('metadata', ARRAY(String), nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
     
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
