@@ -2,6 +2,68 @@
 
 This directory contains utility scripts for managing the application.
 
+## diagnose_migrations.py
+
+Comprehensive diagnostic tool for analyzing Alembic migration health and identifying issues.
+
+**Features:**
+- Executes `alembic history` to view the complete migration chain
+- Executes `alembic current` to verify database version state
+- Scans all migration files for duplicate revision IDs
+- Validates Python syntax using AST parsing
+- Identifies orphaned migrations without proper down_revision links
+- Detects circular dependencies in migration chain
+- Checks for gaps and conflicts in migration chain
+- Generates a detailed audit report to `migration_audit_report.txt`
+
+**Usage:**
+```bash
+python scripts/diagnose_migrations.py
+```
+
+The script will:
+1. Scan all migration files in `alembic/versions/`
+2. Parse each migration file to extract metadata (revision, down_revision, etc.)
+3. Run comprehensive checks for common migration issues
+4. Execute alembic commands to verify database state
+5. Generate a detailed report at `migration_audit_report.txt`
+
+**Exit Codes:**
+- `0`: All checks passed (warnings may exist)
+- `1`: Critical issues found
+
+**Issues Detected:**
+- Duplicate revision IDs across multiple files
+- Syntax errors in migration files
+- Orphaned migrations referencing non-existent parent revisions
+- Circular dependencies in migration chain
+- Missing upgrade() or downgrade() functions
+
+**Output:**
+The script generates `migration_audit_report.txt` containing:
+- Summary of issues, warnings, and info messages
+- Detailed list of all critical issues
+- Complete migration details for each revision
+- Visual migration chain graph
+- Alembic history output
+- Current database version state
+
+**Example:**
+```bash
+$ python scripts/diagnose_migrations.py
+Starting Alembic Migration Diagnostics...
+======================================================================
+
+Report generated: /path/to/migration_audit_report.txt
+
+======================================================================
+DIAGNOSTIC SUMMARY
+======================================================================
+Critical Issues: 3
+Warnings: 2
+Total Migrations: 67
+```
+
 ## create_admin.py
 
 Creates an admin user for the application.

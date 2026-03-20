@@ -72,6 +72,9 @@ Thumbs.db
 # Logs
 *.log
 
+# Migration diagnostic reports
+migration_audit_report.txt
+
 # Docker
 .dockerignore
 
