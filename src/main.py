@@ -22,6 +22,22 @@ async def lifespan(app: FastAPI):
     init_sentry()
     await init_redis()
     
+    # Check migration status on startup
+    from src.utils.migration_checker import warn_if_migrations_pending
+    from src.database import SessionLocal
+    
+    db = SessionLocal()
+    try:
+        # Check if migrations are up to date (warn only, don't fail startup)
+        warn_if_migrations_pending(db, fail_on_pending=False)
+    except Exception as e:
+        # Log error but don't fail startup
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Failed to check migration status: {e}")
+    finally:
+        db.close()
+    
     # Start background resource monitoring
     resource_task = asyncio.create_task(collect_resource_metrics())
     
@@ -59,6 +75,7 @@ async def root():
 async def health_check():
     from src.database import SessionLocal
     from src.redis_client import get_redis
+    from src.utils.migration_checker import get_migration_health_check
     
     health_status = {
         "status": "healthy",
@@ -82,5 +99,14 @@ async def health_check():
     except Exception as e:
         health_status["redis"] = f"error: {str(e)}"
         health_status["status"] = "unhealthy"
+    
+    # Add migration status to health check
+    try:
+        migration_status = get_migration_health_check()
+        health_status["migrations"] = migration_status
+        if not migration_status.get("migrations_up_to_date", False):
+            health_status["status"] = "degraded"
+    except Exception as e:
+        health_status["migrations"] = {"error": str(e)}
     
     return health_status

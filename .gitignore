@@ -222,12 +222,21 @@ nginx/ssl/*.crt
 backups/*.sql
 backups/*.dump
 backups/*.tar.gz
+backups/pre-migration-*/
+backup_*.dump
+*_backup.sql
 
 # Migration test artifacts
 .env.test.migration
 backups/migration_test/*.json
 backups/migration_test/*.txt
 backups/migration_test/*.log
+
+# Migration monitoring and metrics
+migration_metrics.json
+migration_metrics_*.json
+migration_export_*.json
+migration_audit_*.txt
 
 # AWS credentials
 .aws/credentials

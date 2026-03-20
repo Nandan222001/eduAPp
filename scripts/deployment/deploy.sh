@@ -75,15 +75,47 @@ docker push ${ECR_REGISTRY}/${ECR_REPOSITORY}:latest
 
 log_info "Image pushed: ${IMAGE_URI}"
 
-# Create database backup (production only)
+# Create database backup before migrations (production only)
 if [ "$ENVIRONMENT" = "prod" ]; then
-    log_info "Creating database backup..."
-    SNAPSHOT_ID="${PROJECT_NAME}-${ENVIRONMENT}-$(date +%Y%m%d-%H%M%S)"
+    log_info "Creating database backup before migrations..."
+    SNAPSHOT_ID="${PROJECT_NAME}-${ENVIRONMENT}-pre-migration-$(date +%Y%m%d-%H%M%S)"
+    
+    # Create RDS snapshot
     aws rds create-db-snapshot \
         --db-instance-identifier ${PROJECT_NAME}-${ENVIRONMENT}-db \
         --db-snapshot-identifier ${SNAPSHOT_ID} \
         --region ${AWS_REGION}
-    log_info "Database snapshot created: ${SNAPSHOT_ID}"
+    
+    log_info "Database snapshot initiated: ${SNAPSHOT_ID}"
+    
+    # Wait for snapshot to be available
+    log_info "Waiting for snapshot to complete..."
+    aws rds wait db-snapshot-completed \
+        --db-snapshot-identifier ${SNAPSHOT_ID} \
+        --region ${AWS_REGION}
+    
+    log_info "Database snapshot completed: ${SNAPSHOT_ID}"
+    
+    # Also create a logical backup for faster restore if needed
+    log_info "Creating logical database backup..."
+    BACKUP_DIR="backups/pre-migration-$(date +%Y%m%d-%H%M%S)"
+    mkdir -p ${BACKUP_DIR}
+    
+    # Get DB connection details from parameter store or environment
+    DB_HOST=$(aws ssm get-parameter --name "/${PROJECT_NAME}/${ENVIRONMENT}/db/host" --query 'Parameter.Value' --output text)
+    DB_NAME=$(aws ssm get-parameter --name "/${PROJECT_NAME}/${ENVIRONMENT}/db/name" --query 'Parameter.Value' --output text)
+    DB_USER=$(aws ssm get-parameter --name "/${PROJECT_NAME}/${ENVIRONMENT}/db/user" --query 'Parameter.Value' --output text)
+    
+    # Create pg_dump backup (this requires pg_dump to be available)
+    if command -v pg_dump &> /dev/null; then
+        pg_dump -h ${DB_HOST} -U ${DB_USER} -d ${DB_NAME} -F c -f ${BACKUP_DIR}/backup.dump
+        
+        # Upload to S3
+        aws s3 cp ${BACKUP_DIR}/backup.dump s3://${PROJECT_NAME}-${ENVIRONMENT}-backups/migrations/$(basename ${BACKUP_DIR})/backup.dump
+        log_info "Logical backup uploaded to S3"
+    else
+        log_warn "pg_dump not available, skipping logical backup"
+    fi
 fi
 
 # Run database migrations
