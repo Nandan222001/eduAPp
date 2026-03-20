@@ -1,7 +1,7 @@
 """create plagiarism detection tables
 
 Revision ID: 018
-Revises: 017
+Revises: 018a_impersonation_debug
 Create Date: 2024-01-15 10:00:00.000000
 
 """
@@ -9,15 +9,13 @@ from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import JSON
 
-# revision identifiers, used by Alembic.
 revision = '018'
-down_revision = '017'
+down_revision = '018a_impersonation_debug'
 branch_labels = None
 depends_on = None
 
 
 def upgrade() -> None:
-    # Create plagiarism_checks table
     op.create_table(
         'plagiarism_checks',
         sa.Column('id', sa.Integer(), nullable=False),
@@ -48,7 +46,6 @@ def upgrade() -> None:
     op.create_index('idx_plagiarism_check_submission', 'plagiarism_checks', ['submission_id'])
     op.create_index('idx_plagiarism_check_status', 'plagiarism_checks', ['status'])
     
-    # Create plagiarism_results table
     op.create_table(
         'plagiarism_results',
         sa.Column('id', sa.Integer(), nullable=False),
@@ -88,7 +85,6 @@ def upgrade() -> None:
     op.create_index('idx_plagiarism_result_review_status', 'plagiarism_results', ['review_status'])
     op.create_index('idx_plagiarism_result_reviewed_by', 'plagiarism_results', ['reviewed_by'])
     
-    # Create plagiarism_match_segments table
     op.create_table(
         'plagiarism_match_segments',
         sa.Column('id', sa.Integer(), nullable=False),
@@ -111,7 +107,6 @@ def upgrade() -> None:
     )
     op.create_index('idx_match_segment_result', 'plagiarism_match_segments', ['result_id'])
     
-    # Create code_ast_fingerprints table
     op.create_table(
         'code_ast_fingerprints',
         sa.Column('id', sa.Integer(), nullable=False),
@@ -136,7 +131,6 @@ def upgrade() -> None:
     op.create_index('idx_ast_fingerprint_structure_hash', 'code_ast_fingerprints', ['structure_hash'])
     op.create_index('idx_ast_fingerprint_language', 'code_ast_fingerprints', ['language'])
     
-    # Create citation_patterns table
     op.create_table(
         'citation_patterns',
         sa.Column('id', sa.Integer(), nullable=False),
@@ -155,7 +149,6 @@ def upgrade() -> None:
     op.create_index('idx_citation_pattern_submission', 'citation_patterns', ['submission_id'])
     op.create_index('idx_citation_pattern_type', 'citation_patterns', ['citation_type'])
     
-    # Create plagiarism_privacy_consents table
     op.create_table(
         'plagiarism_privacy_consents',
         sa.Column('id', sa.Integer(), nullable=False),

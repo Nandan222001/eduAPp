@@ -1,7 +1,7 @@
 """add impersonation and debugging tables
 
-Revision ID: 018_impersonation_debug
-Revises: 017_create_adaptive_learning_path_tables
+Revision ID: 018a_impersonation_debug
+Revises: 017
 Create Date: 2024-01-15 10:00:00.000000
 
 """
@@ -9,8 +9,7 @@ from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import JSONB
 
-# revision identifiers, used by Alembic.
-revision = '018_impersonation_debug'
+revision = '018a_impersonation_debug'
 down_revision = '017'
 branch_labels = None
 depends_on = None

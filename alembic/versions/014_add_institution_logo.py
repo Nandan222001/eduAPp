@@ -1,6 +1,6 @@
 """add institution logo
 
-Revision ID: 014
+Revision ID: 014a_add_institution_logo
 Revises: 013
 Create Date: 2026-03-11 12:16:00.000000
 
@@ -8,8 +8,8 @@ Create Date: 2026-03-11 12:16:00.000000
 from alembic import op
 import sqlalchemy as sa
 
-revision = '014'
-down_revision = '013_create_parent_linking_tables'
+revision = '014a_add_institution_logo'
+down_revision = '013'
 branch_labels = None
 depends_on = None
 

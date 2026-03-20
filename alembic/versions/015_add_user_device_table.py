@@ -1,6 +1,6 @@
 """add user device table
 
-Revision ID: 015
+Revision ID: 015a_add_user_device_table
 Revises: 014
 Create Date: 2024-01-15 12:00:00.000000
 
@@ -9,7 +9,7 @@ from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
-revision = '015'
+revision = '015a_add_user_device_table'
 down_revision = '014'
 branch_labels = None
 depends_on = None

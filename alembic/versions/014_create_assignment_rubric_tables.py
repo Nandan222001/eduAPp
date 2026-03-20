@@ -1,7 +1,7 @@
 """create assignment rubric tables
 
-Revision ID: 014_create_rubric
-Revises: 013_create_parent_linking_tables
+Revision ID: 014
+Revises: 014a_add_institution_logo
 Create Date: 2025-01-11 14:30:00.000000
 
 """
@@ -11,8 +11,8 @@ from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
-revision: str = '014_create_rubric'
-down_revision: Union[str, None] = '013_create_parent_linking_tables'
+revision: str = '014'
+down_revision: Union[str, None] = '014a_add_institution_logo'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

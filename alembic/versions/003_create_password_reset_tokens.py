@@ -1,4 +1,3 @@
-revision = '003'
 """create password reset tokens table
 
 Revision ID: 003

@@ -1,7 +1,7 @@
 """create ml training tables
 
-Revision ID: 016_create_ml_training_tables
-Revises: 015_add_ml_training_config
+Revision ID: 016
+Revises: 015
 Create Date: 2024-01-15 13:00:00.000000
 
 """
@@ -9,23 +9,19 @@ from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
-# revision identifiers, used by Alembic.
-revision = '016_create_ml_training_tables'
-down_revision = '015_add_ml_training_config'
-branch_label = None
+revision = '016'
+down_revision = '015'
+branch_labels = None
 depends_on = None
 
 
 def upgrade():
-    # Create training_job_type enum
     training_job_type = postgresql.ENUM('manual', 'scheduled', 'retraining', name='trainingjobtype')
     training_job_type.create(op.get_bind())
     
-    # Create training_status enum
     training_status = postgresql.ENUM('pending', 'running', 'completed', 'failed', 'cancelled', name='trainingstatus')
     training_status.create(op.get_bind())
     
-    # Create ml_training_jobs table
     op.create_table(
         'ml_training_jobs',
         sa.Column('id', sa.Integer(), nullable=False),
@@ -66,7 +62,6 @@ def upgrade():
     op.create_index('idx_training_job_created', 'ml_training_jobs', ['created_at'])
     op.create_index('idx_training_job_celery_task', 'ml_training_jobs', ['celery_task_id'])
     
-    # Create model_performance_metrics table
     op.create_table(
         'model_performance_metrics',
         sa.Column('id', sa.Integer(), nullable=False),
@@ -88,7 +83,6 @@ def upgrade():
     op.create_index('idx_performance_metrics_version', 'model_performance_metrics', ['model_version_id'])
     op.create_index('idx_performance_metrics_date', 'model_performance_metrics', ['metric_date'])
     
-    # Create model_promotion_logs table
     op.create_table(
         'model_promotion_logs',
         sa.Column('id', sa.Integer(), nullable=False),

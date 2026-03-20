@@ -9,15 +9,13 @@ from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
-# revision identifiers, used by Alembic.
 revision = '017'
-down_revision = '016_create_ml_training_tables'
+down_revision = '016'
 branch_labels = None
 depends_on = None
 
 
 def upgrade() -> None:
-    # Create enum types
     op.execute("""
         CREATE TYPE difficultylevel AS ENUM ('beginner', 'elementary', 'intermediate', 'advanced', 'expert');
         CREATE TYPE masterylevel AS ENUM ('not_started', 'learning', 'practicing', 'mastered', 'needs_review');
@@ -26,7 +24,6 @@ def upgrade() -> None:
         CREATE TYPE reviewpriority AS ENUM ('low', 'medium', 'high', 'critical');
     """)
     
-    # Create learning_paths table
     op.create_table(
         'learning_paths',
         sa.Column('id', sa.Integer(), nullable=False),
@@ -60,7 +57,6 @@ def upgrade() -> None:
     op.create_index('idx_learning_path_status', 'learning_paths', ['status'])
     op.create_index('idx_learning_path_active', 'learning_paths', ['is_active'])
     
-    # Create topic_sequences table
     op.create_table(
         'topic_sequences',
         sa.Column('id', sa.Integer(), nullable=False),
@@ -96,7 +92,6 @@ def upgrade() -> None:
     op.create_index('idx_topic_sequence_mastery', 'topic_sequences', ['mastery_level'])
     op.create_index('idx_topic_sequence_unlocked', 'topic_sequences', ['is_unlocked'])
     
-    # Create topic_performance_data table
     op.create_table(
         'topic_performance_data',
         sa.Column('id', sa.Integer(), nullable=False),
@@ -125,7 +120,6 @@ def upgrade() -> None:
     op.create_index('idx_topic_performance_student', 'topic_performance_data', ['student_id'])
     op.create_index('idx_topic_performance_date', 'topic_performance_data', ['recorded_at'])
     
-    # Create learning_milestones table
     op.create_table(
         'learning_milestones',
         sa.Column('id', sa.Integer(), nullable=False),
@@ -151,7 +145,6 @@ def upgrade() -> None:
     op.create_index('idx_milestone_order', 'learning_milestones', ['milestone_order'])
     op.create_index('idx_milestone_status', 'learning_milestones', ['status'])
     
-    # Create spaced_repetition_schedules table
     op.create_table(
         'spaced_repetition_schedules',
         sa.Column('id', sa.Integer(), nullable=False),
@@ -188,7 +181,6 @@ def upgrade() -> None:
     op.create_index('idx_spaced_rep_priority', 'spaced_repetition_schedules', ['priority'])
     op.create_index('idx_spaced_rep_due', 'spaced_repetition_schedules', ['is_due'])
     
-    # Create review_history table
     op.create_table(
         'review_history',
         sa.Column('id', sa.Integer(), nullable=False),
@@ -212,7 +204,6 @@ def upgrade() -> None:
     op.create_index('idx_review_history_student', 'review_history', ['student_id'])
     op.create_index('idx_review_history_date', 'review_history', ['review_date'])
     
-    # Create learning_velocity_records table
     op.create_table(
         'learning_velocity_records',
         sa.Column('id', sa.Integer(), nullable=False),
@@ -240,7 +231,6 @@ def upgrade() -> None:
     op.create_index('idx_velocity_record_student', 'learning_velocity_records', ['student_id'])
     op.create_index('idx_velocity_record_period', 'learning_velocity_records', ['period_start', 'period_end'])
     
-    # Create difficulty_progressions table
     op.create_table(
         'difficulty_progressions',
         sa.Column('id', sa.Integer(), nullable=False),
@@ -268,7 +258,6 @@ def upgrade() -> None:
     op.create_index('idx_difficulty_progression_learning_path', 'difficulty_progressions', ['learning_path_id'])
     op.create_index('idx_difficulty_progression_adjusted', 'difficulty_progressions', ['adjusted_at'])
     
-    # Create prerequisite_relationships table
     op.create_table(
         'prerequisite_relationships',
         sa.Column('id', sa.Integer(), nullable=False),
@@ -292,7 +281,6 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    # Drop tables in reverse order
     op.drop_index('idx_prerequisite_topic_prereq', table_name='prerequisite_relationships')
     op.drop_index('idx_prerequisite_topic', table_name='prerequisite_relationships')
     op.drop_index('idx_prerequisite_institution', table_name='prerequisite_relationships')
@@ -355,7 +343,6 @@ def downgrade() -> None:
     op.drop_index('idx_learning_path_institution', table_name='learning_paths')
     op.drop_table('learning_paths')
     
-    # Drop enum types
     op.execute("""
         DROP TYPE IF EXISTS reviewpriority;
         DROP TYPE IF EXISTS milestonestatus;

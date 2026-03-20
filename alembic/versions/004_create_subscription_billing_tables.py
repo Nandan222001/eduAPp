@@ -1,7 +1,7 @@
 """create subscription billing tables
 
-Revision ID: 004_create_subscription_billing_tables
-Revises: 003_create_password_reset_tokens
+Revision ID: 004
+Revises: 003
 Create Date: 2024-01-15 00:00:00.000000
 
 """
@@ -11,7 +11,7 @@ from sqlalchemy.dialects import postgresql
 
 revision = '004'
 down_revision = '003'
-branch_label = None
+branch_labels = None
 depends_on = None
 
 

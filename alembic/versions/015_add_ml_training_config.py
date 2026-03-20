@@ -1,7 +1,7 @@
 """add ml training configuration
 
-Revision ID: 015_add_ml_training_config
-Revises: 014_create_assignment_rubric_tables
+Revision ID: 015
+Revises: 015a_add_user_device_table
 Create Date: 2024-01-15 12:00:00.000000
 
 """
@@ -9,10 +9,9 @@ from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
-# revision identifiers, used by Alembic.
-revision = '015_add_ml_training_config'
-down_revision = '014'
-branch_label = None
+revision = '015'
+down_revision = '015a_add_user_device_table'
+branch_labels = None
 depends_on = None
 
 
