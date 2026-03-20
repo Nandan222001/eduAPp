@@ -1,0 +1,7 @@
+# This directory stores migration test reports and schema backups
+# 
+# Generated files (ignored by git):
+# - *.json - Test reports
+# - *.sql - Schema backups
+# - *.txt - Test summaries
+# - *.log - Test logs

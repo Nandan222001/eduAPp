@@ -216,6 +216,12 @@ backups/*.sql
 backups/*.dump
 backups/*.tar.gz
 
+# Migration test artifacts
+.env.test.migration
+backups/migration_test/*.json
+backups/migration_test/*.txt
+backups/migration_test/*.log
+
 # AWS credentials
 .aws/credentials
 aws-exports.js

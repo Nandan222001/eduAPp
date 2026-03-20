@@ -1,0 +1,260 @@
+name: Migration Tests
+
+on:
+  pull_request:
+    paths:
+      - 'alembic/versions/**'
+      - 'src/models/**'
+      - 'alembic/**'
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'alembic/versions/**'
+
+jobs:
+  test-migrations:
+    name: Test Database Migrations
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Cache Python dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt || pip install alembic sqlalchemy psycopg2-binary python-dotenv
+      
+      - name: Set up environment variables
+        run: |
+          cat > .env << EOF
+          DATABASE_HOST=localhost
+          DATABASE_PORT=5432
+          DATABASE_USER=postgres
+          DATABASE_PASSWORD=postgres
+          DATABASE_NAME=fastapi_db
+          EOF
+      
+      - name: Set up test database
+        run: |
+          chmod +x scripts/migration_test/setup_test_db.sh
+          ./scripts/migration_test/setup_test_db.sh
+        env:
+          PGPASSWORD: postgres
+      
+      - name: Run migration validation
+        run: |
+          python scripts/migration_test/validate_migrations.py
+        continue-on-error: false
+      
+      - name: Test recent migrations
+        run: |
+          python scripts/migration_test/test_recent_migrations.py -n 5
+        continue-on-error: true
+      
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: migration-test-reports
+          path: |
+            backups/migration_test/*.json
+            backups/migration_test/*.txt
+          retention-days: 30
+      
+      - name: Comment PR with results
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const summaryPath = 'backups/migration_test/test_suite_summary.txt';
+            
+            if (fs.existsSync(summaryPath)) {
+              const summary = fs.readFileSync(summaryPath, 'utf8');
+              
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: `## Migration Test Results\n\n\`\`\`\n${summary}\n\`\`\``
+              });
+            }
+  
+  migration-syntax-check:
+    name: Migration Syntax Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Check migration file syntax
+        run: |
+          # Check for required functions
+          for file in alembic/versions/*.py; do
+            if [ -f "$file" ] && [[ ! "$file" =~ __pycache__ ]] && [[ ! "$file" =~ __init__ ]]; then
+              echo "Checking $file..."
+              
+              # Check Python syntax
+              python -m py_compile "$file"
+              
+              # Check for required functions
+              if ! grep -q "def upgrade()" "$file"; then
+                echo "ERROR: Missing upgrade() function in $file"
+                exit 1
+              fi
+              
+              if ! grep -q "def downgrade()" "$file"; then
+                echo "ERROR: Missing downgrade() function in $file"
+                exit 1
+              fi
+              
+              # Check for revision ID
+              if ! grep -q "^revision = " "$file"; then
+                echo "ERROR: Missing revision ID in $file"
+                exit 1
+              fi
+            fi
+          done
+          
+          echo "✓ All migration files passed syntax check"
+      
+      - name: Check for duplicate revision IDs
+        run: |
+          REVISION_IDS=$(grep -h "^revision = " alembic/versions/*.py 2>/dev/null | sort)
+          DUPLICATE_IDS=$(echo "$REVISION_IDS" | uniq -d)
+          
+          if [ -n "$DUPLICATE_IDS" ]; then
+            echo "ERROR: Found duplicate revision IDs:"
+            echo "$DUPLICATE_IDS"
+            exit 1
+          fi
+          
+          echo "✓ No duplicate revision IDs found"
+
+  schema-comparison:
+    name: Schema Comparison
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+      - name: Checkout base branch
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.base_ref }}
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install alembic sqlalchemy psycopg2-binary python-dotenv
+      
+      - name: Set up environment
+        run: |
+          cat > .env << EOF
+          DATABASE_HOST=localhost
+          DATABASE_PORT=5432
+          DATABASE_USER=postgres
+          DATABASE_PASSWORD=postgres
+          DATABASE_NAME=fastapi_db_base
+          EOF
+      
+      - name: Create base schema
+        run: |
+          PGPASSWORD=postgres psql -h localhost -U postgres -c "CREATE DATABASE fastapi_db_base;"
+          alembic upgrade head
+        env:
+          PGPASSWORD: postgres
+      
+      - name: Backup base schema
+        run: |
+          mkdir -p /tmp/schema
+          PGPASSWORD=postgres pg_dump -h localhost -U postgres --schema-only fastapi_db_base > /tmp/schema/base_schema.sql
+        env:
+          PGPASSWORD: postgres
+      
+      - name: Checkout PR branch
+        uses: actions/checkout@v3
+      
+      - name: Create PR schema
+        run: |
+          cat > .env << EOF
+          DATABASE_HOST=localhost
+          DATABASE_PORT=5432
+          DATABASE_USER=postgres
+          DATABASE_PASSWORD=postgres
+          DATABASE_NAME=fastapi_db_pr
+          EOF
+          
+          PGPASSWORD=postgres psql -h localhost -U postgres -c "CREATE DATABASE fastapi_db_pr;"
+          alembic upgrade head
+        env:
+          PGPASSWORD: postgres
+      
+      - name: Compare schemas
+        run: |
+          python scripts/migration_test/compare_schemas.py fastapi_db_base fastapi_db_pr || true
+        continue-on-error: true
+      
+      - name: Upload comparison report
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: schema-comparison-report
+          path: backups/migration_test/schema_comparison_report.json
+          retention-days: 30
