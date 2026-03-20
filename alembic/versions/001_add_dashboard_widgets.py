@@ -1,6 +1,6 @@
 """add dashboard widgets
 
-Revision ID: 001a_dashboard_widgets
+Revision ID: 001a
 Revises: 005
 Create Date: 2024-01-15 10:00:00.000000
 
@@ -9,7 +9,7 @@ from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
-revision = '001a_dashboard_widgets'
+revision = '001a'
 down_revision = '005'
 branch_labels = None
 depends_on = None

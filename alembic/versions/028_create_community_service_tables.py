@@ -1,7 +1,7 @@
 """create community service tables
 
-Revision ID: community_service_001
-Revises: 027_create_carpool_tables
+Revision ID: 028
+Revises: 027
 Create Date: 2024-01-15 00:00:00.000000
 
 """
@@ -10,8 +10,8 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = 'community_service_001'
-down_revision = '027_carpool_coordination'
+revision = '028'
+down_revision = '027'
 branch_labels = None
 depends_on = None
 

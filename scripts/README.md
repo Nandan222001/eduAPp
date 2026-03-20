@@ -64,6 +64,87 @@ Warnings: 2
 Total Migrations: 67
 ```
 
+## validate_schema.py
+
+Validates database schema consistency with SQLAlchemy models.
+
+**Features:**
+- Compares database tables with SQLAlchemy model definitions
+- Validates foreign key relationships
+- Checks for missing indexes on foreign keys
+- Verifies enum type existence
+- Detects schema drift between models and database
+- Reports missing tables and columns
+
+**Usage:**
+```bash
+python scripts/validate_schema.py
+```
+
+**Exit Codes:**
+- `0`: Schema validation passed
+- `1`: Issues found (see output for details)
+
+**Checks Performed:**
+1. **Table Validation**
+   - Tables defined in models but missing in database
+   - Tables in database but not defined in models
+
+2. **Foreign Key Validation**
+   - Counts foreign keys in models vs database
+   - Identifies mismatches
+
+3. **Index Validation**
+   - Verifies all foreign keys have indexes
+   - Reports missing indexes (performance impact)
+
+4. **Enum Type Validation**
+   - Checks all expected enum types exist
+   - Identifies missing enum types
+
+**Example Output:**
+```bash
+$ python scripts/validate_schema.py
+================================================================================
+DATABASE SCHEMA VALIDATION
+================================================================================
+
+Database tables: 150
+Model tables: 150
+
+✅ All model tables exist in database
+
+FOREIGN KEY VALIDATION
+--------------------------------------------------------------------------------
+✅ Foreign key counts match for all tables
+
+INDEX VALIDATION
+--------------------------------------------------------------------------------
+⚠️  Foreign keys without indexes (may impact performance):
+  - volunteer_hour_logs.supervisor_teacher_id
+  - content_reviews.reviewer_student_id
+
+ENUM TYPE VALIDATION
+--------------------------------------------------------------------------------
+✅ All expected enum types exist
+
+================================================================================
+VALIDATION SUMMARY
+================================================================================
+⚠️  Minor issues found - see details above
+
+Recommended actions:
+1. Add missing indexes for optimal performance
+2. Run: CREATE INDEX idx_name ON table_name(column_name);
+```
+
+**When to Run:**
+- After applying new migrations
+- Before deploying schema changes
+- As part of CI/CD pipeline
+- When investigating performance issues
+- Monthly as part of maintenance
+
 ## create_admin.py
 
 Creates an admin user for the application.
