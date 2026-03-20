@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -15,13 +15,180 @@ import { LoadingState } from '@components/shared/LoadingState';
 import { ErrorState } from '@components/shared/ErrorState';
 import { EmptyState } from '@components/shared/EmptyState';
 import { COLORS, SPACING } from '@constants';
+import { isDemoUser, demoDataApi } from '@api/demoDataApi';
+
+interface ChildInfo {
+  id: number;
+  firstName: string;
+  lastName: string;
+  studentId: string;
+  grade: string;
+  section: string;
+}
+
+interface AggregatedAttendance {
+  childId: number;
+  childName: string;
+  percentage: number;
+  todayStatus: string;
+}
+
+interface RecentGrade {
+  childId: number;
+  subject: string;
+  examName: string;
+  obtainedMarks: number;
+  totalMarks: number;
+  percentage: number;
+  grade: string;
+  examDate: string;
+}
+
+interface FeePaymentStatus {
+  childId: number;
+  status: {
+    status: string;
+    totalFees: number;
+    paidAmount: number;
+    pendingAmount: number;
+    dueDate: string;
+  };
+}
+
+interface TodayAlert {
+  childName: string;
+  status: string;
+  subject?: string;
+  remarks?: string;
+}
+
+interface DashboardData {
+  children: ChildInfo[];
+  aggregatedAttendance: AggregatedAttendance[];
+  recentGrades: RecentGrade[];
+  feePayments: FeePaymentStatus[];
+  todayAlerts?: TodayAlert[];
+}
 
 export const DashboardScreen = () => {
   const [selectedChildId, setSelectedChildId] = useState<number | null>(null);
   const [selectorVisible, setSelectorVisible] = useState(false);
-  const { data, isLoading, isError, error, refetch, isRefetching } = useParentDashboard();
+  const [demoData, setDemoData] = useState<DashboardData | null>(null);
+  const [demoLoading, setDemoLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const isDemo = isDemoUser();
+  const { data: apiData, isLoading: apiLoading, isError, error, refetch, isRefetching } = useParentDashboard();
 
-  React.useEffect(() => {
+  const loadDemoData = async () => {
+    setDemoLoading(true);
+    try {
+      const children = await demoDataApi.parents.getChildren();
+      const aggregatedAttendance: AggregatedAttendance[] = [];
+      const recentGrades: RecentGrade[] = [];
+      const feePayments: FeePaymentStatus[] = [];
+
+      for (const child of children) {
+        const childStats = await demoDataApi.parents.getChildStats(child.id);
+        const todayAtt = await demoDataApi.parents.getTodayAttendance(child.id);
+        const grades = await demoDataApi.parents.getRecentGrades(child.id, 5);
+        const fees = await demoDataApi.parents.getFeePayments(child.id);
+
+        aggregatedAttendance.push({
+          childId: child.id,
+          childName: `${child.first_name} ${child.last_name}`,
+          percentage: childStats.attendance_percentage,
+          todayStatus: todayAtt.status === 'not_marked' ? 'not_marked' : todayAtt.status,
+        });
+
+        grades.forEach((grade) => {
+          recentGrades.push({
+            childId: child.id,
+            subject: grade.subject_name,
+            examName: grade.exam_name,
+            obtainedMarks: grade.marks_obtained,
+            totalMarks: grade.total_marks,
+            percentage: grade.percentage,
+            grade: grade.grade,
+            examDate: grade.date,
+          });
+        });
+
+        if (fees.length > 0) {
+          const pendingFees = fees.filter((f) => f.status === 'pending' || f.status === 'overdue');
+          const paidFees = fees.filter((f) => f.status === 'paid');
+          const totalFees = fees.reduce((sum, f) => sum + f.amount, 0);
+          const paidAmount = paidFees.reduce((sum, f) => sum + f.amount, 0);
+          const pendingAmount = pendingFees.reduce((sum, f) => sum + f.amount, 0);
+          const nextDue = pendingFees.length > 0 ? pendingFees[0].due_date : fees[0].due_date;
+          const feeStatus = pendingAmount > 0 ? 'pending' : 'paid';
+
+          feePayments.push({
+            childId: child.id,
+            status: {
+              status: feeStatus,
+              totalFees,
+              paidAmount,
+              pendingAmount,
+              dueDate: nextDue,
+            },
+          });
+        }
+      }
+
+      const transformedChildren: ChildInfo[] = children.map((child) => ({
+        id: child.id,
+        firstName: child.first_name,
+        lastName: child.last_name,
+        studentId: child.student_id,
+        grade: child.grade,
+        section: child.class_name,
+      }));
+
+      const todayAlerts: TodayAlert[] = [];
+      for (const child of children) {
+        const todayAtt = await demoDataApi.parents.getTodayAttendance(child.id);
+        if (todayAtt.status === 'absent' || todayAtt.status === 'late') {
+          todayAlerts.push({
+            childName: `${child.first_name} ${child.last_name}`,
+            status: todayAtt.status,
+          });
+        }
+      }
+
+      setDemoData({
+        children: transformedChildren,
+        aggregatedAttendance,
+        recentGrades,
+        feePayments,
+        todayAlerts: todayAlerts.length > 0 ? todayAlerts : undefined,
+      });
+    } catch (err) {
+      console.error('Error loading demo data:', err);
+    } finally {
+      setDemoLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isDemo) {
+      loadDemoData();
+    }
+  }, [isDemo]);
+
+  const handleRefresh = async () => {
+    if (isDemo) {
+      setRefreshing(true);
+      await loadDemoData();
+      setRefreshing(false);
+    } else {
+      refetch();
+    }
+  };
+
+  const data = isDemo ? demoData : apiData;
+  const isLoading = isDemo ? demoLoading : apiLoading;
+
+  useEffect(() => {
     if (data?.children && data.children.length > 0 && !selectedChildId) {
       setSelectedChildId(data.children[0].id);
     }
@@ -31,7 +198,7 @@ export const DashboardScreen = () => {
     return <LoadingState message="Loading dashboard..." />;
   }
 
-  if (isError) {
+  if (!isDemo && isError) {
     return (
       <ErrorState
         message={error?.message || 'Failed to load dashboard'}
@@ -80,7 +247,12 @@ export const DashboardScreen = () => {
   return (
     <ScrollView
       style={styles.container}
-      refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
+      refreshControl={
+        <RefreshControl
+          refreshing={isDemo ? refreshing : isRefetching}
+          onRefresh={handleRefresh}
+        />
+      }
     >
       <Card containerStyle={styles.card}>
         <Card.Title>Select Child</Card.Title>
