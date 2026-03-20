@@ -70,7 +70,7 @@ class FamilyCalendarEvent(Base):
     start_date = Column(DateTime, nullable=False, index=True)
     end_date = Column(DateTime, nullable=True)
     location = Column(String(255), nullable=True)
-    metadata = Column(JSON, nullable=True)
+    metadata_json = Column('metadata', JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     
@@ -148,7 +148,7 @@ class FamilyNotificationItem(Base):
     title = Column(String(255), nullable=False)
     message = Column(Text, nullable=False)
     priority = Column(String(20), default='medium', nullable=False)
-    metadata = Column(JSON, nullable=True)
+    metadata_json = Column('metadata', JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     
     batch = relationship("FamilyNotificationBatch", back_populates="items")

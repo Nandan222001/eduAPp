@@ -194,7 +194,7 @@ class GroupActivity(Base):
     user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
     activity_type = Column(SQLEnum(ActivityType), nullable=False)
     content = Column(String(1000), nullable=False)
-    metadata = Column(Text, nullable=True)
+    metadata_json = Column('metadata', Text, nullable=True)
     
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     

@@ -17,7 +17,7 @@ class AuditLog(Base):
     new_values = Column(JSONB, nullable=True)
     ip_address = Column(String(45), nullable=True)
     user_agent = Column(Text, nullable=True)
-    metadata = Column(JSONB, nullable=True)
+    metadata_json = Column('metadata', JSONB, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
     
     __table_args__ = (
@@ -88,7 +88,7 @@ class SessionReplay(Base):
     user_id = Column(Integer, ForeignKey('users.id', ondelete='SET NULL'), nullable=True, index=True)
     institution_id = Column(Integer, ForeignKey('institutions.id', ondelete='SET NULL'), nullable=True, index=True)
     events = Column(JSONB, nullable=False)
-    metadata = Column(JSONB, nullable=True)
+    metadata_json = Column('metadata', JSONB, nullable=True)
     started_at = Column(DateTime, nullable=False, index=True)
     ended_at = Column(DateTime, nullable=True)
     duration_seconds = Column(Integer, nullable=True)

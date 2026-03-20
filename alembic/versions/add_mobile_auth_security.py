@@ -10,7 +10,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 revision = 'add_mobile_auth_security'
-down_revision = None
+down_revision = '005'
 branch_labels = None
 depends_on = None
 

@@ -9,8 +9,8 @@ from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
-revision = '013'
-down_revision = '012'
+revision = '013_create_parent_linking_tables'
+down_revision = '012_enhance_student_fields'
 branch_labels = None
 depends_on = None
 

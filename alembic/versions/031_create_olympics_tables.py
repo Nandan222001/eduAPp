@@ -10,7 +10,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import JSON, ARRAY
 
 revision = '031'
-down_revision = '030'
+down_revision = 'homework_scanner_001'
 branch_labels = None
 depends_on = None
 

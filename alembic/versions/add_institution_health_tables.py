@@ -11,7 +11,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = 'add_institution_health'
-down_revision = None  # Update this with your latest revision
+down_revision = '005'
 branch_labels = None
 depends_on = None
 

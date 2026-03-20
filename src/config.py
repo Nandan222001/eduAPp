@@ -64,7 +64,6 @@ class Settings(BaseSettings):
     sentry_traces_sample_rate: float = Field(default=1.0, alias="SENTRY_TRACES_SAMPLE_RATE")
     sentry_profiles_sample_rate: float = Field(default=1.0, alias="SENTRY_PROFILES_SAMPLE_RATE")
 
-<<<<<<< HEAD
     agora_app_id: str = Field(default="", alias="AGORA_APP_ID")
     agora_app_certificate: str = Field(default="", alias="AGORA_APP_CERTIFICATE")
     agora_customer_id: str = Field(default="", alias="AGORA_CUSTOMER_ID")

@@ -70,7 +70,7 @@ class WellbeingAlert(Base):
     
     detected_indicators = Column(JSON, nullable=False)
     recommended_actions = Column(JSON, nullable=False)
-    metadata = Column(JSON, nullable=True)
+    metadata_json = Column('metadata', JSON, nullable=True)
     
     assigned_counselor_id = Column(Integer, ForeignKey('users.id', ondelete='SET NULL'), nullable=True, index=True)
     acknowledged_by = Column(Integer, ForeignKey('users.id', ondelete='SET NULL'), nullable=True, index=True)

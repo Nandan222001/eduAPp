@@ -4,7 +4,25 @@ from sqlalchemy import pool
 from alembic import context
 from src.config import settings
 from src.database import Base
-from src.models import *
+import importlib.util
+from pathlib import Path
+
+# Load each model module file directly (without importing the package's
+# __init__.py). This avoids executing src.models.__init__.py which may import
+# optional modules that aren't present in this checkout.
+models_dir = Path(__file__).resolve().parent.parent / "src" / "models"
+for path in sorted(models_dir.glob("*.py")):
+    if path.name == "__init__.py" or path.name.startswith("_"):
+        continue
+    module_name = f"_alembic_src_models_{path.stem}"
+    try:
+        spec = importlib.util.spec_from_file_location(module_name, str(path))
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)  # type: ignore
+    except Exception:
+        # Don't fail migrations because one model file errors; surface other
+        # issues later when/if they matter.
+        pass
 
 config = context.config
 

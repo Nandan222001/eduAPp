@@ -37,7 +37,7 @@ class StudyBuddyMessage(Base):
     session_id = Column(Integer, ForeignKey('study_buddy_sessions.id', ondelete='CASCADE'), nullable=False, index=True)
     role = Column(String(50), nullable=False)
     content = Column(Text, nullable=False)
-    metadata = Column(JSON, nullable=True)
+    metadata_json = Column('metadata', JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     
     session = relationship("StudyBuddySession", back_populates="messages")
@@ -60,7 +60,7 @@ class StudyBuddyInsight(Base):
     priority = Column(Integer, default=1, nullable=False)
     is_read = Column(Boolean, default=False, nullable=False)
     read_at = Column(DateTime, nullable=True)
-    metadata = Column(JSON, nullable=True)
+    metadata_json = Column('metadata', JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     
     institution = relationship("Institution")

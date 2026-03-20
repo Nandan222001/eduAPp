@@ -19,7 +19,7 @@ class MobileAuthEvent(Base):
     ip_address = Column(String(45), nullable=True)
     location = Column(String(255), nullable=True)
     device_info = Column(JSONB, nullable=True)
-    metadata = Column(JSONB, nullable=True)
+    metadata_json = Column('metadata', JSONB, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
 
     __table_args__ = (
@@ -62,7 +62,7 @@ class SensitiveOperationLog(Base):
     reauth_method = Column(String(50), nullable=True)
     reauth_success = Column(Boolean, nullable=True)
     ip_address = Column(String(45), nullable=True)
-    metadata = Column(JSONB, nullable=True)
+    metadata_json = Column('metadata', JSONB, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
 
     __table_args__ = (

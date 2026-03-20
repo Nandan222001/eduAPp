@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 revision = 'nlp_phase2_001'
-down_revision = None
+down_revision = '005'
 depends_on = None
 
 

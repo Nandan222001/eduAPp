@@ -10,7 +10,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 revision = '019_create_career_pathway_tables'
-down_revision = '018_create_plagiarism_detection_tables'
+down_revision = '018_impersonation_debug'
 branch_labels = None
 depends_on = None
 

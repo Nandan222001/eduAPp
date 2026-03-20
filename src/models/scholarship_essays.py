@@ -240,7 +240,7 @@ class EssayAnalytics(Base):
     
     improvement_from_previous = Column(Float, nullable=True)
     
-    metadata = Column(JSON, nullable=True)
+    metadata_json = Column('metadata', JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     
     institution = relationship("Institution")

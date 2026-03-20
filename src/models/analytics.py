@@ -58,7 +58,7 @@ class PerformanceMetric(Base):
     rating = Column(String(20), nullable=True)  # good, needs-improvement, poor
     
     # Additional data
-    metadata = Column(JSON, nullable=True)
+    metadata_json = Column('metadata', JSON, nullable=True)
     
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
     

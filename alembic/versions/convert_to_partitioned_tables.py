@@ -10,7 +10,7 @@ import sqlalchemy as sa
 from datetime import datetime, timedelta
 
 revision = 'partition_001'
-down_revision = None
+down_revision = '005'
 branch_labels = None
 depends_on = None
 

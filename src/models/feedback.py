@@ -16,7 +16,7 @@ class Feedback(Base):
     message = Column(Text, nullable=False)
     rating = Column(Integer, nullable=True)
     status = Column(String(50), default="pending")
-    metadata = Column(JSON, default=dict)
+    metadata_json = Column('metadata', JSON, default=dict)
     admin_response = Column(Text, nullable=True)
     created_at = Column(String, default=lambda: datetime.utcnow().isoformat())
     updated_at = Column(String, default=lambda: datetime.utcnow().isoformat(), onupdate=lambda: datetime.utcnow().isoformat())

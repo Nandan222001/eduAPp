@@ -11,8 +11,8 @@ from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
-revision: str = '034'
-down_revision: Union[str, None] = '033'
+revision: str = '034_create_subject_rpg'
+down_revision: Union[str, None] = 'reverse_classroom_001'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

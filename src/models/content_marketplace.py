@@ -73,7 +73,7 @@ class StudentContent(Base):
     plagiarism_status = Column(Enum(PlagiarismStatus), default=PlagiarismStatus.NOT_CHECKED, nullable=False, index=True)
     plagiarism_score = Column(Float, nullable=True)
     
-    metadata = Column(JSON, nullable=True)
+    metadata_json = Column('metadata', JSON, nullable=True)
     tags = Column(JSON, nullable=True)
     
     is_featured = Column(Boolean, default=False, nullable=False)
@@ -291,7 +291,7 @@ class CreditTransaction(Base):
     reference_type = Column(String(50), nullable=True)
     reference_id = Column(Integer, nullable=True)
     
-    metadata = Column(JSON, nullable=True)
+    metadata_json = Column('metadata', JSON, nullable=True)
     
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     

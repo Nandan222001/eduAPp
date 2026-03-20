@@ -43,7 +43,7 @@ class ServiceActivity(Base):
     verification_token = Column(String(255), nullable=True, unique=True, index=True)
     verification_token_expires = Column(DateTime, nullable=True)
     attachments = Column(JSON, nullable=True)
-    metadata = Column(JSON, nullable=True)
+    metadata_json = Column('metadata', JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     
@@ -77,7 +77,7 @@ class OrganizationContact(Base):
     is_verified = Column(Boolean, default=False, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
     notes = Column(Text, nullable=True)
-    metadata = Column(JSON, nullable=True)
+    metadata_json = Column('metadata', JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     
@@ -139,7 +139,7 @@ class GraduationRequirement(Base):
     description = Column(Text, nullable=True)
     academic_year_id = Column(Integer, ForeignKey('academic_years.id', ondelete='CASCADE'), nullable=True, index=True)
     is_active = Column(Boolean, default=True, nullable=False)
-    metadata = Column(JSON, nullable=True)
+    metadata_json = Column('metadata', JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     

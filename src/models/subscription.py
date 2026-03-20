@@ -27,7 +27,10 @@ class Subscription(Base):
     external_subscription_id = Column(String(255), nullable=True, index=True)
     razorpay_subscription_id = Column(String(255), nullable=True, index=True)
     razorpay_customer_id = Column(String(255), nullable=True, index=True)
-    metadata = Column(Text, nullable=True)
+    # `metadata` is a reserved attribute name on Declarative classes (SQLAlchemy uses
+    # `metadata` for the MetaData object). Expose the column in the DB as `metadata`
+    # but use a different attribute name on the model to avoid conflicts.
+    metadata_json = Column('metadata', Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     
@@ -59,7 +62,8 @@ class Payment(Base):
     razorpay_order_id = Column(String(255), nullable=True, index=True)
     razorpay_signature = Column(String(500), nullable=True)
     failure_reason = Column(Text, nullable=True)
-    metadata = Column(Text, nullable=True)
+    # store payment metadata (keep DB column name `metadata`)
+    metadata_json = Column('metadata', Text, nullable=True)
     paid_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
@@ -90,7 +94,8 @@ class Invoice(Base):
     due_date = Column(DateTime, nullable=False)
     paid_at = Column(DateTime, nullable=True)
     invoice_url = Column(String(500), nullable=True)
-    metadata = Column(Text, nullable=True)
+    # store invoice metadata (keep DB column name `metadata`)
+    metadata_json = Column('metadata', Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     
@@ -115,7 +120,8 @@ class UsageRecord(Base):
     recorded_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     period_start = Column(DateTime, nullable=False)
     period_end = Column(DateTime, nullable=False)
-    metadata = Column(Text, nullable=True)
+    # store usage record metadata (keep DB column name `metadata`)
+    metadata_json = Column('metadata', Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     
     subscription = relationship("Subscription", back_populates="usage_records")
