@@ -1,3 +1,34 @@
+/**
+ * @fileoverview Demo Data Provider for Offline Mode
+ * 
+ * This file contains comprehensive dummy data for testing and demonstration purposes.
+ * It provides complete offline functionality without backend dependencies, supporting
+ * both Student and Parent roles with realistic sample data.
+ * 
+ * **Purpose:**
+ * - Enable offline development and testing
+ * - Provide consistent demo environment
+ * - Support UI/UX evaluation without backend
+ * - Facilitate automated testing with known data sets
+ * 
+ * **Demo Credentials:**
+ * - Student: demo@example.com / Demo@123
+ * - Parent: parent@demo.com / Demo@123
+ * 
+ * **Data Coverage:**
+ * - 2 demo users (1 student, 1 parent)
+ * - 2 children for parent account
+ * - 8 subjects with complete details
+ * - 6 assignments across different statuses
+ * - 60+ days of attendance history
+ * - 3 completed exams + 2 upcoming
+ * - AI predictions for 5 subjects
+ * - Gamification data (points, badges, leaderboard)
+ * - Fee payments and teacher communications
+ * 
+ * @see {@link mobile/src/data/DEMO_USERS.md} for comprehensive documentation
+ */
+
 import {
   User,
   TokenResponse,
@@ -42,6 +73,15 @@ import {
   SubjectPerformance,
 } from '../types/parent';
 
+/**
+ * Demo user interface containing authentication credentials and user profile
+ * 
+ * @interface DemoUser
+ * @property {string} email - Login email address
+ * @property {string} password - Login password
+ * @property {User} user - Complete user profile with role and institution
+ * @property {TokenResponse} tokens - Authentication tokens (dummy values for demo)
+ */
 export interface DemoUser {
   email: string;
   password: string;
@@ -49,24 +89,51 @@ export interface DemoUser {
   tokens: TokenResponse;
 }
 
+/**
+ * Demo institution information
+ * Represents the school/academy that all demo users belong to
+ */
 const demoInstitution: InstitutionInfo = {
   id: 1,
   name: 'Springfield Academy',
   slug: 'springfield-academy',
 };
 
+/**
+ * Student role definition
+ * Used for demo student account
+ */
 const studentRole: RoleInfo = {
   id: 3,
   name: 'Student',
   slug: 'student',
 };
 
+/**
+ * Parent role definition
+ * Used for demo parent account
+ */
 const parentRole: RoleInfo = {
   id: 4,
   name: 'Parent',
   slug: 'parent',
 };
 
+/**
+ * Demo Student User - Alex Johnson
+ * 
+ * Credentials: demo@example.com / Demo@123
+ * Grade: 10th Grade, Section 10-A
+ * 
+ * Features Access:
+ * - Dashboard with stats overview
+ * - 6 assignments (pending, submitted, graded)
+ * - 80% attendance across 8 subjects
+ * - 3 exam results + 2 upcoming exams
+ * - AI predictions and weak areas analysis
+ * - Gamification (2450 points, Level 5, Rank #8)
+ * - Personal goals with milestones
+ */
 export const demoStudentUser: DemoUser = {
   email: 'demo@example.com',
   password: 'Demo@123',
@@ -94,6 +161,21 @@ export const demoStudentUser: DemoUser = {
   },
 };
 
+/**
+ * Demo Parent User - Sarah Johnson
+ * 
+ * Credentials: parent@demo.com / Demo@123
+ * Children: Alex Johnson (10th Grade), Emma Johnson (7th Grade)
+ * 
+ * Features Access:
+ * - Multi-child dashboard with quick stats
+ * - Attendance tracking for both children
+ * - Academic performance and grades
+ * - Assignment monitoring
+ * - Fee payment management
+ * - Teacher messages (4 messages)
+ * - School announcements
+ */
 export const demoParentUser: DemoUser = {
   email: 'parent@demo.com',
   password: 'Demo@123',
@@ -121,6 +203,13 @@ export const demoParentUser: DemoUser = {
   },
 };
 
+/**
+ * Student Profile Data
+ * 
+ * Complete profile information for the demo student (Alex Johnson).
+ * Includes personal details, academic information, and contact details.
+ * Used in profile screens and throughout the student app.
+ */
 export const studentProfile = {
   id: 1001,
   first_name: 'Alex',
@@ -144,6 +233,12 @@ export const studentProfile = {
   blood_group: 'A+',
 };
 
+/**
+ * Student Statistics Summary
+ * 
+ * Key performance indicators displayed on the student dashboard.
+ * Provides quick overview of attendance, courses, assignments, grades, and gamification progress.
+ */
 export const studentStats: StudentStats = {
   attendance_percentage: 80,
   total_courses: 8,
@@ -154,18 +249,46 @@ export const studentStats: StudentStats = {
   level: 5,
 };
 
+/**
+ * Utility function to calculate future dates
+ * 
+ * @param {number} days - Number of days from now (positive for future)
+ * @returns {string} ISO 8601 formatted date string
+ */
 const getDateDaysFromNow = (days: number): string => {
   const date = new Date();
   date.setDate(date.getDate() + days);
   return date.toISOString();
 };
 
+/**
+ * Utility function to calculate past dates
+ * 
+ * @param {number} days - Number of days ago (positive for past)
+ * @returns {string} ISO 8601 formatted date string
+ */
 const getDateDaysAgo = (days: number): string => {
   const date = new Date();
   date.setDate(date.getDate() - days);
   return date.toISOString();
 };
 
+/**
+ * Assignments Data
+ * 
+ * Collection of 6 assignments across different subjects and statuses:
+ * - 2 pending (Math, Biology)
+ * - 1 overdue (History)
+ * - 3 graded (History, English, Chemistry, Computer Science)
+ * 
+ * Each assignment includes:
+ * - Title, description, subject
+ * - Due dates (some past, some future)
+ * - Status tracking
+ * - Grading information (where applicable)
+ * - Teacher feedback
+ * - Attachments (where applicable)
+ */
 export const assignments: Assignment[] = [
   {
     id: 1,
@@ -249,6 +372,16 @@ export const assignments: Assignment[] = [
   },
 ];
 
+/**
+ * Subjects Data
+ * 
+ * List of 8 subjects that the student is enrolled in:
+ * - Core subjects: Mathematics, Biology, Chemistry, Physics
+ * - Language/Humanities: English Literature, History
+ * - Electives: Computer Science, Physical Education
+ * 
+ * Each subject includes teacher name, course code, and material count.
+ */
 export const subjects: Subject[] = [
   { id: 101, name: 'Mathematics', code: 'MATH-10', teacher_name: 'Dr. Robert Brown', material_count: 45 },
   { id: 102, name: 'Biology', code: 'BIO-10', teacher_name: 'Ms. Emily Davis', material_count: 38 },
@@ -260,6 +393,20 @@ export const subjects: Subject[] = [
   { id: 108, name: 'Physical Education', code: 'PE-10', teacher_name: 'Coach Mark Johnson', material_count: 12 },
 ];
 
+/**
+ * Attendance Summary
+ * 
+ * Overall attendance statistics for the student:
+ * - Total: 160 classes
+ * - Attended: 128 classes (80%)
+ * - Absent: 25 classes
+ * - Late: 7 classes
+ * 
+ * Includes:
+ * - Overall and monthly percentages
+ * - Today's status
+ * - Subject-wise breakdown for all 8 subjects
+ */
 export const attendanceSummary: AttendanceSummary = {
   totalClasses: 160,
   attendedClasses: 128,
@@ -280,6 +427,17 @@ export const attendanceSummary: AttendanceSummary = {
   ],
 };
 
+/**
+ * Generates monthly attendance history
+ * 
+ * Creates attendance records for the past 30 days (weekdays only).
+ * Each day includes:
+ * - Overall status (present/absent/late)
+ * - Session-wise breakdown (period, subject, teacher, time)
+ * - Random distribution of attendance patterns
+ * 
+ * @returns {AttendanceHistory[]} Array of daily attendance records
+ */
 const generateMonthlyAttendance = (): AttendanceHistory[] => {
   const history: AttendanceHistory[] = [];
   const statuses: ('present' | 'absent' | 'late')[] = ['present', 'present', 'present', 'present', 'absent', 'late'];
@@ -322,8 +480,29 @@ const generateMonthlyAttendance = (): AttendanceHistory[] => {
   return history;
 };
 
+/**
+ * Attendance History
+ * 
+ * Generated daily attendance records for the past 30 days.
+ * Excludes weekends and includes period-wise session details.
+ */
 export const attendanceHistory = generateMonthlyAttendance();
 
+/**
+ * Exam Results
+ * 
+ * Collection of 3 completed mid-term exam results:
+ * - Mathematics: 88% (Rank 5)
+ * - Biology: 82% (Rank 8)
+ * - Chemistry: 85% (Rank 6)
+ * 
+ * Each result includes:
+ * - Obtained and total marks
+ * - Grade and class rank
+ * - Class statistics (average, highest, lowest)
+ * - Section-wise breakdown
+ * - Teacher remarks
+ */
 export const examResults: StudentExamResult[] = [
   {
     id: 1,
@@ -400,6 +579,19 @@ export const examResults: StudentExamResult[] = [
   },
 ];
 
+/**
+ * Upcoming Exams
+ * 
+ * List of 2 scheduled final examinations:
+ * - Mathematics Final (15 days away)
+ * - Biology Final (16 days away)
+ * 
+ * Each exam includes:
+ * - Schedule and duration
+ * - Marks and passing criteria
+ * - Venue and instructions
+ * - Syllabus topics to cover
+ */
 export const upcomingExams: Exam[] = [
   {
     id: 201,
@@ -443,6 +635,18 @@ export const upcomingExams: Exam[] = [
   },
 ];
 
+/**
+ * AI Predictions
+ * 
+ * Machine learning-based grade predictions for 5 subjects.
+ * Each prediction includes:
+ * - Predicted grade percentage
+ * - Confidence score (0-1)
+ * - Performance trend (improving/stable/declining)
+ * - Next milestone information (where applicable)
+ * 
+ * Used in AI Insights screen to help students understand their academic trajectory.
+ */
 export const aiPredictions: AIPrediction[] = [
   {
     subject: 'Mathematics',
@@ -485,6 +689,22 @@ export const aiPredictions: AIPrediction[] = [
   },
 ];
 
+/**
+ * Weak Areas
+ * 
+ * Identification of 4 topics where student needs improvement:
+ * - Trigonometric Identities (Math) - 65%
+ * - Literary Analysis (English) - 68%
+ * - Organic Reactions (Chemistry) - 72%
+ * - Electromagnetic Induction (Physics) - 70%
+ * 
+ * Each weak area includes:
+ * - Subject and specific topic
+ * - Current proficiency score
+ * - Personalized recommendations
+ * - Difficulty level
+ * - Count of recommended resources
+ */
 export const weakAreas: WeakArea[] = [
   {
     id: 1,
@@ -528,6 +748,16 @@ export const weakAreas: WeakArea[] = [
   },
 ];
 
+/**
+ * Focus Areas
+ * 
+ * Prioritized list of topics requiring attention, categorized by urgency:
+ * - High Priority: Topics with proficiency < 70%
+ * - Medium Priority: Topics with proficiency 70-75%
+ * - Low Priority: Topics with proficiency > 75%
+ * 
+ * Used to guide students on where to focus their study efforts.
+ */
 export const focusAreas = {
   high_priority: [
     { topic: 'Trigonometric Identities', subject: 'Mathematics', proficiency: 65 },
@@ -542,6 +772,15 @@ export const focusAreas = {
   ],
 };
 
+/**
+ * Topic Probabilities
+ * 
+ * AI-calculated probability scores (0-1) for topics likely to appear in upcoming exams.
+ * Organized by subject with key topics and their likelihood scores.
+ * 
+ * Higher scores indicate topics more likely to be tested.
+ * Used to help students prioritize exam preparation.
+ */
 export const topicProbabilities = {
   mathematics: {
     'Quadratic Equations': 0.92,
@@ -563,6 +802,22 @@ export const topicProbabilities = {
   },
 };
 
+/**
+ * Gamification Points
+ * 
+ * Student's gamification progress and point history:
+ * - Total: 2450 points
+ * - Current Level: 5 (Scholar)
+ * - Progress to next level: 450/1000 points
+ * 
+ * Includes recent activities with point rewards:
+ * - Assignment submissions
+ * - Perfect attendance
+ * - High exam grades
+ * - Login streaks
+ * 
+ * Points motivate engagement and reward positive behaviors.
+ */
 export const gamificationPoints: Points = {
   totalPoints: 2450,
   currentLevel: 5,
@@ -602,6 +857,23 @@ export const gamificationPoints: Points = {
   ],
 };
 
+/**
+ * Badges
+ * 
+ * Collection of 6 badges (4 earned, 2 in progress):
+ * 
+ * Earned:
+ * - Perfect Week (attendance)
+ * - Math Wizard (academic)
+ * - Early Bird (attendance)
+ * - Team Player (participation)
+ * 
+ * In Progress:
+ * - Century Club (80/100 points)
+ * - Bookworm (7/10 assignments)
+ * 
+ * Badges are categorized by type and rarity (common/rare/epic/legendary).
+ */
 export const badges: Badge[] = [
   {
     id: 1,
@@ -665,6 +937,20 @@ export const badges: Badge[] = [
   },
 ];
 
+/**
+ * Leaderboard
+ * 
+ * Weekly class leaderboard showing competitive rankings:
+ * - Student's rank: 8 out of 150
+ * - Student's points: 2450
+ * 
+ * Displays:
+ * - Top 3 rankers with full details
+ * - Nearby rankers (±1 rank from student)
+ * - Trend indicators (up/down/same)
+ * 
+ * Promotes healthy competition and motivation.
+ */
 export const leaderboard: Leaderboard = {
   timeframe: 'weekly',
   myRank: 8,
@@ -736,6 +1022,21 @@ export const leaderboard: Leaderboard = {
   ],
 };
 
+/**
+ * Streaks
+ * 
+ * Active streak tracking for 3 categories:
+ * - Daily Login: 7 days current (21 days longest)
+ * - Assignment Submission: 4 days current (8 days longest)
+ * - Attendance: 5 days current (12 days longest)
+ * 
+ * Each streak includes:
+ * - Current and longest streak counts
+ * - Activity status
+ * - Next milestone to achieve
+ * 
+ * Streaks encourage consistent engagement.
+ */
 export const streaks: Streak[] = [
   {
     currentStreak: 7,
@@ -763,6 +1064,19 @@ export const streaks: Streak[] = [
   },
 ];
 
+/**
+ * Achievements
+ * 
+ * Unlocked achievements with reward details:
+ * - Perfect Week Achievement (100 points, attendance badge)
+ * - Math Excellence (150 points, math wizard badge)
+ * 
+ * Each achievement includes:
+ * - Title and description
+ * - Category classification
+ * - Points and badge rewards
+ * - Achievement date
+ */
 export const achievements: Achievement[] = [
   {
     id: 1,
@@ -786,6 +1100,16 @@ export const achievements: Achievement[] = [
   },
 ];
 
+/**
+ * Gamification Statistics
+ * 
+ * Aggregated gamification data for dashboard display:
+ * - Total points, badges, achievements
+ * - Current level and rank
+ * - Progress metrics
+ * 
+ * Provides comprehensive overview of student's gamification status.
+ */
 export const gamificationStats: GamificationStats = {
   totalPoints: 2450,
   totalBadges: 4,
@@ -799,6 +1123,22 @@ export const gamificationStats: GamificationStats = {
   recentAchievements: achievements,
 };
 
+/**
+ * Student Goals
+ * 
+ * Personal goals with milestone tracking:
+ * 
+ * 1. Improve Math Grade to 90% (75% progress)
+ * 2. Perfect Attendance 95% (80% progress)
+ * 3. Complete Python Project (40% progress)
+ * 
+ * Each goal includes:
+ * - Title, description, category
+ * - Target and current values
+ * - Progress percentage
+ * - Milestone breakdown with completion status
+ * - Target completion date
+ */
 export const studentGoals = [
   {
     id: 1,
@@ -852,6 +1192,19 @@ export const studentGoals = [
   },
 ];
 
+/**
+ * Parent's Children
+ * 
+ * List of 2 children for the demo parent account:
+ * - Alex Johnson (10th Grade, Section 10-A)
+ * - Emma Johnson (7th Grade, Section 7-B)
+ * 
+ * Each child record includes:
+ * - Basic profile information
+ * - Grade and class details
+ * - Roll number and student ID
+ * - Profile photo
+ */
 export const parentChildren: Child[] = [
   {
     id: 1001,
@@ -875,6 +1228,15 @@ export const parentChildren: Child[] = [
   },
 ];
 
+/**
+ * Children Statistics
+ * 
+ * Quick stats for each child displayed on parent dashboard:
+ * - Alex: 80% attendance, Rank 8, 84.3% average
+ * - Emma: 92% attendance, Rank 3, 91.5% average
+ * 
+ * Provides at-a-glance performance overview for parents.
+ */
 export const childrenStats: { [childId: number]: ChildStats } = {
   1001: {
     attendance_percentage: 80,
@@ -890,6 +1252,16 @@ export const childrenStats: { [childId: number]: ChildStats } = {
   },
 };
 
+/**
+ * Today's Attendance
+ * 
+ * Current day attendance status for each child.
+ * Both Alex and Emma are marked present today.
+ * 
+ * Includes:
+ * - Date and status
+ * - Marked timestamp and by whom
+ */
 export const todayAttendance: { [childId: number]: TodayAttendance } = {
   1001: {
     child_id: 1001,
@@ -907,6 +1279,19 @@ export const todayAttendance: { [childId: number]: TodayAttendance } = {
   },
 };
 
+/**
+ * Parent - Grades
+ * 
+ * Exam grades for both children:
+ * - Alex: 3 mid-term results (Math 88%, Biology 82%, Chemistry 85%)
+ * - Emma: 2 mid-term results (Math 95%, Science 92%)
+ * 
+ * Each grade includes:
+ * - Subject, exam name, and type
+ * - Marks obtained and total
+ * - Percentage and letter grade
+ * - Exam date and term
+ */
 export const parentGrades: { [childId: number]: Grade[] } = {
   1001: [
     {
@@ -974,6 +1359,15 @@ export const parentGrades: { [childId: number]: Grade[] } = {
   ],
 };
 
+/**
+ * Parent - Assignments
+ * 
+ * Assignment tracking for both children:
+ * - Alex: 2 pending assignments (Math, Biology)
+ * - Emma: 1 submitted assignment (Math, scored 48/50)
+ * 
+ * Parents can monitor assignment status and deadlines.
+ */
 export const parentAssignments: { [childId: number]: ParentAssignment[] } = {
   1001: [
     {
@@ -1006,6 +1400,20 @@ export const parentAssignments: { [childId: number]: ParentAssignment[] } = {
   ],
 };
 
+/**
+ * Parent - Fee Payments
+ * 
+ * Fee payment records for both children:
+ * - Alex: 4 fee records ($11,500 total, 2 pending)
+ * - Emma: 2 fee records ($9,000 total, 1 pending)
+ * 
+ * Includes:
+ * - Fee type (tuition, library, sports)
+ * - Amount and due dates
+ * - Payment status and paid dates
+ * 
+ * Helps parents track financial obligations.
+ */
 export const feePayments: { [childId: number]: FeePayment[] } = {
   1001: [
     {
@@ -1064,6 +1472,20 @@ export const feePayments: { [childId: number]: FeePayment[] } = {
   ],
 };
 
+/**
+ * Teacher Messages
+ * 
+ * Communication from teachers and administrators to parent:
+ * - 4 messages total (2 unread)
+ * - Priority levels: high/medium/low
+ * - From various staff members
+ * 
+ * Topics include:
+ * - Student performance updates
+ * - Assignment reminders
+ * - School meeting notifications
+ * - Achievement recognition
+ */
 export const teacherMessages: TeacherMessage[] = [
   {
     id: 1,
@@ -1107,6 +1529,20 @@ export const teacherMessages: TeacherMessage[] = [
   },
 ];
 
+/**
+ * School Announcements
+ * 
+ * School-wide announcements visible to all parents:
+ * - 4 announcements across different categories
+ * - Categories: Events, Academic, General, Facilities
+ * - Important flag for urgent announcements
+ * 
+ * Covers:
+ * - Events (Sports Day)
+ * - Academic activities (Science Fair)
+ * - General information (Winter Break)
+ * - Facility updates (Library hours)
+ */
 export const announcements: Announcement[] = [
   {
     id: 1,
@@ -1146,6 +1582,15 @@ export const announcements: Announcement[] = [
   },
 ];
 
+/**
+ * Generates attendance calendar for a child
+ * 
+ * Creates 60-day attendance history (weekdays only) with color-coded status.
+ * Alex has slightly lower attendance rate than Emma.
+ * 
+ * @param {number} childId - Child's ID to generate calendar for
+ * @returns {AttendanceCalendar} Calendar object with date-status mappings
+ */
 const generateAttendanceCalendar = (childId: number): AttendanceCalendar => {
   const calendar: AttendanceCalendar = {};
   const statuses: ('present' | 'absent' | 'late' | 'excused')[] = 
@@ -1171,11 +1616,26 @@ const generateAttendanceCalendar = (childId: number): AttendanceCalendar => {
   return calendar;
 };
 
+/**
+ * Attendance Calendar
+ * 
+ * 60-day attendance calendar for both children.
+ * Used in calendar view for visual attendance tracking.
+ */
 export const attendanceCalendar: { [childId: number]: AttendanceCalendar } = {
   1001: generateAttendanceCalendar(1001),
   1002: generateAttendanceCalendar(1002),
 };
 
+/**
+ * Subject-wise Attendance
+ * 
+ * Detailed attendance breakdown by subject for each child:
+ * - Alex: 8 subjects with varying attendance rates
+ * - Emma: 7 subjects with higher overall attendance
+ * 
+ * Shows present count, total count, and percentage per subject.
+ */
 export const subjectAttendance: { [childId: number]: ParentSubjectAttendance[] } = {
   1001: [
     { subject_name: 'Mathematics', present_count: 20, total_count: 24, percentage: 83.3 },
@@ -1198,6 +1658,18 @@ export const subjectAttendance: { [childId: number]: ParentSubjectAttendance[] }
   ],
 };
 
+/**
+ * Parent - Exam Results
+ * 
+ * Comprehensive exam results for both children:
+ * - Alex: Mid-term with 8 subjects (84% overall, Rank 8)
+ * - Emma: Mid-term with 7 subjects (91.4% overall, Rank 3)
+ * 
+ * Each result includes:
+ * - Overall marks, percentage, and rank
+ * - Subject-wise breakdown with grades
+ * - Term information
+ */
 export const parentExamResults: { [childId: number]: ParentExamResult[] } = {
   1001: [
     {
@@ -1242,6 +1714,19 @@ export const parentExamResults: { [childId: number]: ParentExamResult[] } = {
   ],
 };
 
+/**
+ * Subject Performance Trends
+ * 
+ * Historical performance analysis by subject for each child:
+ * - Tracks average, highest, and lowest scores
+ * - Shows total exams taken per subject
+ * - Indicates performance trend (improving/stable/declining)
+ * 
+ * Alex: 4 subjects tracked
+ * Emma: 3 subjects tracked
+ * 
+ * Helps parents understand long-term academic trends.
+ */
 export const subjectPerformance: { [childId: number]: SubjectPerformance[] } = {
   1001: [
     {
@@ -1305,6 +1790,24 @@ export const subjectPerformance: { [childId: number]: SubjectPerformance[] } = {
   ],
 };
 
+/**
+ * Complete Dummy Data Export
+ * 
+ * Main data structure organizing all demo data by role:
+ * - students.demo: All data for student demo account
+ * - parents.demo: All data for parent demo account
+ * 
+ * This structure makes it easy to:
+ * - Access role-specific data
+ * - Mock API responses
+ * - Test different user scenarios
+ * - Maintain data consistency
+ * 
+ * All data is self-contained and requires no external dependencies.
+ * Perfect for offline development, testing, and demonstrations.
+ * 
+ * @see {@link mobile/src/data/DEMO_USERS.md} for complete documentation
+ */
 export const dummyData = {
   students: {
     demo: {
