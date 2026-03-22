@@ -1,7 +1,8 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosError } from 'axios';
-import * as SecureStore from 'expo-secure-store';
+import { secureStorage } from '../utils/secureStorage';
 import { offlineQueueManager } from '../utils/offlineQueue';
 import { networkStatusManager } from '../utils/networkStatus';
+import { STORAGE_KEYS } from '../constants';
 
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:8000';
 const API_VERSION = process.env.API_VERSION || 'v1';
@@ -25,7 +26,7 @@ class ApiClient {
   private setupInterceptors() {
     this.client.interceptors.request.use(
       async (config) => {
-        const token = await SecureStore.getItemAsync('accessToken');
+        const token = await secureStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
           
@@ -97,7 +98,7 @@ class ApiClient {
 
     this.refreshTokenPromise = (async () => {
       try {
-        const refreshToken = await SecureStore.getItemAsync('refreshToken');
+        const refreshToken = await secureStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
         if (!refreshToken) {
           throw new Error('No refresh token available');
         }
@@ -108,8 +109,8 @@ class ApiClient {
         );
 
         const { access_token, refresh_token } = response.data;
-        await SecureStore.setItemAsync('accessToken', access_token);
-        await SecureStore.setItemAsync('refreshToken', refresh_token);
+        await secureStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, access_token);
+        await secureStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refresh_token);
 
         return access_token;
       } finally {
@@ -121,8 +122,8 @@ class ApiClient {
   }
 
   private async clearTokens() {
-    await SecureStore.deleteItemAsync('accessToken');
-    await SecureStore.deleteItemAsync('refreshToken');
+    await secureStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+    await secureStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
   }
 
   public async get<T = any>(url: string, config?: AxiosRequestConfig) {
