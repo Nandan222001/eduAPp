@@ -18,7 +18,6 @@ from datetime import datetime
 from typing import Dict, List, Tuple, Optional
 import json
 
-# Add project root to path
 project_root = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(project_root))
 
@@ -47,10 +46,8 @@ class MigrationValidator:
     
     def load_test_config(self):
         """Load test database configuration"""
-        # First load default .env
         load_dotenv()
         
-        # Then load test-specific config
         if os.path.exists(self.test_env_file):
             load_dotenv(self.test_env_file, override=True)
             print(f"✓ Loaded test configuration from {self.test_env_file}")
@@ -58,26 +55,25 @@ class MigrationValidator:
             print(f"⚠ Warning: Test config file {self.test_env_file} not found")
             print("  Using default environment variables")
         
-        # Build database URL
         db_host = os.getenv("DATABASE_HOST", "localhost")
-        db_port = os.getenv("DATABASE_PORT", "5432")
-        db_user = os.getenv("DATABASE_USER", "postgres")
-        db_pass = os.getenv("DATABASE_PASSWORD", "postgres")
+        db_port = os.getenv("DATABASE_PORT", "3306")
+        db_user = os.getenv("DATABASE_USER", "root")
+        db_pass = os.getenv("DATABASE_PASSWORD", "test_password")
         db_name = os.getenv("DATABASE_NAME", "fastapi_db_migration_test")
         
-        self.database_url = f"postgresql://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}"
+        self.database_url = f"mysql+pymysql://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}?charset=utf8mb4"
     
     def connect_database(self):
         """Connect to the test database"""
         try:
-            self.engine = create_engine(self.database_url)
+            self.engine = create_engine(self.database_url, pool_pre_ping=True)
             self.inspector = inspect(self.engine)
             
-            # Test connection
             with self.engine.connect() as conn:
                 conn.execute(text("SELECT 1"))
             
-            print(f"✓ Connected to test database: {self.database_url.split('@')[1]}")
+            db_info = self.database_url.split('@')[1] if '@' in self.database_url else self.database_url
+            print(f"✓ Connected to test database: {db_info}")
             return True
         except Exception as e:
             error_msg = f"Failed to connect to test database: {e}"
@@ -92,10 +88,8 @@ class MigrationValidator:
         print("="*60)
         
         try:
-            # Set DATABASE_NAME for alembic
             env = os.environ.copy()
             
-            # Run alembic upgrade
             result = subprocess.run(
                 ["alembic", "upgrade", "head"],
                 env=env,
@@ -150,23 +144,13 @@ class MigrationValidator:
             table_details = {}
             
             for table_name in sorted(tables):
-                # Skip alembic version table
                 if table_name == "alembic_version":
                     continue
                 
-                # Get columns
                 columns = self.inspector.get_columns(table_name)
-                
-                # Get indexes
                 indexes = self.inspector.get_indexes(table_name)
-                
-                # Get foreign keys
                 foreign_keys = self.inspector.get_foreign_keys(table_name)
-                
-                # Get primary key
                 pk_constraint = self.inspector.get_pk_constraint(table_name)
-                
-                # Get unique constraints
                 unique_constraints = self.inspector.get_unique_constraints(table_name)
                 
                 table_details[table_name] = {
@@ -177,18 +161,15 @@ class MigrationValidator:
                     "unique_constraints": len(unique_constraints)
                 }
                 
-                # Verify critical columns have NOT NULL constraints where expected
                 for col in columns:
                     col_name = col["name"]
                     nullable = col["nullable"]
                     
-                    # Check for common columns that should not be nullable
                     critical_columns = ["id", "institution_id", "created_at"]
                     if col_name in critical_columns and nullable:
                         warning = f"Table {table_name}.{col_name} is nullable but should not be"
                         self.results["warnings"].append(warning)
                 
-                # Verify foreign keys have indexes
                 fk_columns = set()
                 for fk in foreign_keys:
                     fk_columns.update(fk.get("constrained_columns", []))
@@ -226,13 +207,11 @@ class MigrationValidator:
         print("="*60)
         
         try:
-            # Get current revision
             with self.engine.connect() as conn:
                 result = conn.execute(text("SELECT version_num FROM alembic_version"))
                 current_version = result.scalar()
                 print(f"Current version: {current_version}")
             
-            # Downgrade specified steps
             result = subprocess.run(
                 ["alembic", "downgrade", f"-{steps}"],
                 capture_output=True,
@@ -243,7 +222,6 @@ class MigrationValidator:
             if result.returncode == 0:
                 print(f"✓ Downgrade -{steps} successful")
                 
-                # Upgrade back to head
                 result = subprocess.run(
                     ["alembic", "upgrade", "head"],
                     capture_output=True,
@@ -288,7 +266,6 @@ class MigrationValidator:
         
         issues = []
         
-        # Check for duplicate migration IDs
         migrations_dir = Path("alembic/versions")
         if migrations_dir.exists():
             revision_ids = {}
@@ -299,7 +276,6 @@ class MigrationValidator:
                 try:
                     content = migration_file.read_text()
                     
-                    # Extract revision ID
                     for line in content.split("\n"):
                         if line.startswith("revision = "):
                             revision = line.split("=")[1].strip().strip("'\"")
@@ -334,7 +310,6 @@ class MigrationValidator:
         print("Generating Validation Report")
         print("="*60)
         
-        # Calculate summary
         self.results["summary"] = {
             "total_tests": len(self.results["tests"]),
             "passed_tests": sum(1 for t in self.results["tests"] if t["status"] == "passed"),
@@ -344,7 +319,6 @@ class MigrationValidator:
             "overall_status": "PASSED" if len(self.results["errors"]) == 0 else "FAILED"
         }
         
-        # Save JSON report
         report_path = Path("backups/migration_test") / output_file
         report_path.parent.mkdir(parents=True, exist_ok=True)
         
@@ -353,7 +327,6 @@ class MigrationValidator:
         
         print(f"✓ Report saved to: {report_path}")
         
-        # Print summary
         print("\n" + "="*60)
         print("VALIDATION SUMMARY")
         print("="*60)
@@ -377,29 +350,21 @@ class MigrationValidator:
         
         success = True
         
-        # Connect to database
         if not self.connect_database():
             return False
         
-        # Run migrations
         if not self.run_migrations_upgrade():
             success = False
         
-        # Verify schema
         if not self.verify_schema():
             success = False
         
-        # Test downgrade/upgrade
         if not self.test_migration_downgrade(steps=3):
-            # This is a warning, not a failure
             self.results["warnings"].append("Downgrade test had issues but continuing")
         
-        # Check consistency
         if not self.check_migration_consistency():
-            # This is a warning for existing issues
             pass
         
-        # Generate report
         report_success = self.generate_report()
         
         return success and report_success

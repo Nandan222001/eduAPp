@@ -39,19 +39,19 @@ class SchemaComparator:
     def get_database_url(self, db_name: str) -> str:
         """Build database URL"""
         db_host = os.getenv("DATABASE_HOST", "localhost")
-        db_port = os.getenv("DATABASE_PORT", "5432")
-        db_user = os.getenv("DATABASE_USER", "postgres")
-        db_pass = os.getenv("DATABASE_PASSWORD", "postgres")
+        db_port = os.getenv("DATABASE_PORT", "3306")
+        db_user = os.getenv("DATABASE_USER", "root")
+        db_pass = os.getenv("DATABASE_PASSWORD", "test_password")
         
-        return f"postgresql://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}"
+        return f"mysql+pymysql://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}?charset=utf8mb4"
     
     def get_schema_info(self, database_url: str) -> Dict:
         """Extract schema information from database"""
-        engine = create_engine(database_url)
+        engine = create_engine(database_url, pool_pre_ping=True)
         inspector = inspect(engine)
         
         schema = {
-            "database_url": database_url.split("@")[1],
+            "database_url": database_url.split("@")[1] if "@" in database_url else database_url,
             "tables": {},
             "enums": [],
             "sequences": []
@@ -104,35 +104,8 @@ class SchemaComparator:
             
             schema["tables"][table_name] = table_info
         
-        # Get enums
-        with engine.connect() as conn:
-            result = conn.execute(text("""
-                SELECT t.typname, e.enumlabel
-                FROM pg_type t 
-                JOIN pg_enum e ON t.oid = e.enumtypid
-                WHERE t.typtype = 'e'
-                ORDER BY t.typname, e.enumsortorder
-            """))
-            
-            enum_dict = {}
-            for typname, enumlabel in result:
-                if typname not in enum_dict:
-                    enum_dict[typname] = []
-                enum_dict[typname].append(enumlabel)
-            
-            schema["enums"] = [
-                {"name": name, "values": values}
-                for name, values in sorted(enum_dict.items())
-            ]
-            
-            # Get sequences
-            result = conn.execute(text("""
-                SELECT sequencename
-                FROM pg_sequences
-                WHERE schemaname = 'public'
-                ORDER BY sequencename
-            """))
-            schema["sequences"] = [row[0] for row in result]
+        schema["enums"] = []
+        schema["sequences"] = []
         
         engine.dispose()
         return schema

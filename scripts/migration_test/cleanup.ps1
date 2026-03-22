@@ -22,10 +22,8 @@ if (Test-Path .env.test.migration) {
 }
 
 $TestDatabaseName = if ($env:TEST_DATABASE_NAME) { $env:TEST_DATABASE_NAME } else { "fastapi_db_migration_test" }
-$DatabaseUser = if ($env:DATABASE_USER) { $env:DATABASE_USER } else { "postgres" }
-$DatabasePassword = if ($env:DATABASE_PASSWORD) { $env:DATABASE_PASSWORD } else { "postgres" }
-
-$env:PGPASSWORD = $DatabasePassword
+$DatabaseUser = if ($env:DATABASE_USER) { $env:DATABASE_USER } else { "root" }
+$DatabasePassword = if ($env:DATABASE_PASSWORD) { $env:DATABASE_PASSWORD } else { "test_password" }
 
 Write-Host "============================================" -ForegroundColor Cyan
 Write-Host "Migration Test Cleanup" -ForegroundColor Cyan
@@ -46,7 +44,7 @@ if ($response -ne 'y' -and $response -ne 'Y') {
 # Drop test database
 Write-Host "Dropping test database..."
 try {
-    $null = & psql -h localhost -U $DatabaseUser -d postgres -c "DROP DATABASE IF EXISTS $TestDatabaseName;" 2>&1
+    $null = & mysql -h localhost -u $DatabaseUser -p"$DatabasePassword" -e "DROP DATABASE IF EXISTS ``$TestDatabaseName``;" 2>&1
     Write-Host "✓ Test database dropped" -ForegroundColor Green
 } catch {
     Write-Host "✓ Test database dropped (or did not exist)" -ForegroundColor Green

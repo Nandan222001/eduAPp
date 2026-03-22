@@ -4,9 +4,9 @@
 param(
     [string]$TestDatabaseName = "fastapi_db_migration_test",
     [string]$DatabaseHost = "localhost",
-    [int]$DatabasePort = 5432,
-    [string]$DatabaseUser = "postgres",
-    [string]$DatabasePassword = "postgres"
+    [int]$DatabasePort = 3306,
+    [string]$DatabaseUser = "root",
+    [string]$DatabasePassword = "test_password"
 )
 
 # Load environment variables from .env file if it exists
@@ -27,8 +27,6 @@ if ($env:DATABASE_PORT) { $DatabasePort = $env:DATABASE_PORT }
 if ($env:DATABASE_USER) { $DatabaseUser = $env:DATABASE_USER }
 if ($env:DATABASE_PASSWORD) { $DatabasePassword = $env:DATABASE_PASSWORD }
 
-$env:PGPASSWORD = $DatabasePassword
-
 Write-Host "============================================" -ForegroundColor Cyan
 Write-Host "Migration Test Database Setup" -ForegroundColor Cyan
 Write-Host "============================================" -ForegroundColor Cyan
@@ -38,27 +36,27 @@ Write-Host "User: $DatabaseUser"
 Write-Host "Test Database: $TestDatabaseName"
 Write-Host "============================================" -ForegroundColor Cyan
 
-# Check if PostgreSQL is accessible
-Write-Host "Checking PostgreSQL connection..."
+# Check if MySQL is accessible
+Write-Host "Checking MySQL connection..."
 try {
-    $null = & psql -h $DatabaseHost -p $DatabasePort -U $DatabaseUser -d postgres -c "SELECT 1" 2>&1
+    $null = & mysql -h $DatabaseHost -P $DatabasePort -u $DatabaseUser -p"$DatabasePassword" -e "SELECT 1" 2>&1
     if ($LASTEXITCODE -ne 0) {
         throw "Connection failed"
     }
-    Write-Host "✓ PostgreSQL connection successful" -ForegroundColor Green
+    Write-Host "✓ MySQL connection successful" -ForegroundColor Green
 } catch {
-    Write-Host "ERROR: Cannot connect to PostgreSQL server" -ForegroundColor Red
-    Write-Host "Please ensure PostgreSQL is running and credentials are correct" -ForegroundColor Red
+    Write-Host "ERROR: Cannot connect to MySQL server" -ForegroundColor Red
+    Write-Host "Please ensure MySQL is running and credentials are correct" -ForegroundColor Red
     exit 1
 }
 
 # Drop test database if it exists
 Write-Host "Dropping existing test database if it exists..."
-$null = & psql -h $DatabaseHost -p $DatabasePort -U $DatabaseUser -d postgres -c "DROP DATABASE IF EXISTS $TestDatabaseName;" 2>&1
+$null = & mysql -h $DatabaseHost -P $DatabasePort -u $DatabaseUser -p"$DatabasePassword" -e "DROP DATABASE IF EXISTS ``$TestDatabaseName``;" 2>&1
 
 # Create new test database
 Write-Host "Creating test database..."
-$null = & psql -h $DatabaseHost -p $DatabasePort -U $DatabaseUser -d postgres -c "CREATE DATABASE $TestDatabaseName;" 2>&1
+$null = & mysql -h $DatabaseHost -P $DatabasePort -u $DatabaseUser -p"$DatabasePassword" -e "CREATE DATABASE ``$TestDatabaseName`` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" 2>&1
 if ($LASTEXITCODE -ne 0) {
     Write-Host "ERROR: Failed to create test database" -ForegroundColor Red
     exit 1
@@ -67,7 +65,11 @@ Write-Host "✓ Test database created successfully" -ForegroundColor Green
 
 # Grant necessary privileges
 Write-Host "Setting up database permissions..."
-$null = & psql -h $DatabaseHost -p $DatabasePort -U $DatabaseUser -d postgres -c "GRANT ALL PRIVILEGES ON DATABASE $TestDatabaseName TO $DatabaseUser;" 2>&1
+$grantSQL = @"
+GRANT ALL PRIVILEGES ON ``$TestDatabaseName``.* TO '$DatabaseUser'@'%';
+FLUSH PRIVILEGES;
+"@
+$null = & mysql -h $DatabaseHost -P $DatabasePort -u $DatabaseUser -p"$DatabasePassword" -e $grantSQL 2>&1
 Write-Host "✓ Database permissions configured" -ForegroundColor Green
 
 # Set up test database configuration file

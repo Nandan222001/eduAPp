@@ -52,16 +52,16 @@ class RecentMigrationTester:
             load_dotenv(self.test_env_file, override=True)
         
         db_host = os.getenv("DATABASE_HOST", "localhost")
-        db_port = os.getenv("DATABASE_PORT", "5432")
-        db_user = os.getenv("DATABASE_USER", "postgres")
-        db_pass = os.getenv("DATABASE_PASSWORD", "postgres")
+        db_port = os.getenv("DATABASE_PORT", "3306")
+        db_user = os.getenv("DATABASE_USER", "root")
+        db_pass = os.getenv("DATABASE_PASSWORD", "test_password")
         db_name = os.getenv("DATABASE_NAME", "fastapi_db_migration_test")
         
-        self.database_url = f"postgresql://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}"
+        self.database_url = f"mysql+pymysql://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}?charset=utf8mb4"
     
     def connect_database(self):
         """Connect to the test database"""
-        self.engine = create_engine(self.database_url)
+        self.engine = create_engine(self.database_url, pool_pre_ping=True)
     
     def get_migration_history(self) -> List[Dict]:
         """Get migration history from alembic"""
@@ -143,15 +143,7 @@ class RecentMigrationTester:
                 ]
             }
         
-        # Get enums
-        with self.engine.connect() as conn:
-            result = conn.execute(text("""
-                SELECT typname 
-                FROM pg_type 
-                WHERE typtype = 'e'
-                ORDER BY typname
-            """))
-            snapshot["enums"] = [row[0] for row in result]
+        snapshot["enums"] = []
         
         return snapshot
     

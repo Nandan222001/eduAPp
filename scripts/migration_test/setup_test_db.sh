@@ -13,11 +13,9 @@ fi
 # Default values
 TEST_DATABASE_NAME="${TEST_DATABASE_NAME:-fastapi_db_migration_test}"
 DATABASE_HOST="${DATABASE_HOST:-localhost}"
-DATABASE_PORT="${DATABASE_PORT:-5432}"
-DATABASE_USER="${DATABASE_USER:-postgres}"
-PGPASSWORD="${DATABASE_PASSWORD:-postgres}"
-
-export PGPASSWORD
+DATABASE_PORT="${DATABASE_PORT:-3306}"
+DATABASE_USER="${DATABASE_USER:-root}"
+DATABASE_PASSWORD="${DATABASE_PASSWORD:-test_password}"
 
 echo "============================================"
 echo "Migration Test Database Setup"
@@ -28,30 +26,31 @@ echo "User: $DATABASE_USER"
 echo "Test Database: $TEST_DATABASE_NAME"
 echo "============================================"
 
-# Check if PostgreSQL is accessible
-echo "Checking PostgreSQL connection..."
-if ! psql -h "$DATABASE_HOST" -p "$DATABASE_PORT" -U "$DATABASE_USER" -d postgres -c "SELECT 1" > /dev/null 2>&1; then
-    echo "ERROR: Cannot connect to PostgreSQL server"
-    echo "Please ensure PostgreSQL is running and credentials are correct"
+# Check if MySQL is accessible
+echo "Checking MySQL connection..."
+if ! mysql -h "$DATABASE_HOST" -P "$DATABASE_PORT" -u "$DATABASE_USER" -p"$DATABASE_PASSWORD" -e "SELECT 1" > /dev/null 2>&1; then
+    echo "ERROR: Cannot connect to MySQL server"
+    echo "Please ensure MySQL is running and credentials are correct"
     exit 1
 fi
 
-echo "✓ PostgreSQL connection successful"
+echo "✓ MySQL connection successful"
 
 # Drop test database if it exists
 echo "Dropping existing test database if it exists..."
-psql -h "$DATABASE_HOST" -p "$DATABASE_PORT" -U "$DATABASE_USER" -d postgres -c "DROP DATABASE IF EXISTS $TEST_DATABASE_NAME;" > /dev/null 2>&1 || true
+mysql -h "$DATABASE_HOST" -P "$DATABASE_PORT" -u "$DATABASE_USER" -p"$DATABASE_PASSWORD" -e "DROP DATABASE IF EXISTS \`$TEST_DATABASE_NAME\`;" > /dev/null 2>&1 || true
 
 # Create new test database
 echo "Creating test database..."
-psql -h "$DATABASE_HOST" -p "$DATABASE_PORT" -U "$DATABASE_USER" -d postgres -c "CREATE DATABASE $TEST_DATABASE_NAME;" > /dev/null 2>&1
+mysql -h "$DATABASE_HOST" -P "$DATABASE_PORT" -u "$DATABASE_USER" -p"$DATABASE_PASSWORD" -e "CREATE DATABASE \`$TEST_DATABASE_NAME\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" > /dev/null 2>&1
 
 echo "✓ Test database created successfully"
 
 # Grant necessary privileges
 echo "Setting up database permissions..."
-psql -h "$DATABASE_HOST" -p "$DATABASE_PORT" -U "$DATABASE_USER" -d postgres << EOF > /dev/null 2>&1
-GRANT ALL PRIVILEGES ON DATABASE $TEST_DATABASE_NAME TO $DATABASE_USER;
+mysql -h "$DATABASE_HOST" -P "$DATABASE_PORT" -u "$DATABASE_USER" -p"$DATABASE_PASSWORD" << EOF > /dev/null 2>&1
+GRANT ALL PRIVILEGES ON \`$TEST_DATABASE_NAME\`.* TO '$DATABASE_USER'@'%';
+FLUSH PRIVILEGES;
 EOF
 
 echo "✓ Database permissions configured"

@@ -1,12 +1,12 @@
-# PowerShell script to backup production database schema using pg_dump --schema-only
+# PowerShell script to backup production database schema using mysqldump --no-data
 # This creates a baseline schema for comparison and testing
 
 param(
     [string]$DatabaseName = "fastapi_db",
     [string]$DatabaseHost = "localhost",
-    [int]$DatabasePort = 5432,
-    [string]$DatabaseUser = "postgres",
-    [string]$DatabasePassword = "postgres"
+    [int]$DatabasePort = 3306,
+    [string]$DatabaseUser = "root",
+    [string]$DatabasePassword = "test_password"
 )
 
 # Load environment variables from .env file if it exists
@@ -26,8 +26,6 @@ if ($env:DATABASE_HOST) { $DatabaseHost = $env:DATABASE_HOST }
 if ($env:DATABASE_PORT) { $DatabasePort = $env:DATABASE_PORT }
 if ($env:DATABASE_USER) { $DatabaseUser = $env:DATABASE_USER }
 if ($env:DATABASE_PASSWORD) { $DatabasePassword = $env:DATABASE_PASSWORD }
-
-$env:PGPASSWORD = $DatabasePassword
 
 # Backup directory and file
 $BackupDir = "backups/migration_test"
@@ -49,30 +47,28 @@ if (-not (Test-Path $BackupDir)) {
     New-Item -ItemType Directory -Path $BackupDir -Force | Out-Null
 }
 
-# Check if PostgreSQL is accessible
-Write-Host "Checking PostgreSQL connection..."
+# Check if MySQL is accessible
+Write-Host "Checking MySQL connection..."
 try {
-    $null = & psql -h $DatabaseHost -p $DatabasePort -U $DatabaseUser -d $DatabaseName -c "SELECT 1" 2>&1
+    $null = & mysql -h $DatabaseHost -P $DatabasePort -u $DatabaseUser -p"$DatabasePassword" -e "USE ``$DatabaseName``" 2>&1
     if ($LASTEXITCODE -ne 0) {
         throw "Connection failed"
     }
     Write-Host "✓ Database connection successful" -ForegroundColor Green
 } catch {
     Write-Host "ERROR: Cannot connect to database $DatabaseName" -ForegroundColor Red
-    Write-Host "Please ensure PostgreSQL is running and the database exists" -ForegroundColor Red
+    Write-Host "Please ensure MySQL is running and the database exists" -ForegroundColor Red
     exit 1
 }
 
 # Backup schema only (no data)
 Write-Host "Backing up database schema..."
-& pg_dump -h $DatabaseHost -p $DatabasePort -U $DatabaseUser `
-    --schema-only `
-    --no-owner `
-    --no-privileges `
-    --no-tablespaces `
-    --no-security-labels `
-    --no-publications `
-    --no-subscriptions `
+& mysqldump -h $DatabaseHost -P $DatabasePort -u $DatabaseUser -p"$DatabasePassword" `
+    --no-data `
+    --skip-comments `
+    --skip-dump-date `
+    --skip-triggers `
+    --routines `
     $DatabaseName | Out-File -FilePath $SchemaFile -Encoding utf8
 
 if ($LASTEXITCODE -eq 0) {
@@ -92,14 +88,12 @@ Write-Host "Schema Statistics:" -ForegroundColor Cyan
 Write-Host "----------------------------------------"
 $Content = Get-Content $SchemaFile
 $TableCount = ($Content | Select-String -Pattern "^CREATE TABLE" | Measure-Object).Count
-$IndexCount = ($Content | Select-String -Pattern "^CREATE.*INDEX" | Measure-Object).Count
+$IndexCount = ($Content | Select-String -Pattern "^  KEY" | Measure-Object).Count
 $ConstraintCount = ($Content | Select-String -Pattern "CONSTRAINT" | Measure-Object).Count
-$EnumCount = ($Content | Select-String -Pattern "CREATE TYPE.*ENUM" | Measure-Object).Count
 
 Write-Host "Tables: $TableCount"
 Write-Host "Indexes: $IndexCount"
 Write-Host "Constraints: $ConstraintCount"
-Write-Host "Enums: $EnumCount"
 $FileSize = (Get-Item $SchemaFile).Length / 1KB
 Write-Host "File size: $([math]::Round($FileSize, 2)) KB"
 Write-Host "----------------------------------------"

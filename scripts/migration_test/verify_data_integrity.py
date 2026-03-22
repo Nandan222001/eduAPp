@@ -72,17 +72,13 @@ def check_foreign_key_integrity(db) -> Tuple[bool, List[str]]:
         # Get all foreign key constraints
         result = db.execute(text("""
             SELECT
-                tc.table_name,
+                kcu.table_name,
                 kcu.column_name,
-                ccu.table_name AS foreign_table_name,
-                ccu.column_name AS foreign_column_name
-            FROM information_schema.table_constraints AS tc
-            JOIN information_schema.key_column_usage AS kcu
-                ON tc.constraint_name = kcu.constraint_name
-            JOIN information_schema.constraint_column_usage AS ccu
-                ON ccu.constraint_name = tc.constraint_name
-            WHERE tc.constraint_type = 'FOREIGN KEY'
-            AND tc.table_schema = 'public'
+                kcu.referenced_table_name AS foreign_table_name,
+                kcu.referenced_column_name AS foreign_column_name
+            FROM information_schema.key_column_usage AS kcu
+            WHERE kcu.referenced_table_name IS NOT NULL
+            AND kcu.table_schema = DATABASE()
         """))
         
         foreign_keys = result.fetchall()
@@ -96,10 +92,10 @@ def check_foreign_key_integrity(db) -> Tuple[bool, List[str]]:
             # Check for orphaned records
             orphan_check = db.execute(text(f"""
                 SELECT COUNT(*)
-                FROM {table_name} t
-                LEFT JOIN {foreign_table} f ON t.{column_name} = f.{foreign_column}
-                WHERE t.{column_name} IS NOT NULL
-                AND f.{foreign_column} IS NULL
+                FROM `{table_name}` t
+                LEFT JOIN `{foreign_table}` f ON t.`{column_name}` = f.`{foreign_column}`
+                WHERE t.`{column_name}` IS NOT NULL
+                AND f.`{foreign_column}` IS NULL
             """))
             
             orphan_count = orphan_check.scalar()
@@ -137,8 +133,8 @@ def check_not_null_constraints(db) -> Tuple[bool, List[str]]:
             SELECT table_name, column_name
             FROM information_schema.columns
             WHERE is_nullable = 'NO'
-            AND table_schema = 'public'
-            AND table_name NOT LIKE 'pg_%'
+            AND table_schema = DATABASE()
+            AND table_name NOT LIKE 'alembic_%'
         """))
         
         not_null_columns = result.fetchall()
@@ -147,8 +143,8 @@ def check_not_null_constraints(db) -> Tuple[bool, List[str]]:
             # Check for NULL values (shouldn't exist but checking anyway)
             null_check = db.execute(text(f"""
                 SELECT COUNT(*)
-                FROM {table_name}
-                WHERE {column_name} IS NULL
+                FROM `{table_name}`
+                WHERE `{column_name}` IS NULL
             """))
             
             null_count = null_check.scalar()
@@ -189,8 +185,9 @@ def check_unique_constraints(db) -> Tuple[bool, List[str]]:
             FROM information_schema.table_constraints AS tc
             JOIN information_schema.key_column_usage AS kcu
                 ON tc.constraint_name = kcu.constraint_name
+                AND tc.table_schema = kcu.table_schema
             WHERE tc.constraint_type = 'UNIQUE'
-            AND tc.table_schema = 'public'
+            AND tc.table_schema = DATABASE()
         """))
         
         unique_columns = result.fetchall()
@@ -198,9 +195,9 @@ def check_unique_constraints(db) -> Tuple[bool, List[str]]:
         for table_name, column_name in unique_columns:
             # Check for duplicates
             dup_check = db.execute(text(f"""
-                SELECT {column_name}, COUNT(*)
-                FROM {table_name}
-                GROUP BY {column_name}
+                SELECT `{column_name}`, COUNT(*)
+                FROM `{table_name}`
+                GROUP BY `{column_name}`
                 HAVING COUNT(*) > 1
             """))
             
@@ -243,6 +240,7 @@ def check_critical_tables_exist(db, tables: List[str]) -> Tuple[bool, List[str]]
                 SELECT EXISTS (
                     SELECT 1 FROM information_schema.tables
                     WHERE table_name = '{table_name}'
+                    AND table_schema = DATABASE()
                 )
             """))
             
@@ -282,7 +280,7 @@ def check_record_counts(db, min_counts: Dict[str, int]) -> Tuple[bool, List[str]
     
     for table_name, min_count in min_counts.items():
         try:
-            result = db.execute(text(f"SELECT COUNT(*) FROM {table_name}"))
+            result = db.execute(text(f"SELECT COUNT(*) FROM `{table_name}`"))
             count = result.scalar()
             
             if count < min_count:
@@ -322,8 +320,9 @@ def check_indexes_exist(db, indexes: List[str]) -> Tuple[bool, List[str]]:
         try:
             result = db.execute(text(f"""
                 SELECT EXISTS (
-                    SELECT 1 FROM pg_indexes
-                    WHERE indexname = '{index_name}'
+                    SELECT 1 FROM information_schema.statistics
+                    WHERE index_name = '{index_name}'
+                    AND table_schema = DATABASE()
                 )
             """))
             

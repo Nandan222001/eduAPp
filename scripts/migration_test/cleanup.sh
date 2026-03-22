@@ -15,10 +15,8 @@ if [ -f .env.test.migration ]; then
 fi
 
 TEST_DATABASE_NAME="${TEST_DATABASE_NAME:-fastapi_db_migration_test}"
-DATABASE_USER="${DATABASE_USER:-postgres}"
-PGPASSWORD="${DATABASE_PASSWORD:-postgres}"
-
-export PGPASSWORD
+DATABASE_USER="${DATABASE_USER:-root}"
+DATABASE_PASSWORD="${DATABASE_PASSWORD:-test_password}"
 
 echo "============================================"
 echo "Migration Test Cleanup"
@@ -39,7 +37,7 @@ fi
 
 # Drop test database
 echo "Dropping test database..."
-psql -h localhost -U "$DATABASE_USER" -d postgres -c "DROP DATABASE IF EXISTS $TEST_DATABASE_NAME;" 2>/dev/null || true
+mysql -h localhost -u "$DATABASE_USER" -p"$DATABASE_PASSWORD" -e "DROP DATABASE IF EXISTS \`$TEST_DATABASE_NAME\`;" 2>/dev/null || true
 echo "✓ Test database dropped"
 
 # Remove test reports

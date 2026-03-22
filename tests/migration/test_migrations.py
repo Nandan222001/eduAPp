@@ -51,12 +51,12 @@ class TestMigrations:
         """
         Create isolated test database URL.
         
-        For CI/testing, use SQLite or a temporary PostgreSQL database.
+        For CI/testing, use a temporary MySQL database.
         Modify this based on your environment.
         """
         return os.getenv(
             "TEST_DATABASE_URL",
-            "postgresql://postgres:postgres@localhost:5432/test_migrations_db"
+            "mysql+pymysql://root:test_password@localhost:3306/test_migrations_db?charset=utf8mb4"
         )
     
     @pytest.fixture(scope="class")
@@ -65,7 +65,8 @@ class TestMigrations:
         engine = create_engine(
             test_database_url,
             poolclass=NullPool,
-            echo=False
+            echo=False,
+            pool_pre_ping=True,
         )
         yield engine
         engine.dispose()
@@ -115,8 +116,23 @@ class TestMigrations:
         alembic_config.set_main_option("sqlalchemy.url", test_database_url)
         
         with test_engine.connect() as conn:
-            conn.execute(text("DROP SCHEMA IF EXISTS public CASCADE"))
-            conn.execute(text("CREATE SCHEMA public"))
+            result = conn.execute(text("SELECT DATABASE()"))
+            current_db = result.scalar()
+            
+            result = conn.execute(text("""
+                SELECT table_name 
+                FROM information_schema.tables 
+                WHERE table_schema = :db_name
+            """), {"db_name": current_db})
+            
+            tables = [row[0] for row in result.fetchall()]
+            
+            if tables:
+                conn.execute(text("SET FOREIGN_KEY_CHECKS = 0"))
+                for table in tables:
+                    conn.execute(text(f"DROP TABLE IF EXISTS `{table}`"))
+                conn.execute(text("SET FOREIGN_KEY_CHECKS = 1"))
+            
             conn.commit()
         
         start_time = time.time()
@@ -357,47 +373,6 @@ class TestMigrations:
         
         self._test_index_performance(test_engine)
     
-    def test_rls_policies(
-        self,
-        test_engine,
-        alembic_config: Config,
-        test_database_url: str
-    ):
-        """
-        Test Row Level Security policies after migrations.
-        
-        This test:
-        - Verifies RLS is enabled on multi-tenant tables
-        - Checks policy definitions
-        - Tests policy effectiveness
-        """
-        alembic_config.set_main_option("sqlalchemy.url", test_database_url)
-        
-        command.upgrade(alembic_config, "head")
-        
-        with test_engine.connect() as conn:
-            rls_tables = conn.execute(text("""
-                SELECT tablename 
-                FROM pg_tables 
-                WHERE schemaname = 'public'
-                AND tablename IN (
-                    SELECT tablename 
-                    FROM pg_policies 
-                    GROUP BY tablename
-                )
-            """)).fetchall()
-            
-            print(f"\n Found {len(rls_tables)} tables with RLS policies:")
-            
-            for (table_name,) in rls_tables:
-                policies = conn.execute(text(f"""
-                    SELECT policyname, cmd 
-                    FROM pg_policies 
-                    WHERE tablename = :table_name
-                """), {"table_name": table_name}).fetchall()
-                
-                print(f"  - {table_name}: {len(policies)} policies")
-    
     def _verify_schema_integrity(self, engine):
         """Verify basic schema integrity."""
         inspector = inspect(engine)
@@ -447,8 +422,6 @@ class TestMigrations:
         print(f"\n  Testing FK cascade behaviors:")
         
         with engine.connect() as conn:
-            conn.execute(text("SET LOCAL app.bypass_rls = true"))
-            
             test_cases = [
                 {
                     'name': 'Institution cascade',
@@ -501,7 +474,7 @@ class TestMigrations:
                 
                 try:
                     result = conn.execute(
-                        text(f"SELECT COUNT(*) FROM {test_table}")
+                        text(f"SELECT COUNT(*) FROM `{test_table}`")
                     )
                     count = result.scalar()
                     print(f"    ✓ Table contains {count} rows")
@@ -524,7 +497,7 @@ class TestMigrationDataIntegrity:
         """Test database URL."""
         return os.getenv(
             "TEST_DATABASE_URL",
-            "postgresql://postgres:postgres@localhost:5432/test_migrations_db"
+            "mysql+pymysql://root:test_password@localhost:3306/test_migrations_db?charset=utf8mb4"
         )
     
     @pytest.fixture
@@ -534,13 +507,28 @@ class TestMigrationDataIntegrity:
         alembic_config: Config
     ):
         """Create and populate test database with sample data."""
-        engine = create_engine(test_database_url, poolclass=NullPool)
+        engine = create_engine(test_database_url, poolclass=NullPool, pool_pre_ping=True)
         
         alembic_config.set_main_option("sqlalchemy.url", test_database_url)
         
         with engine.connect() as conn:
-            conn.execute(text("DROP SCHEMA IF EXISTS public CASCADE"))
-            conn.execute(text("CREATE SCHEMA public"))
+            result = conn.execute(text("SELECT DATABASE()"))
+            current_db = result.scalar()
+            
+            result = conn.execute(text("""
+                SELECT table_name 
+                FROM information_schema.tables 
+                WHERE table_schema = :db_name
+            """), {"db_name": current_db})
+            
+            tables = [row[0] for row in result.fetchall()]
+            
+            if tables:
+                conn.execute(text("SET FOREIGN_KEY_CHECKS = 0"))
+                for table in tables:
+                    conn.execute(text(f"DROP TABLE IF EXISTS `{table}`"))
+                conn.execute(text("SET FOREIGN_KEY_CHECKS = 1"))
+            
             conn.commit()
         
         command.upgrade(alembic_config, "head")
@@ -554,8 +542,6 @@ class TestMigrationDataIntegrity:
     def _populate_test_data(self, engine):
         """Populate database with test data."""
         with engine.connect() as conn:
-            conn.execute(text("SET LOCAL app.bypass_rls = true"))
-            
             inspector = inspect(engine)
             tables = inspector.get_table_names()
             
@@ -566,7 +552,6 @@ class TestMigrationDataIntegrity:
                     VALUES 
                     ('Test School', 'TS', 'TEST001', 'test@school.com', '1234567890', 
                      '123 Test St', 'Test City', 'Test State', 'Test Country', '12345', true, NOW())
-                    ON CONFLICT DO NOTHING
                 """))
             
             if 'roles' in tables:
@@ -576,7 +561,6 @@ class TestMigrationDataIntegrity:
                     ('Admin', 'Administrator', true, NOW()),
                     ('Teacher', 'Teacher', true, NOW()),
                     ('Student', 'Student', true, NOW())
-                    ON CONFLICT DO NOTHING
                 """))
             
             conn.commit()
@@ -629,14 +613,12 @@ class TestMigrationDataIntegrity:
         tables = inspector.get_table_names()
         
         with engine.connect() as conn:
-            conn.execute(text("SET LOCAL app.bypass_rls = true"))
-            
             for table in tables:
                 if table.startswith('alembic_'):
                     continue
                 
                 try:
-                    result = conn.execute(text(f"SELECT COUNT(*) FROM {table}"))
+                    result = conn.execute(text(f"SELECT COUNT(*) FROM `{table}`"))
                     count = result.scalar()
                     
                     checksums[table] = {
@@ -669,14 +651,29 @@ class TestMigrationPerformance:
         """
         test_db_url = os.getenv(
             "TEST_DATABASE_URL",
-            "postgresql://postgres:postgres@localhost:5432/test_perf_migrations"
+            "mysql+pymysql://root:test_password@localhost:3306/test_perf_migrations?charset=utf8mb4"
         )
         
-        engine = create_engine(test_db_url, poolclass=NullPool)
+        engine = create_engine(test_db_url, poolclass=NullPool, pool_pre_ping=True)
         
         with engine.connect() as conn:
-            conn.execute(text("DROP SCHEMA IF EXISTS public CASCADE"))
-            conn.execute(text("CREATE SCHEMA public"))
+            result = conn.execute(text("SELECT DATABASE()"))
+            current_db = result.scalar()
+            
+            result = conn.execute(text("""
+                SELECT table_name 
+                FROM information_schema.tables 
+                WHERE table_schema = :db_name
+            """), {"db_name": current_db})
+            
+            tables = [row[0] for row in result.fetchall()]
+            
+            if tables:
+                conn.execute(text("SET FOREIGN_KEY_CHECKS = 0"))
+                for table in tables:
+                    conn.execute(text(f"DROP TABLE IF EXISTS `{table}`"))
+                conn.execute(text("SET FOREIGN_KEY_CHECKS = 1"))
+            
             conn.commit()
         
         performance_config.set_main_option("sqlalchemy.url", test_db_url)

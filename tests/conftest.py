@@ -28,12 +28,12 @@ from src.utils.session import SessionManager
 
 fake = Faker()
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
+SQLALCHEMY_DATABASE_URL = "mysql+pymysql://root:test_password@localhost:3306/test_db?charset=utf8mb4"
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
-    connect_args={"check_same_thread": False},
     poolclass=StaticPool,
+    pool_pre_ping=True,
 )
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -70,7 +70,6 @@ def client(db_session: Session) -> Generator[TestClient, None, None]:
         finally:
             pass
 
-    # Mock Redis for testing
     async def mock_get_redis():
         mock_redis = AsyncMock()
         mock_redis.get.return_value = None
@@ -468,7 +467,6 @@ def parent_user(db_session: Session, institution: Institution, parent_role: Role
     db_session.commit()
     db_session.refresh(user)
     
-    # Create parent profile
     parent = Parent(
         institution_id=institution.id,
         user_id=user.id,

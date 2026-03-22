@@ -21,7 +21,7 @@ def migration_test_db_url():
     """
     return os.getenv(
         "TEST_MIGRATION_DATABASE_URL",
-        "postgresql://postgres:postgres@localhost:5432/test_migrations_db"
+        "mysql+pymysql://root:test_password@localhost:3306/test_migrations_db?charset=utf8mb4"
     )
 
 
@@ -45,8 +45,23 @@ def clean_test_db(migration_test_db_url):
     engine = create_engine(migration_test_db_url, poolclass=NullPool, echo=False)
     
     with engine.connect() as conn:
-        conn.execute(text("DROP SCHEMA IF EXISTS public CASCADE"))
-        conn.execute(text("CREATE SCHEMA public"))
+        result = conn.execute(text("SELECT DATABASE()"))
+        current_db = result.scalar()
+        
+        result = conn.execute(text("""
+            SELECT table_name 
+            FROM information_schema.tables 
+            WHERE table_schema = :db_name
+        """), {"db_name": current_db})
+        
+        tables = [row[0] for row in result.fetchall()]
+        
+        if tables:
+            conn.execute(text("SET FOREIGN_KEY_CHECKS = 0"))
+            for table in tables:
+                conn.execute(text(f"DROP TABLE IF EXISTS `{table}`"))
+            conn.execute(text("SET FOREIGN_KEY_CHECKS = 1"))
+        
         conn.commit()
     
     yield engine
