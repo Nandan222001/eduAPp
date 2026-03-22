@@ -84,9 +84,34 @@ function RootLayoutNav() {
 
     const inAuthGroup = segments[0] === '(auth)';
 
+    console.log('[Navigation] useEffect triggered:', {
+      isAuthenticated,
+      activeRole,
+      segments,
+      inAuthGroup,
+    });
+
+    const checkTokenEdgeCase = async () => {
+      const { getAccessToken, getRefreshToken } = await import('@utils/secureStorage');
+      const accessToken = await getAccessToken();
+      const refreshToken = await getRefreshToken();
+      
+      if ((accessToken || refreshToken) && !isAuthenticated) {
+        console.warn('[Navigation] Edge case detected: User has tokens but isAuthenticated is false', {
+          hasAccessToken: !!accessToken,
+          hasRefreshToken: !!refreshToken,
+          isAuthenticated,
+        });
+      }
+    };
+
+    checkTokenEdgeCase();
+
     if (!isAuthenticated && !inAuthGroup) {
+      console.log('[Navigation] Redirecting to login - user not authenticated');
       router.replace('/(auth)/login');
     } else if (isAuthenticated && inAuthGroup) {
+      console.log('[Navigation] User authenticated in auth group, redirecting based on role:', activeRole);
       if (activeRole === 'parent') {
         router.replace('/(tabs)/parent');
       } else if (activeRole === 'student') {
