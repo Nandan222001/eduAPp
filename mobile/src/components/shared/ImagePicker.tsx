@@ -1,8 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Image, StyleSheet, Alert } from 'react-native';
-import * as ExpoImagePicker from 'expo-image-picker';
+import { View, Text, TouchableOpacity, Image, StyleSheet, Alert, Platform } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '@/theme';
+
+// Lazy load ImagePicker only on native platforms
+let ExpoImagePicker: any = null;
+if (Platform.OS !== 'web') {
+  ExpoImagePicker = require('expo-image-picker');
+}
 
 interface ImagePickerProps {
   label?: string;
@@ -25,6 +30,10 @@ export const ImagePicker: React.FC<ImagePickerProps> = ({
   const [imageUri, setImageUri] = useState<string | undefined>(currentImage);
 
   const requestPermissions = async () => {
+    if (Platform.OS === 'web') {
+      return true; // No permissions needed on web
+    }
+
     const { status } = await ExpoImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Permission Required', 'Please grant permission to access your photos.');
@@ -33,7 +42,31 @@ export const ImagePicker: React.FC<ImagePickerProps> = ({
     return true;
   };
 
+  const pickImageWeb = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (e: any) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event: any) => {
+          const uri = event.target.result;
+          setImageUri(uri);
+          onImageSelect(uri);
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+    input.click();
+  };
+
   const pickImage = async () => {
+    if (Platform.OS === 'web') {
+      pickImageWeb();
+      return;
+    }
+
     const hasPermission = await requestPermissions();
     if (!hasPermission) return;
 
@@ -57,6 +90,11 @@ export const ImagePicker: React.FC<ImagePickerProps> = ({
   };
 
   const takePhoto = async () => {
+    if (Platform.OS === 'web') {
+      Alert.alert('Not Available', 'Camera is not available on web platform');
+      return;
+    }
+
     const { status } = await ExpoImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Permission Required', 'Please grant permission to access your camera.');
@@ -82,6 +120,11 @@ export const ImagePicker: React.FC<ImagePickerProps> = ({
   };
 
   const showOptions = () => {
+    if (Platform.OS === 'web') {
+      pickImage();
+      return;
+    }
+
     Alert.alert('Select Image', 'Choose an option', [
       { text: 'Take Photo', onPress: takePhoto },
       { text: 'Choose from Library', onPress: pickImage },

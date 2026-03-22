@@ -1,7 +1,25 @@
-import { Camera, CameraType, FlashMode } from 'expo-camera';
-import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { Alert, Platform } from 'react-native';
-import * as FileSystem from 'expo-file-system';
+
+// Lazy load camera modules only on native platforms
+let Camera: any = null;
+let CameraType: any = null;
+let FlashMode: any = null;
+let manipulateAsync: any = null;
+let SaveFormat: any = null;
+let FileSystem: any = null;
+
+if (Platform.OS !== 'web') {
+  const cameraModule = require('expo-camera');
+  Camera = cameraModule.Camera;
+  CameraType = cameraModule.CameraType;
+  FlashMode = cameraModule.FlashMode;
+  
+  const imageManipulator = require('expo-image-manipulator');
+  manipulateAsync = imageManipulator.manipulateAsync;
+  SaveFormat = imageManipulator.SaveFormat;
+  
+  FileSystem = require('expo-file-system');
+}
 
 export interface CameraPermissions {
   camera: boolean;
@@ -34,8 +52,17 @@ export interface Point {
   y: number;
 }
 
+const notAvailableOnWeb = (feature: string) => {
+  Alert.alert('Not Available', `${feature} is not available on web platform`);
+};
+
 export const cameraService = {
   async requestPermissions(): Promise<CameraPermissions> {
+    if (Platform.OS === 'web') {
+      notAvailableOnWeb('Camera');
+      return { camera: false, microphone: false };
+    }
+
     const cameraPermission = await Camera.requestCameraPermissionsAsync();
     const microphonePermission = await Camera.requestMicrophonePermissionsAsync();
 
@@ -46,6 +73,10 @@ export const cameraService = {
   },
 
   async checkPermissions(): Promise<CameraPermissions> {
+    if (Platform.OS === 'web') {
+      return { camera: false, microphone: false };
+    }
+
     const cameraPermission = await Camera.getCameraPermissionsAsync();
     const microphonePermission = await Camera.getMicrophonePermissionsAsync();
 
@@ -56,6 +87,11 @@ export const cameraService = {
   },
 
   async ensureCameraPermission(): Promise<boolean> {
+    if (Platform.OS === 'web') {
+      notAvailableOnWeb('Camera');
+      return false;
+    }
+
     const permissions = await this.checkPermissions();
 
     if (!permissions.camera) {
@@ -73,9 +109,14 @@ export const cameraService = {
   },
 
   async capturePhoto(
-    cameraRef: React.RefObject<Camera>,
+    cameraRef: React.RefObject<any>,
     options: PhotoOptions = {}
   ): Promise<CapturedPhoto | null> {
+    if (Platform.OS === 'web') {
+      notAvailableOnWeb('Camera capture');
+      return null;
+    }
+
     try {
       if (!cameraRef.current) {
         throw new Error('Camera reference not available');
@@ -104,6 +145,10 @@ export const cameraService = {
   },
 
   async processImageWithEdgeDetection(uri: string): Promise<CapturedPhoto> {
+    if (Platform.OS === 'web') {
+      return { uri, width: 0, height: 0 };
+    }
+
     try {
       const processed = await manipulateAsync(
         uri,
@@ -138,6 +183,10 @@ export const cameraService = {
   },
 
   async enhanceDocument(uri: string): Promise<string> {
+    if (Platform.OS === 'web') {
+      return uri;
+    }
+
     try {
       const result = await manipulateAsync(uri, [{ resize: { width: 1200 } }], {
         compress: 0.9,
@@ -170,6 +219,10 @@ export const cameraService = {
       height: number;
     }
   ): Promise<string> {
+    if (Platform.OS === 'web') {
+      return uri;
+    }
+
     try {
       const result = await manipulateAsync(uri, [{ crop: cropData }], {
         compress: 0.9,
@@ -183,6 +236,10 @@ export const cameraService = {
   },
 
   async compressImage(uri: string, quality: number = 0.8): Promise<string> {
+    if (Platform.OS === 'web') {
+      return uri;
+    }
+
     try {
       const result = await manipulateAsync(uri, [], { compress: quality, format: SaveFormat.JPEG });
       return result.uri;
@@ -193,6 +250,10 @@ export const cameraService = {
   },
 
   async rotateImage(uri: string, degrees: number): Promise<string> {
+    if (Platform.OS === 'web') {
+      return uri;
+    }
+
     try {
       const result = await manipulateAsync(uri, [{ rotate: degrees }], {
         compress: 0.9,
@@ -206,6 +267,10 @@ export const cameraService = {
   },
 
   async getImageInfo(uri: string): Promise<{ width: number; height: number; size: number }> {
+    if (Platform.OS === 'web') {
+      return { width: 0, height: 0, size: 0 };
+    }
+
     try {
       const info = await FileSystem.getInfoAsync(uri, { size: true });
 
@@ -220,3 +285,5 @@ export const cameraService = {
     }
   },
 };
+
+export { CameraType, FlashMode };

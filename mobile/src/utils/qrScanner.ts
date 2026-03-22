@@ -1,5 +1,11 @@
-import { BarCodeScanner, BarCodeScannerResult } from 'expo-barcode-scanner';
-import { Alert } from 'react-native';
+import { Alert, Platform } from 'react-native';
+
+// Lazy load barcode scanner only on native platforms
+let BarCodeScanner: any = null;
+if (Platform.OS !== 'web') {
+  const barcodeModule = require('expo-barcode-scanner');
+  BarCodeScanner = barcodeModule.BarCodeScanner;
+}
 
 export interface QRScanResult {
   data: string;
@@ -17,8 +23,17 @@ export interface ParsedQRData {
   raw: string;
 }
 
+const notAvailableOnWeb = (feature: string) => {
+  Alert.alert('Not Available', `${feature} is not available on web platform`);
+};
+
 export const qrScannerService = {
   async requestPermissions(): Promise<boolean> {
+    if (Platform.OS === 'web') {
+      notAvailableOnWeb('QR Scanner');
+      return false;
+    }
+
     try {
       const { status } = await BarCodeScanner.requestPermissionsAsync();
       return status === 'granted';
@@ -29,6 +44,10 @@ export const qrScannerService = {
   },
 
   async checkPermissions(): Promise<boolean> {
+    if (Platform.OS === 'web') {
+      return false;
+    }
+
     try {
       const { status } = await BarCodeScanner.getPermissionsAsync();
       return status === 'granted';
@@ -39,6 +58,11 @@ export const qrScannerService = {
   },
 
   async ensurePermissions(): Promise<boolean> {
+    if (Platform.OS === 'web') {
+      notAvailableOnWeb('QR Scanner');
+      return false;
+    }
+
     const hasPermission = await this.checkPermissions();
 
     if (!hasPermission) {
@@ -55,8 +79,8 @@ export const qrScannerService = {
     return true;
   },
 
-  parseQRData(scanResult: BarCodeScannerResult): ParsedQRData {
-    const { data, type } = scanResult;
+  parseQRData(scanResult: any): ParsedQRData {
+    const { data } = scanResult;
 
     if (this.isURL(data)) {
       return {
@@ -110,7 +134,7 @@ export const qrScannerService = {
     }
   },
 
-  async handleScanResult(scanResult: BarCodeScannerResult, navigation: any): Promise<void> {
+  async handleScanResult(scanResult: any, navigation: any): Promise<void> {
     const parsed = this.parseQRData(scanResult);
 
     switch (parsed.type) {
@@ -157,6 +181,10 @@ export const qrScannerService = {
   },
 
   getSupportedBarcodeTypes(): string[] {
+    if (Platform.OS === 'web') {
+      return [];
+    }
+
     return [
       BarCodeScanner.Constants.BarCodeType.qr,
       BarCodeScanner.Constants.BarCodeType.pdf417,
@@ -183,3 +211,5 @@ export const qrScannerService = {
     }
   },
 };
+
+export { BarCodeScanner };

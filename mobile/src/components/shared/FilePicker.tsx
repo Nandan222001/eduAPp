@@ -1,12 +1,24 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import * as DocumentPicker from 'expo-document-picker';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, Platform } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '@/theme';
 
+// Lazy load DocumentPicker only on native platforms
+let DocumentPicker: any = null;
+if (Platform.OS !== 'web') {
+  DocumentPicker = require('expo-document-picker');
+}
+
+interface DocumentPickerAsset {
+  uri: string;
+  name: string;
+  size?: number;
+  mimeType?: string;
+}
+
 interface FilePickerProps {
   label?: string;
-  onFileSelect: (file: DocumentPicker.DocumentPickerAsset) => void;
+  onFileSelect: (file: DocumentPickerAsset) => void;
   acceptedTypes?: string[];
   error?: string;
   multiple?: boolean;
@@ -21,7 +33,35 @@ export const FilePicker: React.FC<FilePickerProps> = ({
 }) => {
   const { theme } = useTheme();
 
+  const pickDocumentWeb = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = acceptedTypes.join(',');
+    input.multiple = multiple;
+    input.onchange = (e: any) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event: any) => {
+          onFileSelect({
+            uri: event.target.result,
+            name: file.name,
+            size: file.size,
+            mimeType: file.type,
+          });
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+    input.click();
+  };
+
   const pickDocument = async () => {
+    if (Platform.OS === 'web') {
+      pickDocumentWeb();
+      return;
+    }
+
     try {
       const result = await DocumentPicker.getDocumentAsync({
         type: acceptedTypes,

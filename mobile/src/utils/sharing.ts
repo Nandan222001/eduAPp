@@ -1,7 +1,13 @@
-import * as Sharing from 'expo-sharing';
-import * as FileSystem from 'expo-file-system';
 import { Platform, Alert } from 'react-native';
-import * as Print from 'expo-print';
+
+// Lazy load sharing modules only on native platforms
+let Sharing: any = null;
+let Print: any = null;
+
+if (Platform.OS !== 'web') {
+  Sharing = require('expo-sharing');
+  Print = require('expo-print');
+}
 
 export interface ShareOptions {
   title?: string;
@@ -18,11 +24,28 @@ export interface ShareFileOptions {
 
 export const sharingService = {
   async isAvailable(): Promise<boolean> {
+    if (Platform.OS === 'web') {
+      return navigator.share !== undefined;
+    }
     return await Sharing.isAvailableAsync();
   },
 
   async shareText(text: string, options: ShareOptions = {}): Promise<void> {
     try {
+      if (Platform.OS === 'web') {
+        if (navigator.share) {
+          await navigator.share({
+            title: options.title,
+            text: text,
+          });
+        } else {
+          // Fallback for browsers without share API
+          await navigator.clipboard.writeText(text);
+          Alert.alert('Copied', 'Text copied to clipboard');
+        }
+        return;
+      }
+
       const RN = require('react-native');
       await RN.Share.share(
         {
@@ -41,6 +64,19 @@ export const sharingService = {
 
   async shareUrl(url: string, options: ShareOptions = {}): Promise<void> {
     try {
+      if (Platform.OS === 'web') {
+        if (navigator.share) {
+          await navigator.share({
+            title: options.title,
+            text: options.message,
+            url: url,
+          });
+        } else {
+          window.open(url, '_blank');
+        }
+        return;
+      }
+
       const RN = require('react-native');
 
       if (Platform.OS === 'ios') {
@@ -72,6 +108,11 @@ export const sharingService = {
   },
 
   async shareFile(fileUri: string, options: ShareFileOptions = {}): Promise<void> {
+    if (Platform.OS === 'web') {
+      Alert.alert('Not Available', 'File sharing is not available on web platform');
+      return;
+    }
+
     try {
       const isAvailable = await this.isAvailable();
 
@@ -105,6 +146,11 @@ export const sharingService = {
   },
 
   async shareGradesAsPDF(grades: any[], studentName: string): Promise<void> {
+    if (Platform.OS === 'web') {
+      Alert.alert('Not Available', 'PDF sharing is not available on web platform');
+      return;
+    }
+
     try {
       const html = this.generateGradesHTML(grades, studentName);
       const { uri } = await Print.printToFileAsync({ html });
@@ -195,7 +241,7 @@ export const sharingService = {
   formatScheduleForSharing(schedule: any[], date: string): string {
     let text = `📅 Schedule for ${date}\n\n`;
 
-    schedule.forEach((item, index) => {
+    schedule.forEach((item) => {
       text += `${item.startTime} - ${item.endTime}\n`;
       text += `${item.subject || item.title}\n`;
       if (item.teacher) text += `Teacher: ${item.teacher}\n`;
@@ -284,6 +330,11 @@ export const sharingService = {
   },
 
   async shareMultipleFiles(fileUris: string[], options: ShareFileOptions = {}): Promise<void> {
+    if (Platform.OS === 'web') {
+      Alert.alert('Not Available', 'File sharing is not available on web platform');
+      return;
+    }
+
     try {
       for (const uri of fileUris) {
         await this.shareFile(uri, options);

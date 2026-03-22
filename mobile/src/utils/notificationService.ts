@@ -1,8 +1,14 @@
-import * as Device from 'expo-device';
-import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
-import * as SecureStore from 'expo-secure-store';
 import { apiClient } from '../api/client';
+
+// Lazy load notification modules only on native platforms
+let Device: any = null;
+let Notifications: any = null;
+
+if (Platform.OS !== 'web') {
+  Device = require('expo-device');
+  Notifications = require('expo-notifications');
+}
 
 export interface NotificationTopic {
   assignments: boolean;
@@ -23,10 +29,14 @@ class NotificationService {
   private expoPushToken: string | null = null;
 
   constructor() {
-    this.setupNotificationHandler();
+    if (Platform.OS !== 'web') {
+      this.setupNotificationHandler();
+    }
   }
 
   private setupNotificationHandler() {
+    if (Platform.OS === 'web') return;
+
     Notifications.setNotificationHandler({
       handleNotification: async () => ({
         shouldShowAlert: true,
@@ -37,6 +47,11 @@ class NotificationService {
   }
 
   async requestPermissions(): Promise<boolean> {
+    if (Platform.OS === 'web') {
+      console.log('Push notifications not available on web');
+      return false;
+    }
+
     if (!Device.isDevice) {
       console.log('Must use physical device for Push Notifications');
       return false;
@@ -94,6 +109,11 @@ class NotificationService {
   }
 
   async registerExpoPushToken(): Promise<string | null> {
+    if (Platform.OS === 'web') {
+      console.log('Push tokens not available on web');
+      return null;
+    }
+
     try {
       const hasPermission = await this.requestPermissions();
       if (!hasPermission) {
@@ -105,7 +125,15 @@ class NotificationService {
       });
 
       this.expoPushToken = token.data;
-      await SecureStore.setItemAsync('expoPushToken', token.data);
+      
+      // Store push token using AsyncStorage on web, SecureStore on native
+      if (Platform.OS === 'web') {
+        const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+        await AsyncStorage.setItem('expoPushToken', token.data);
+      } else {
+        const SecureStore = require('expo-secure-store');
+        await SecureStore.setItemAsync('expoPushToken', token.data);
+      }
 
       return token.data;
     } catch (error) {
@@ -115,6 +143,11 @@ class NotificationService {
   }
 
   async registerDeviceWithBackend(topics: NotificationTopic): Promise<boolean> {
+    if (Platform.OS === 'web') {
+      console.log('Device registration not available on web');
+      return false;
+    }
+
     try {
       const token = this.expoPushToken || await this.registerExpoPushToken();
       if (!token) {
@@ -125,12 +158,20 @@ class NotificationService {
         device_token: token,
         device_type: Platform.OS === 'ios' ? 'ios' : 'android',
         device_name: Device.deviceName || 'Unknown Device',
-        app_version: '1.0.0', // Should be dynamically fetched from app config
+        app_version: '1.0.0',
         topics,
       };
 
       await apiClient.post('/notifications/register-device', deviceInfo);
-      await SecureStore.setItemAsync('notificationTopics', JSON.stringify(topics));
+      
+      // Store topics using AsyncStorage on web, SecureStore on native
+      if (Platform.OS === 'web') {
+        const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+        await AsyncStorage.setItem('notificationTopics', JSON.stringify(topics));
+      } else {
+        const SecureStore = require('expo-secure-store');
+        await SecureStore.setItemAsync('notificationTopics', JSON.stringify(topics));
+      }
 
       return true;
     } catch (error) {
@@ -145,7 +186,16 @@ class NotificationService {
 
   async getStoredTopics(): Promise<NotificationTopic | null> {
     try {
-      const topicsJson = await SecureStore.getItemAsync('notificationTopics');
+      let topicsJson: string | null = null;
+      
+      if (Platform.OS === 'web') {
+        const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+        topicsJson = await AsyncStorage.getItem('notificationTopics');
+      } else {
+        const SecureStore = require('expo-secure-store');
+        topicsJson = await SecureStore.getItemAsync('notificationTopics');
+      }
+      
       if (topicsJson) {
         return JSON.parse(topicsJson);
       }
@@ -157,11 +207,15 @@ class NotificationService {
   }
 
   setupNotificationListeners(
-    onNotificationReceived?: (notification: Notifications.Notification) => void,
-    onNotificationTapped?: (response: Notifications.NotificationResponse) => void
+    onNotificationReceived?: (notification: any) => void,
+    onNotificationTapped?: (response: any) => void
   ) {
+    if (Platform.OS === 'web') {
+      return () => {};
+    }
+
     const receivedSubscription = Notifications.addNotificationReceivedListener(
-      (notification) => {
+      (notification: any) => {
         console.log('Notification received:', notification);
         if (onNotificationReceived) {
           onNotificationReceived(notification);
@@ -170,7 +224,7 @@ class NotificationService {
     );
 
     const responseSubscription = Notifications.addNotificationResponseReceivedListener(
-      (response) => {
+      (response: any) => {
         console.log('Notification tapped:', response);
         if (onNotificationTapped) {
           onNotificationTapped(response);
@@ -185,7 +239,7 @@ class NotificationService {
   }
 
   async handleNotificationTapped(
-    response: Notifications.NotificationResponse,
+    response: any,
     navigation: any
   ) {
     const data = response.notification.request.content.data;
@@ -231,14 +285,17 @@ class NotificationService {
   }
 
   async setBadgeCount(count: number): Promise<void> {
+    if (Platform.OS === 'web') return;
     await Notifications.setBadgeCountAsync(count);
   }
 
   async getBadgeCount(): Promise<number> {
+    if (Platform.OS === 'web') return 0;
     return await Notifications.getBadgeCountAsync();
   }
 
   async clearBadge(): Promise<void> {
+    if (Platform.OS === 'web') return;
     await Notifications.setBadgeCountAsync(0);
   }
 
@@ -246,8 +303,13 @@ class NotificationService {
     title: string,
     body: string,
     data?: any,
-    trigger?: Notifications.NotificationTriggerInput
+    trigger?: any
   ): Promise<string> {
+    if (Platform.OS === 'web') {
+      console.log('Local notifications not available on web');
+      return '';
+    }
+
     return await Notifications.scheduleNotificationAsync({
       content: {
         title,
@@ -260,14 +322,17 @@ class NotificationService {
   }
 
   async cancelAllScheduledNotifications(): Promise<void> {
+    if (Platform.OS === 'web') return;
     await Notifications.cancelAllScheduledNotificationsAsync();
   }
 
-  async getPresentedNotifications(): Promise<Notifications.Notification[]> {
+  async getPresentedNotifications(): Promise<any[]> {
+    if (Platform.OS === 'web') return [];
     return await Notifications.getPresentedNotificationsAsync();
   }
 
   async dismissAllNotifications(): Promise<void> {
+    if (Platform.OS === 'web') return;
     await Notifications.dismissAllNotificationsAsync();
   }
 

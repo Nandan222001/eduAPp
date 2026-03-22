@@ -1,6 +1,6 @@
 import 'react-native-gesture-handler';
 import React, { useEffect } from 'react';
-import { Slot, useRouter, useSegments, SplashScreen } from 'expo-router';
+import { Slot, useRouter, useSegments } from 'expo-router';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 import { ThemeProvider } from '@rneui/themed';
@@ -16,8 +16,11 @@ import { theme } from '@config/theme';
 import { authService } from '@utils/authService';
 import { initializeOfflineSupport } from '@utils/offlineInit';
 
-// Prevent splash screen from auto-hiding
-SplashScreen.preventAutoHideAsync();
+// Prevent splash screen from auto-hiding (only on native platforms)
+if (Platform.OS !== 'web') {
+  const SplashScreen = require('expo-splash-screen');
+  SplashScreen.preventAutoHideAsync();
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -46,6 +49,7 @@ function RootLayoutNav() {
       } finally {
         // Hide splash screen after initialization
         if (Platform.OS !== 'web') {
+          const SplashScreen = require('expo-splash-screen');
           await SplashScreen.hideAsync();
         }
       }

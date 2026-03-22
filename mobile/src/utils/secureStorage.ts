@@ -1,5 +1,4 @@
 import { Platform } from 'react-native';
-import * as SecureStore from 'expo-secure-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const TOKEN_KEYS = {
@@ -9,6 +8,12 @@ const TOKEN_KEYS = {
   USER_EMAIL: 'userEmail',
   IS_DEMO_USER: 'isDemoUser',
 } as const;
+
+// Lazy load SecureStore only on native platforms
+let SecureStore: any = null;
+if (Platform.OS !== 'web') {
+  SecureStore = require('expo-secure-store');
+}
 
 // Storage abstraction layer
 const storage = {

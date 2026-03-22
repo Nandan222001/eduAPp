@@ -1,6 +1,11 @@
-import * as LocalAuthentication from 'expo-local-authentication';
 import { Platform } from 'react-native';
 import { secureStorage } from './secureStorage';
+
+// Lazy load LocalAuthentication only on native platforms
+let LocalAuthentication: any = null;
+if (Platform.OS !== 'web') {
+  LocalAuthentication = require('expo-local-authentication');
+}
 
 const BIOMETRIC_ENABLED_KEY = 'biometric_auth_enabled';
 
@@ -13,6 +18,16 @@ export interface BiometricAvailability {
 
 export const biometricsService = {
   async checkAvailability(): Promise<BiometricAvailability> {
+    // Biometrics not available on web
+    if (Platform.OS === 'web') {
+      return {
+        isAvailable: false,
+        biometricType: 'None',
+        hasHardware: false,
+        isEnrolled: false,
+      };
+    }
+
     const hasHardware = await LocalAuthentication.hasHardwareAsync();
     const isEnrolled = await LocalAuthentication.isEnrolledAsync();
     const supportedTypes = await LocalAuthentication.supportedAuthenticationTypesAsync();
@@ -35,6 +50,10 @@ export const biometricsService = {
   },
 
   async authenticate(reason?: string): Promise<boolean> {
+    if (Platform.OS === 'web') {
+      return false;
+    }
+
     try {
       const availability = await this.checkAvailability();
 
@@ -58,8 +77,8 @@ export const biometricsService = {
 
   async isEnabled(): Promise<boolean> {
     try {
-      const enabled = await secureStorage.getItem(BIOMETRIC_ENABLED_KEY);
-      return enabled === 'true';
+      const enabled = await secureStorage.getBiometricEnabled();
+      return enabled;
     } catch (error) {
       return false;
     }
@@ -67,7 +86,7 @@ export const biometricsService = {
 
   async setEnabled(enabled: boolean): Promise<void> {
     try {
-      await secureStorage.setItem(BIOMETRIC_ENABLED_KEY, enabled ? 'true' : 'false');
+      await secureStorage.setBiometricEnabled(enabled);
     } catch (error) {
       console.error('Error setting biometric preference:', error);
       throw error;
@@ -75,6 +94,10 @@ export const biometricsService = {
   },
 
   async authenticateForLogin(): Promise<boolean> {
+    if (Platform.OS === 'web') {
+      return false;
+    }
+
     const isEnabled = await this.isEnabled();
 
     if (!isEnabled) {
@@ -89,11 +112,18 @@ export const biometricsService = {
     return this.authenticate(`Use ${availability.biometricType} to sign in to EDU Mobile`);
   },
 
-  async getSupportedAuthenticationTypes(): Promise<LocalAuthentication.AuthenticationType[]> {
+  async getSupportedAuthenticationTypes(): Promise<any[]> {
+    if (Platform.OS === 'web') {
+      return [];
+    }
     return LocalAuthentication.supportedAuthenticationTypesAsync();
   },
 
-  getAuthenticationTypeName(type: LocalAuthentication.AuthenticationType): string {
+  getAuthenticationTypeName(type: any): string {
+    if (Platform.OS === 'web') {
+      return 'Not Available';
+    }
+
     switch (type) {
       case LocalAuthentication.AuthenticationType.FINGERPRINT:
         return Platform.OS === 'ios' ? 'Touch ID' : 'Fingerprint';
@@ -107,6 +137,9 @@ export const biometricsService = {
   },
 
   async canAuthenticateWithBiometrics(): Promise<boolean> {
+    if (Platform.OS === 'web') {
+      return false;
+    }
     const availability = await this.checkAvailability();
     return availability.isAvailable;
   },

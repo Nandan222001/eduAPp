@@ -1,7 +1,17 @@
-import * as LocalAuthentication from 'expo-local-authentication';
+import { Platform } from 'react-native';
+
+// Lazy load LocalAuthentication only on native platforms
+let LocalAuthentication: any = null;
+if (Platform.OS !== 'web') {
+  LocalAuthentication = require('expo-local-authentication');
+}
 
 export const biometricUtils = {
   isAvailable: async (): Promise<boolean> => {
+    if (Platform.OS === 'web') {
+      return false;
+    }
+
     const compatible = await LocalAuthentication.hasHardwareAsync();
     if (!compatible) return false;
 
@@ -9,7 +19,10 @@ export const biometricUtils = {
     return enrolled;
   },
 
-  getSupportedTypes: async (): Promise<LocalAuthentication.AuthenticationType[]> => {
+  getSupportedTypes: async (): Promise<any[]> => {
+    if (Platform.OS === 'web') {
+      return [];
+    }
     return await LocalAuthentication.supportedAuthenticationTypesAsync();
   },
 
@@ -18,6 +31,13 @@ export const biometricUtils = {
     cancelLabel?: string;
     disableDeviceFallback?: boolean;
   }): Promise<{ success: boolean; error?: string }> => {
+    if (Platform.OS === 'web') {
+      return {
+        success: false,
+        error: 'Biometric authentication is not available on web',
+      };
+    }
+
     try {
       const result = await LocalAuthentication.authenticateAsync({
         promptMessage: options?.promptMessage || 'Authenticate to continue',
@@ -43,6 +63,10 @@ export const biometricUtils = {
   },
 
   getBiometricType: async (): Promise<string> => {
+    if (Platform.OS === 'web') {
+      return 'Not Available';
+    }
+
     const types = await LocalAuthentication.supportedAuthenticationTypesAsync();
 
     if (types.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION)) {

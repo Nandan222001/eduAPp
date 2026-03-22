@@ -1,7 +1,21 @@
-import { Camera } from 'expo-camera';
-import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
-import * as FileSystem from 'expo-file-system';
-import { Alert } from 'react-native';
+import { Alert, Platform } from 'react-native';
+
+// Lazy load camera modules only on native platforms
+let Camera: any = null;
+let manipulateAsync: any = null;
+let SaveFormat: any = null;
+let FileSystem: any = null;
+
+if (Platform.OS !== 'web') {
+  const cameraModule = require('expo-camera');
+  Camera = cameraModule.Camera;
+  
+  const imageManipulator = require('expo-image-manipulator');
+  manipulateAsync = imageManipulator.manipulateAsync;
+  SaveFormat = imageManipulator.SaveFormat;
+  
+  FileSystem = require('expo-file-system');
+}
 
 export interface ScannedDocument {
   uri: string;
@@ -26,11 +40,20 @@ export interface ScanOptions {
   multiPage?: boolean;
 }
 
+const notAvailableOnWeb = (feature: string) => {
+  Alert.alert('Not Available', `${feature} is not available on web platform`);
+};
+
 export const documentScanner = {
   async scanDocument(
-    cameraRef: React.RefObject<Camera>,
+    cameraRef: React.RefObject<any>,
     options: ScanOptions = {}
   ): Promise<DocumentPage | null> {
+    if (Platform.OS === 'web') {
+      notAvailableOnWeb('Document Scanner');
+      return null;
+    }
+
     try {
       if (!cameraRef.current) {
         throw new Error('Camera reference not available');
@@ -66,6 +89,10 @@ export const documentScanner = {
   },
 
   async enhanceDocument(uri: string): Promise<string> {
+    if (Platform.OS === 'web') {
+      return uri;
+    }
+
     try {
       const enhanced = await manipulateAsync(uri, [{ resize: { width: 1600 } }], {
         compress: 0.95,
@@ -83,7 +110,11 @@ export const documentScanner = {
     return uri;
   },
 
-  async convertToPDF(pages: DocumentPage[]): Promise<string> {
+  async convertToPDF(_pages: DocumentPage[]): Promise<string> {
+    if (Platform.OS === 'web') {
+      throw new Error('PDF conversion is not available on web platform');
+    }
+
     try {
       const pdfDir = `${FileSystem.documentDirectory}scanned_documents/`;
       await FileSystem.makeDirectoryAsync(pdfDir, { intermediates: true });
@@ -98,9 +129,14 @@ export const documentScanner = {
   },
 
   async scanMultiplePages(
-    cameraRef: React.RefObject<Camera>,
+    cameraRef: React.RefObject<any>,
     options: ScanOptions = {}
   ): Promise<ScannedDocument | null> {
+    if (Platform.OS === 'web') {
+      notAvailableOnWeb('Document Scanner');
+      return null;
+    }
+
     try {
       const pages: DocumentPage[] = [];
       const firstPage = await this.scanDocument(cameraRef, options);
@@ -125,6 +161,10 @@ export const documentScanner = {
   },
 
   async cropToDocument(uri: string, corners?: { x: number; y: number }[]): Promise<string> {
+    if (Platform.OS === 'web') {
+      return uri;
+    }
+
     try {
       if (!corners || corners.length !== 4) {
         return uri;
@@ -139,7 +179,11 @@ export const documentScanner = {
     }
   },
 
-  async applyFilter(uri: string, filter: 'grayscale' | 'blackwhite' | 'color'): Promise<string> {
+  async applyFilter(uri: string, _filter: 'grayscale' | 'blackwhite' | 'color'): Promise<string> {
+    if (Platform.OS === 'web') {
+      return uri;
+    }
+
     try {
       const result = await manipulateAsync(uri, [], { compress: 0.9, format: SaveFormat.JPEG });
 
@@ -151,6 +195,10 @@ export const documentScanner = {
   },
 
   async saveScan(document: ScannedDocument, name: string): Promise<string> {
+    if (Platform.OS === 'web') {
+      throw new Error('Save scan is not available on web platform');
+    }
+
     try {
       const saveDir = `${FileSystem.documentDirectory}documents/`;
       await FileSystem.makeDirectoryAsync(saveDir, { intermediates: true });
@@ -169,6 +217,10 @@ export const documentScanner = {
   },
 
   async deleteScan(uri: string): Promise<void> {
+    if (Platform.OS === 'web') {
+      return;
+    }
+
     try {
       const info = await FileSystem.getInfoAsync(uri);
       if (info.exists) {
@@ -179,3 +231,5 @@ export const documentScanner = {
     }
   },
 };
+
+export { Camera };
