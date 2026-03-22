@@ -36,6 +36,7 @@ export const secureStorage = {
     await Promise.all([
       SecureStore.deleteItemAsync(TOKEN_KEYS.ACCESS_TOKEN),
       SecureStore.deleteItemAsync(TOKEN_KEYS.REFRESH_TOKEN),
+      SecureStore.deleteItemAsync(TOKEN_KEYS.IS_DEMO_USER),
     ]);
   },
 
@@ -63,6 +64,19 @@ export const secureStorage = {
   getIsDemoUser: async (): Promise<boolean> => {
     const value = await SecureStore.getItemAsync(TOKEN_KEYS.IS_DEMO_USER);
     return value === 'true';
+  },
+
+  setDemoUser: async (isDemoUser: boolean): Promise<void> => {
+    await SecureStore.setItemAsync(TOKEN_KEYS.IS_DEMO_USER, isDemoUser.toString());
+  },
+
+  getDemoUser: async (): Promise<boolean> => {
+    const value = await SecureStore.getItemAsync(TOKEN_KEYS.IS_DEMO_USER);
+    return value === 'true';
+  },
+
+  clearDemoUser: async (): Promise<void> => {
+    await SecureStore.deleteItemAsync(TOKEN_KEYS.IS_DEMO_USER);
   },
 
   clearAll: async (): Promise<void> => {
