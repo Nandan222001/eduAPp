@@ -25,7 +25,10 @@
         "NSMicrophoneUsageDescription": "Allow EduTrack to use your microphone for voice features",
         "UIBackgroundModes": ["fetch", "remote-notification"]
       },
-      "associatedDomains": ["applinks:edutrack.app"]
+      "associatedDomains": [
+        "applinks:edutrack.app",
+        "applinks:*.edutrack.app"
+      ]
     },
     "android": {
       "adaptiveIcon": {
@@ -35,7 +38,12 @@
       "package": "com.edutrack.app",
       "permissions": [
         "USE_BIOMETRIC",
-        "USE_FINGERPRINT"
+        "USE_FINGERPRINT",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "ACCESS_NETWORK_STATE",
+        "INTERNET"
       ],
       "googleServicesFile": "./google-services.json",
       "intentFilters": [
@@ -47,6 +55,20 @@
               "scheme": "https",
               "host": "edutrack.app",
               "pathPrefix": "/"
+            },
+            {
+              "scheme": "https",
+              "host": "*.edutrack.app",
+              "pathPrefix": "/"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        },
+        {
+          "action": "VIEW",
+          "data": [
+            {
+              "scheme": "edutrack"
             }
           ],
           "category": ["BROWSABLE", "DEFAULT"]
@@ -76,9 +98,7 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/notification-icon.png",
-          "color": "#ffffff",
-          "sounds": ["./assets/notification-sound.wav"]
+          "color": "#ffffff"
         }
       ]
     ]

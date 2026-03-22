@@ -25,5 +25,13 @@ module.exports = function(api) {
       ],
       'react-native-reanimated/plugin',
     ],
+    env: {
+      production: {
+        plugins: [
+          // Remove console.log in production
+          ['transform-remove-console', { exclude: ['error', 'warn'] }],
+        ],
+      },
+    },
   };
 };

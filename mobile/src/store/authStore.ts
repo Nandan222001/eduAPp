@@ -1,8 +1,8 @@
 import { create } from 'zustand';
-import { User } from '@types';
+import { User, LoginRequest } from '@types';
 import { storage } from '@utils/storage';
 import { STORAGE_KEYS } from '@constants';
-import { authApi, LoginRequest } from '@api/auth';
+import { authApi } from '@api/authApi';
 
 interface AuthStore {
   user: User | null;

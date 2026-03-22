@@ -9,7 +9,6 @@ import {
   LoginRequest,
   OTPLoginRequest,
   OTPVerifyRequest,
-  UserRole,
 } from '../../types/auth';
 
 const initialState: AuthState = {
@@ -339,6 +338,18 @@ const authSlice = createSlice({
         state.isAuthenticated = false;
         state.isLoading = false;
         state.error = null;
+        state.biometricEnabled = false;
+        state.activeRole = null;
+        state.availableRoles = [];
+      })
+      .addCase(logout.rejected, (state) => {
+        state.user = null;
+        state.accessToken = null;
+        state.refreshToken = null;
+        state.isAuthenticated = false;
+        state.isLoading = false;
+        state.error = null;
+        state.biometricEnabled = false;
         state.activeRole = null;
         state.availableRoles = [];
       })

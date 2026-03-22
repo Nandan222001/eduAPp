@@ -1,6 +1,6 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosError } from 'axios';
 import { secureStorage } from '../utils/secureStorage';
-import { offlineQueueManager } from '../utils/offlineQueue';
+import { offlineQueueManager, QueuedRequestType } from '../utils/offlineQueue';
 import { networkStatusManager } from '../utils/networkStatus';
 import { STORAGE_KEYS } from '../constants';
 
@@ -84,6 +84,7 @@ class ApiClient {
     const headers = config.headers as Record<string, string>;
 
     await offlineQueueManager.addToQueue({
+      type: QueuedRequestType.PROFILE_UPDATE,
       url,
       method,
       data,
@@ -101,6 +102,18 @@ class ApiClient {
         const refreshToken = await secureStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
         if (!refreshToken) {
           throw new Error('No refresh token available');
+        }
+
+        if (refreshToken.startsWith('demo_student_refresh_token_') || refreshToken.startsWith('demo_parent_refresh_token_')) {
+          const isStudent = refreshToken.startsWith('demo_student_refresh_token_');
+          const newAccessToken = isStudent 
+            ? `demo_student_access_token_${Date.now()}`
+            : `demo_parent_access_token_${Date.now()}`;
+          
+          await secureStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, newAccessToken);
+          await secureStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
+          
+          return newAccessToken;
         }
 
         const response = await axios.post(

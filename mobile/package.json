@@ -8,10 +8,15 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "build": "eas build --profile preview --platform all",
+    "build:web": "expo export --platform web",
+    "analyze-bundle": "npm run build:web && node scripts/analyze-bundle.js",
+    "verify-web-optimization": "node scripts/verify-web-optimization.js",
     "lint": "eslint . --ext .ts,.tsx",
     "type-check": "tsc --noEmit",
     "validate-ios": "node validate-ios-setup.js",
-    "test-ios": "npm run validate-ios && npm run type-check && npm run lint"
+    "validate-android": "node validate-android-setup.js",
+    "test-ios": "npm run validate-ios && npm run type-check && npm run lint",
+    "test-android": "npm run validate-android && npm run type-check && npm run lint"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "^1.21.0",
