@@ -15,11 +15,32 @@ const migrations = {
     if (state?.auth) {
       const { isAuthenticated, user, accessToken, refreshToken } = state.auth;
       if (!isAuthenticated && user && accessToken && refreshToken) {
+        console.log('[Migration v1] Fixing isAuthenticated state - user has valid auth data');
         return {
           ...state,
           auth: {
             ...state.auth,
             isAuthenticated: true,
+            activeRole: state.auth.activeRole || user?.roleInfo?.slug || null,
+            availableRoles: state.auth.availableRoles || (user?.roleInfo?.slug ? [user.roleInfo.slug] : []),
+          },
+        };
+      }
+    }
+    return state;
+  },
+  2: (state: any) => {
+    if (state?.auth) {
+      const { user, accessToken, refreshToken } = state.auth;
+      if (user && accessToken && refreshToken) {
+        console.log('[Migration v2] Ensuring auth state consistency');
+        return {
+          ...state,
+          auth: {
+            ...state.auth,
+            isAuthenticated: true,
+            activeRole: state.auth.activeRole || user?.roleInfo?.slug || null,
+            availableRoles: state.auth.availableRoles || (user?.roleInfo?.slug ? [user.roleInfo.slug] : []),
           },
         };
       }
@@ -30,7 +51,7 @@ const migrations = {
 
 const persistConfig = {
   key: 'root',
-  version: 1,
+  version: 2,
   storage: AsyncStorage,
   whitelist: ['auth', 'profile', 'dashboard', 'assignments', 'grades', 'parent', 'offline', 'studentData'],
   migrate: createMigrate(migrations, { debug: false }),

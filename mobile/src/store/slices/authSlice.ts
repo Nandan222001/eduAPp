@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { REHYDRATE } from 'redux-persist';
 import { authApi } from '../../api/authApi';
 import { secureStorage } from '../../utils/secureStorage';
 import { biometricUtils } from '../../utils/biometric';
@@ -140,16 +141,27 @@ export const logout = createAsyncThunk('auth/logout', async (_, { getState, reje
 
 export const loadStoredAuth = createAsyncThunk('auth/loadStoredAuth', async (_, { rejectWithValue }) => {
   try {
+    console.log('[DEBUG] loadStoredAuth - Starting to load stored auth');
     const accessToken = await secureStorage.getAccessToken();
     const refreshToken = await secureStorage.getRefreshToken();
     const biometricEnabled = await secureStorage.getBiometricEnabled();
     const isDemoUser = await secureStorage.getIsDemoUser();
 
+    console.log('[DEBUG] loadStoredAuth - SecureStorage check:', {
+      hasAccessToken: !!accessToken,
+      hasRefreshToken: !!refreshToken,
+      biometricEnabled,
+      isDemoUser,
+    });
+
     if (!accessToken || !refreshToken) {
+      console.log('[DEBUG] loadStoredAuth - No stored tokens found');
       return null;
     }
 
+    console.log('[DEBUG] loadStoredAuth - Fetching current user from API');
     const user = await authApi.getCurrentUser();
+    console.log('[DEBUG] loadStoredAuth - User fetched successfully:', user.email);
 
     if (isDemoUser) {
       await secureStorage.setIsDemoUser(true);
@@ -162,6 +174,7 @@ export const loadStoredAuth = createAsyncThunk('auth/loadStoredAuth', async (_, 
       biometricEnabled,
     };
   } catch (error: any) {
+    console.error('[DEBUG] loadStoredAuth - Error occurred:', error);
     await secureStorage.clearTokens();
     return rejectWithValue(error.response?.data?.detail || 'Failed to restore session');
   }
@@ -211,6 +224,31 @@ const authSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      .addCase(REHYDRATE, (state, action: any) => {
+        if (action.payload?.auth) {
+          const rehydratedAuth = action.payload.auth;
+          console.log('[DEBUG] REHYDRATE - Restoring auth state from persistence');
+          console.log('[DEBUG] REHYDRATE - Has user:', !!rehydratedAuth.user);
+          console.log('[DEBUG] REHYDRATE - Has accessToken:', !!rehydratedAuth.accessToken);
+          console.log('[DEBUG] REHYDRATE - Has refreshToken:', !!rehydratedAuth.refreshToken);
+          console.log('[DEBUG] REHYDRATE - isAuthenticated value:', rehydratedAuth.isAuthenticated);
+          
+          if (rehydratedAuth.user && rehydratedAuth.accessToken && rehydratedAuth.refreshToken) {
+            console.log('[DEBUG] REHYDRATE - All required data present, ensuring isAuthenticated is true');
+            state.user = rehydratedAuth.user;
+            state.accessToken = rehydratedAuth.accessToken;
+            state.refreshToken = rehydratedAuth.refreshToken;
+            state.isAuthenticated = true;
+            state.biometricEnabled = rehydratedAuth.biometricEnabled || false;
+            state.activeRole = rehydratedAuth.activeRole || rehydratedAuth.user?.roleInfo?.slug || null;
+            state.availableRoles = rehydratedAuth.availableRoles || (rehydratedAuth.user?.roleInfo?.slug ? [rehydratedAuth.user.roleInfo.slug] : []);
+            console.log('[DEBUG] REHYDRATE - State after rehydration - isAuthenticated:', state.isAuthenticated);
+            console.log('[DEBUG] REHYDRATE - State after rehydration - activeRole:', state.activeRole);
+          } else {
+            console.log('[DEBUG] REHYDRATE - Missing required data, keeping isAuthenticated false');
+          }
+        }
+      })
       .addCase(login.pending, (state) => {
         state.isLoading = true;
         state.error = null;

@@ -50,8 +50,10 @@ function RootLayoutNav() {
           await initializeIOSPlatform();
         }
 
-        // Load stored authentication
-        await dispatch(loadStoredAuth()).unwrap();
+        // Load stored authentication - this will fetch fresh user data from API if tokens exist
+        console.log('[App Init] Dispatching loadStoredAuth');
+        const result = await dispatch(loadStoredAuth()).unwrap();
+        console.log('[App Init] loadStoredAuth result:', result ? 'User restored' : 'No stored session');
         
         // Initialize offline support on native platforms
         if (Platform.OS !== 'web') {
