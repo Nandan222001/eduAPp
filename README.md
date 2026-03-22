@@ -6,12 +6,12 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
-A production-ready FastAPI application with PostgreSQL, Redis, and Docker support.
+A production-ready FastAPI application with MySQL, Redis, and Docker support.
 
 ## Features
 
 - **FastAPI**: Modern, fast web framework for building APIs
-- **PostgreSQL**: Reliable relational database with SQLAlchemy ORM
+- **MySQL**: Reliable relational database with SQLAlchemy ORM
 - **Redis**: In-memory data store for caching
 - **Alembic**: Database migrations
 - **Poetry**: Dependency management
@@ -66,7 +66,7 @@ cp .env.example .env
 # Edit .env with your local settings
 ```
 
-4. Start PostgreSQL and Redis:
+4. Start MySQL and Redis:
 ```bash
 docker-compose up -d db redis
 ```
@@ -157,7 +157,7 @@ For detailed guidance on migrations, see:
 See `.env.example` for all available configuration options.
 
 Key variables:
-- `DATABASE_URL`: PostgreSQL connection string
+- `DATABASE_URL`: MySQL connection string (format: `mysql+pymysql://user:password@host:port/database`)
 - `REDIS_URL`: Redis connection string
 - `SECRET_KEY`: Application secret key
 - `DEBUG`: Enable debug mode

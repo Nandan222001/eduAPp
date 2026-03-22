@@ -146,7 +146,7 @@ Follow the [Developer Setup Guide](DEVELOPER_SETUP_GUIDE.md) to:
          ┌───────────────┴──────────────┐
          │                              │
 ┌────────▼─────────┐           ┌────────▼─────────┐
-│   PostgreSQL     │           │     Redis        │
+│      MySQL       │           │     Redis        │
 │   (Database)     │           │     (Cache)      │
 └──────────────────┘           └────────┬─────────┘
                                         │
@@ -233,7 +233,7 @@ Follow the [Developer Setup Guide](DEVELOPER_SETUP_GUIDE.md) to:
 - **Framework:** FastAPI 0.109+
 - **Language:** Python 3.11
 - **ORM:** SQLAlchemy 2.0
-- **Database:** PostgreSQL 14+
+- **Database:** MySQL 8.0+
 - **Cache:** Redis 7.0
 - **Task Queue:** Celery
 - **Migrations:** Alembic
@@ -392,7 +392,11 @@ alembic upgrade head
 
 ### Backup Database
 ```bash
-pg_dump $DATABASE_URL > backup_$(date +%Y%m%d).sql
+# Using mysqldump
+mysqldump -u username -p database_name > backup_$(date +%Y%m%d).sql
+
+# Or using Docker
+docker exec edu_platform_mysql mysqldump -u root -ppassword edu_platform_dev > backup_$(date +%Y%m%d).sql
 ```
 
 ### Clear Redis Cache
@@ -423,7 +427,11 @@ curl http://localhost:8000/health
 
 **Check database connection:**
 ```bash
-psql $DATABASE_URL -c "SELECT 1"
+# Using mysql client
+mysql -h localhost -u username -p -e "SELECT 1;"
+
+# Or using Docker
+docker exec -it edu_platform_mysql mysql -u root -ppassword -e "SELECT 1;"
 ```
 
 **Check Redis:**

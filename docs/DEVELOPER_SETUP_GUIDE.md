@@ -161,7 +161,7 @@ APP_ENV=development
 DEBUG=True
 SECRET_KEY=your-secret-key-here-generate-a-secure-one
 
-# Database
+# Database (MySQL)
 DATABASE_URL=mysql+pymysql://root:password@localhost:3306/edu_platform_dev?charset=utf8mb4
 DATABASE_POOL_SIZE=5
 DATABASE_MAX_OVERFLOW=10
@@ -401,6 +401,11 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
     command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
@@ -452,10 +457,11 @@ Already configured in the project. Check `alembic.ini`:
 ```ini
 [alembic]
 script_location = alembic
-sqlalchemy.url = driver://user:pass@localhost/dbname
+# MySQL connection URL format
+sqlalchemy.url = mysql+pymysql://user:pass@localhost/dbname
 
 [alembic:exclude]
-tables = spatial_ref_sys
+tables = 
 ```
 
 **Run Migrations:**
@@ -1176,11 +1182,20 @@ poetry update
    # Docker
    docker-compose ps mysql
    
-   # Service
+   # Service (Linux/macOS)
    sudo systemctl status mysql
+   
+   # Service (macOS with Homebrew)
+   brew services list
    ```
 
 2. Credentials are correct in `.env`
+   ```bash
+   # Verify DATABASE_URL format
+   # mysql+pymysql://user:password@host:port/database
+   grep DATABASE_URL .env
+   ```
+
 3. Database exists
    ```bash
    mysql -u root -p -e "SHOW DATABASES;"
@@ -1188,7 +1203,10 @@ poetry update
 
 4. Port not already in use
    ```bash
+   # Linux/macOS
    lsof -i :3306
+   # Windows
+   netstat -ano | findstr :3306
    ```
 
 ### Issue: Migration Conflicts

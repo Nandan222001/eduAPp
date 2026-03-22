@@ -44,7 +44,10 @@ Before initiating any rollback, complete this checklist:
 
 ```bash
 # Create full database backup
-pg_dump -h localhost -U postgres -d production_db -F c -b -v -f "backup_before_rollback_$(date +%Y%m%d_%H%M%S).dump"
+mysqldump -h localhost -u root -p production_db > "backup_before_rollback_$(date +%Y%m%d_%H%M%S).sql"
+
+# Or with Docker
+docker exec mysql_container mysqldump -u root -ppassword production_db > "backup_before_rollback_$(date +%Y%m%d_%H%M%S).sql"
 
 # Verify backup
 pg_restore --list backup_before_rollback_*.dump | head -20
@@ -180,7 +183,7 @@ When a migration causes a critical production issue:
 # Via load balancer or application server
 
 # 2. Create emergency backup
-pg_dump -h prod-host -U postgres -d prod_db -F c -f emergency_backup_$(date +%Y%m%d_%H%M%S).dump
+mysqldump -h prod-host -u root -p prod_db > emergency_backup_$(date +%Y%m%d_%H%M%S).sql
 
 # 3. Quick rollback (single migration)
 alembic downgrade -1
@@ -192,7 +195,7 @@ alembic downgrade -1
 tail -f /var/log/app/error.log
 
 # 6. Monitor database
-psql -h prod-host -U postgres -d prod_db -c "SELECT COUNT(*) FROM pg_stat_activity"
+mysql -h prod-host -u root -p -D prod_db -e "SHOW PROCESSLIST"
 ```
 
 #### Data Loss Mitigation
@@ -201,9 +204,9 @@ If rollback will cause data loss:
 
 ```bash
 # 1. Export affected data before rollback
-psql -h prod-host -U postgres -d prod_db << EOF
-\copy (SELECT * FROM new_table) TO 'data_backup_new_table.csv' CSV HEADER;
-\copy (SELECT * FROM modified_table) TO 'data_backup_modified_table.csv' CSV HEADER;
+mysql -h prod-host -u root -p prod_db << EOF
+SELECT * FROM new_table INTO OUTFILE '/tmp/data_backup_new_table.csv' FIELDS TERMINATED BY ',' ENCLOSED BY '"' LINES TERMINATED BY '\n';
+SELECT * FROM modified_table INTO OUTFILE '/tmp/data_backup_modified_table.csv' FIELDS TERMINATED BY ',' ENCLOSED BY '"' LINES TERMINATED BY '\n';
 EOF
 
 # 2. Perform rollback
@@ -504,13 +507,13 @@ DROP TABLE alembic_version;
 pg_isready -h localhost -p 5432
 
 # Check connection limits
-psql -d postgres -c "SHOW max_connections;"
-psql -d postgres -c "SELECT count(*) FROM pg_stat_activity;"
+mysql -u root -p -e "SHOW VARIABLES LIKE 'max_connections';"
+mysql -u root -p -e "SHOW PROCESSLIST;"
 
 # Kill idle connections if needed
-psql -d postgres << EOF
-SELECT pg_terminate_backend(pid)
-FROM pg_stat_activity
+mysql -u root -p << EOF
+SELECT CONCAT('KILL ', id, ';')
+FROM INFORMATION_SCHEMA.PROCESSLIST
 WHERE state = 'idle'
     AND query_start < now() - interval '30 minutes';
 EOF
@@ -609,7 +612,7 @@ echo "Verification complete!"
 ## Additional Resources
 
 - [Alembic Documentation](https://alembic.sqlalchemy.org/)
-- [PostgreSQL Backup Documentation](https://www.postgresql.org/docs/current/backup.html)
+- [MySQL Backup Documentation](https://dev.mysql.com/doc/refman/8.0/en/backup-and-recovery.html)
 - [Database Migration Best Practices](../docs/MIGRATION_BEST_PRACTICES.md)
 - [Incident Response Procedures](../docs/INCIDENT_RESPONSE.md)
 

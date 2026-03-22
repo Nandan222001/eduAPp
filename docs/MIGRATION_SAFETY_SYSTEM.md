@@ -437,10 +437,10 @@ FROM migration_execution_metrics;
 ```bash
 # Database connection
 DATABASE_HOST=localhost
-DATABASE_PORT=5432
+DATABASE_PORT=3306
 DATABASE_NAME=fastapi_db
-DATABASE_USER=postgres
-DATABASE_PASSWORD=postgres
+DATABASE_USER=root
+DATABASE_PASSWORD=password
 
 # Monitoring
 SENTRY_DSN=https://...

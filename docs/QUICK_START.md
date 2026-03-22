@@ -8,12 +8,13 @@ poetry install
 ```
 
 ### 2. Configure Database
-Ensure your `.env` file has PostgreSQL settings:
+Ensure your `.env` file has MySQL settings:
 ```env
+DATABASE_URL=mysql+pymysql://root:password@localhost:3306/fastapi_db?charset=utf8mb4
 DATABASE_HOST=localhost
-DATABASE_PORT=5432
-DATABASE_USER=postgres
-DATABASE_PASSWORD=postgres
+DATABASE_PORT=3306
+DATABASE_USER=root
+DATABASE_PASSWORD=password
 DATABASE_NAME=fastapi_db
 ```
 
@@ -25,8 +26,8 @@ alembic upgrade head
 # This will create:
 # - All tables (institutions, users, roles, permissions, subscriptions, audit_logs)
 # - Indexes for performance
-# - Row-Level Security policies
-# - Audit triggers
+# - Foreign key constraints
+# - Triggers for auditing
 # - Default permissions and roles
 ```
 

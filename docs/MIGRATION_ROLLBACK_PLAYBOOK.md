@@ -544,7 +544,7 @@ Update these contacts for your team:
 
 ### External Resources
 
-- [PostgreSQL Documentation](https://www.postgresql.org/docs/)
+- [MySQL Documentation](https://dev.mysql.com/doc/)
 - [Alembic Documentation](https://alembic.sqlalchemy.org/)
 - [AWS RDS Backup/Restore](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_RestoreFromSnapshot.html)
 - Internal Wiki: [Link to internal docs]

@@ -38,7 +38,7 @@ Complete deployment guide for the Educational SaaS Platform covering all environ
          ┌───────────────┴──────────────┐
          │                              │
 ┌────────▼─────────┐           ┌────────▼─────────┐
-│   PostgreSQL     │           │     Redis        │
+│      MySQL       │           │     Redis        │
 │   (RDS)          │           │   (ElastiCache)  │
 └──────────────────┘           └──────────────────┘
 ```

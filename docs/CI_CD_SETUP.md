@@ -57,14 +57,14 @@ Runs on every push and pull request to `main`, `develop`, and `staging` branches
 **Jobs:**
 
 1. **code-quality**: Runs Black, Ruff, and MyPy checks
-2. **test**: Executes test suite with PostgreSQL 15 and Redis 7
+2. **test**: Executes test suite with MySQL 8.0 and Redis 7
 3. **security-scan**: Runs security analysis with Safety and Bandit
 4. **build**: Builds Python package and Docker image
 5. **status-check**: Aggregates results from all jobs
 
 **Services:**
 
-- PostgreSQL 15 (Alpine)
+- MySQL 8.0
 - Redis 7 (Alpine)
 
 #### 2. Test Cache Optimization (`.github/workflows/test-cache.yml`)
@@ -108,7 +108,7 @@ The GitLab CI pipeline is defined in `.gitlab-ci.yml` with the following stages:
 
 ### Services
 
-- PostgreSQL 15 (Alpine)
+- MySQL 8.0
 - Redis 7 (Alpine)
 
 ### Setup Steps
@@ -312,8 +312,8 @@ Caches are automatically invalidated when:
 **Solution**:
 ```bash
 # Use exact CI environment
-docker-compose up -d postgres redis
-export DATABASE_URL=postgresql://test_user:test_password@localhost:5432/test_db
+docker-compose up -d mysql redis
+export DATABASE_URL=mysql+pymysql://test_user:test_password@localhost:3306/test_db?charset=utf8mb4
 export REDIS_URL=redis://localhost:6379/0
 poetry run pytest
 ```

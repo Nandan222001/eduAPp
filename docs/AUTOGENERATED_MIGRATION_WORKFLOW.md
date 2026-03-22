@@ -200,9 +200,9 @@ op.drop_table('important_existing_table')
 ```python
 # For enums shared between tables (e.g., 'verificationstatus')
 # Use create_type=False in SQLAlchemy Column definition
-sa.Column('status', postgresql.ENUM('pending', 'approved', 'rejected',
-                                    name='verificationstatus', 
-                                    create_type=False),  # Don't recreate
+sa.Column('status', sa.Enum('pending', 'approved', 'rejected',
+                           name='verificationstatus', 
+                           create_type=False),  # Don't recreate
           nullable=False)
 ```
 
@@ -234,7 +234,7 @@ Before applying to production, test on a clean database.
 createdb test_clean_migration
 
 # Export test database URL
-export DATABASE_URL="postgresql://user:pass@localhost/test_clean_migration"
+export DATABASE_URL="mysql+pymysql://user:pass@localhost/test_clean_migration?charset=utf8mb4"
 
 # Run all migrations from scratch
 alembic upgrade head
@@ -262,7 +262,7 @@ createdb test_existing_migration
 psql test_existing_migration < backup.sql
 
 # Apply the new migration
-export DATABASE_URL="postgresql://user:pass@localhost/test_existing_migration"
+export DATABASE_URL="mysql+pymysql://user:pass@localhost/test_existing_migration?charset=utf8mb4"
 alembic upgrade head
 
 # Verify
@@ -590,5 +590,5 @@ If you encounter issues:
 
 - [Alembic Documentation](https://alembic.sqlalchemy.org/)
 - [SQLAlchemy Documentation](https://docs.sqlalchemy.org/)
-- [PostgreSQL Documentation](https://www.postgresql.org/docs/)
+- [MySQL Documentation](https://dev.mysql.com/doc/)
 - Project-specific migration guides in `/docs`

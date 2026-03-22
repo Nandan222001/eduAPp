@@ -199,7 +199,7 @@ KEYS "rate_limit:stats:*"
 
 ### Check Database
 
-Query violations in PostgreSQL:
+Query violations in MySQL:
 
 ```sql
 -- Recent violations

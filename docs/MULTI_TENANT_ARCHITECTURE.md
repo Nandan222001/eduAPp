@@ -90,7 +90,7 @@ Comprehensive audit trail for all data changes.
 ## Row-Level Security (RLS)
 
 ### Overview
-PostgreSQL Row-Level Security policies enforce data isolation at the database level.
+Application-level security enforces data isolation at the query level using middleware and filters.
 
 ### Session Variables
 - `app.current_institution_id`: Current institution context

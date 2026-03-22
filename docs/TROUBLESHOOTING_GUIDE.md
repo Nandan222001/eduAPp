@@ -88,16 +88,18 @@ poetry check
 
 ```bash
 # Test database connection
-psql $DATABASE_URL -c "SELECT 1;"
+mysql -h localhost -u username -p -e "SELECT 1;"
 
 # If fails, check:
-# - PostgreSQL is running
-docker ps | grep postgres
-sudo systemctl status postgresql
+# - MySQL is running
+docker ps | grep mysql
+sudo systemctl status mysql
 
-# - Credentials are correct
+# - Credentials are correct in .env
+# DATABASE_URL format: mysql+pymysql://user:password@host:port/database
+
 # - Database exists
-psql -U postgres -l
+mysql -u root -p -e "SHOW DATABASES;"
 ```
 
 ### Application Crashes Randomly
@@ -183,16 +185,16 @@ curl -w "@curl-format.txt" -o /dev/null -s https://api.yourplatform.com/api/v1/s
 **1. Add Database Indexes**
 
 ```sql
--- Check missing indexes
-SELECT schemaname, tablename, attname, n_distinct
-FROM pg_stats
-WHERE schemaname NOT IN ('pg_catalog', 'information_schema')
-AND n_distinct > 100
-ORDER BY n_distinct DESC;
+-- Check existing indexes
+SHOW INDEXES FROM students;
+SHOW INDEXES FROM assignments;
 
 -- Add indexes on frequently queried columns
 CREATE INDEX idx_students_grade_section ON students(grade_id, section_id);
 CREATE INDEX idx_assignments_due_date ON assignments(due_date);
+
+-- Check index usage
+SHOW INDEX FROM students;
 ```
 
 **2. Enable Caching**
@@ -244,42 +246,45 @@ for student in students:
 **Diagnostic Steps:**
 
 ```bash
-# Check if PostgreSQL is running
-sudo systemctl status postgresql
-docker ps | grep postgres
+# Check if MySQL is running
+sudo systemctl status mysql
+docker ps | grep mysql
 
 # Test connection
-psql -h localhost -U postgres -d edu_platform_dev
+mysql -h localhost -u root -p -D edu_platform_dev
 
 # Check network connectivity
-telnet localhost 5432
-nc -zv localhost 5432
+telnet localhost 3306
+nc -zv localhost 3306
 ```
 
 **Solutions:**
 
-**1. PostgreSQL Not Running**
+**1. MySQL Not Running**
 
 ```bash
-# Start PostgreSQL
-sudo systemctl start postgresql
+# Start MySQL
+sudo systemctl start mysql
 
 # Or with Docker
-docker-compose up -d postgres
+docker-compose up -d mysql
 
 # Enable auto-start
-sudo systemctl enable postgresql
+sudo systemctl enable mysql
 ```
 
 **2. Wrong Connection String**
 
 ```bash
 # Verify DATABASE_URL format
-# postgresql://username:password@hostname:port/database
+# mysql+pymysql://username:password@hostname:port/database
 echo $DATABASE_URL
 
-# Test each component
-psql -h localhost -p 5432 -U postgres -c "SELECT 1;"
+# Example:
+# mysql+pymysql://root:password@localhost:3306/edu_platform_dev?charset=utf8mb4
+
+# Test connection
+mysql -h localhost -P 3306 -u root -p -e "SELECT 1;"
 ```
 
 **3. Firewall Blocking**
@@ -289,27 +294,27 @@ psql -h localhost -p 5432 -U postgres -c "SELECT 1;"
 sudo ufw status
 sudo iptables -L
 
-# Allow PostgreSQL port
-sudo ufw allow 5432
+# Allow MySQL port
+sudo ufw allow 3306
 ```
 
-**4. PostgreSQL Not Listening**
+**4. MySQL Not Listening**
 
 ```bash
-# Edit postgresql.conf
-sudo nano /etc/postgresql/14/main/postgresql.conf
+# Edit my.cnf or my.ini
+sudo nano /etc/mysql/my.cnf
 
-# Change
-listen_addresses = '*'  # or specific IP
+# Ensure bind-address allows connections
+[mysqld]
+bind-address = 0.0.0.0  # or specific IP
 
-# Edit pg_hba.conf
-sudo nano /etc/postgresql/14/main/pg_hba.conf
+# Grant remote access if needed
+mysql -u root -p
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' IDENTIFIED BY 'password';
+FLUSH PRIVILEGES;
 
-# Add
-host    all    all    0.0.0.0/0    md5
-
-# Restart
-sudo systemctl restart postgresql
+# Restart MySQL
+sudo systemctl restart mysql
 ```
 
 ### Database Locks/Deadlocks
@@ -319,26 +324,28 @@ sudo systemctl restart postgresql
 **Diagnostic Steps:**
 
 ```sql
--- Check for locks
-SELECT 
-    pid,
-    usename,
-    pg_blocking_pids(pid) as blocked_by,
-    query,
-    state
-FROM pg_stat_activity
-WHERE state != 'idle' AND pid != pg_backend_pid();
+-- Check for locks (MySQL)
+SHOW PROCESSLIST;
+
+-- Check InnoDB status
+SHOW ENGINE INNODB STATUS;
+
+-- Check for locked tables
+SHOW OPEN TABLES WHERE In_use > 0;
 
 -- Check long-running queries
-SELECT
-    pid,
-    now() - query_start as duration,
-    query,
-    state
-FROM pg_stat_activity
-WHERE state != 'idle'
-AND (now() - query_start) > interval '5 minutes'
-ORDER BY duration DESC;
+SELECT 
+    ID,
+    USER,
+    HOST,
+    DB,
+    COMMAND,
+    TIME,
+    STATE,
+    INFO
+FROM INFORMATION_SCHEMA.PROCESSLIST
+WHERE TIME > 300
+ORDER BY TIME DESC;
 ```
 
 **Solutions:**
@@ -346,14 +353,14 @@ ORDER BY duration DESC;
 **1. Kill Blocking Query**
 
 ```sql
--- Kill specific process
-SELECT pg_terminate_backend(12345);
+-- Show all processes
+SHOW PROCESSLIST;
 
--- Kill all long-running queries
-SELECT pg_terminate_backend(pid)
-FROM pg_stat_activity
-WHERE state != 'idle'
-AND (now() - query_start) > interval '10 minutes';
+-- Kill specific process
+KILL 12345;
+
+-- Kill query (stops query but keeps connection)
+KILL QUERY 12345;
 ```
 
 **2. Prevent Future Deadlocks**
@@ -404,7 +411,7 @@ alembic upgrade head --sql > migration.sql
 
 ```bash
 # Check if tables already exist
-psql $DATABASE_URL -c "\dt"
+mysql -u username -p -D database_name -e "SHOW TABLES;"
 
 # If migration partially applied
 # Manually fix schema to match expected state
@@ -542,11 +549,11 @@ async def refresh_token(
 
 ```bash
 # Check user's role and permissions
-psql $DATABASE_URL << EOF
+mysql -u username -p -D database_name << EOF
 SELECT 
     u.email,
     r.name as role,
-    array_agg(p.name) as permissions
+    GROUP_CONCAT(p.name) as permissions
 FROM users u
 JOIN roles r ON u.role_id = r.id
 LEFT JOIN role_permissions rp ON r.id = rp.role_id
@@ -996,21 +1003,20 @@ def get_students_streaming(db: Session):
 **Diagnostic Steps:**
 
 ```sql
--- Enable slow query logging
-ALTER DATABASE edu_platform_dev SET log_min_duration_statement = 100;
+-- Enable slow query logging (in my.cnf)
+-- [mysqld]
+-- slow_query_log = 1
+-- slow_query_log_file = /var/log/mysql/slow-query.log
+-- long_query_time = 2
 
--- Check slow queries
-SELECT 
-    query,
-    mean_exec_time,
-    calls,
-    total_exec_time
-FROM pg_stat_statements
-WHERE mean_exec_time > 100
-ORDER BY mean_exec_time DESC
-LIMIT 10;
+-- Check slow query log
+-- tail -f /var/log/mysql/slow-query.log
 
 -- Explain query
+EXPLAIN
+SELECT * FROM students WHERE grade_id = 10;
+
+-- Analyze query performance
 EXPLAIN ANALYZE
 SELECT * FROM students WHERE grade_id = 10;
 ```
@@ -1446,18 +1452,19 @@ kubectl port-forward pod-name 8000:8000
 **Database:**
 ```bash
 # Connect
-psql $DATABASE_URL
+mysql -h host -u username -p database_name
 
-# Useful queries
-\dt  # List tables
-\d table_name  # Describe table
-\di  # List indexes
-\du  # List users
-\l  # List databases
+# Useful commands
+SHOW TABLES;  # List tables
+DESCRIBE table_name;  # Describe table
+SHOW INDEXES FROM table_name;  # List indexes
+SELECT user, host FROM mysql.user;  # List users
+SHOW DATABASES;  # List databases
 
 # Performance
-SELECT * FROM pg_stat_activity;
-SELECT * FROM pg_stat_database;
+SHOW PROCESSLIST;
+SHOW STATUS;
+SHOW ENGINE INNODB STATUS;
 ```
 
 **Redis:**

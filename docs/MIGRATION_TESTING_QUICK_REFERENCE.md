@@ -40,7 +40,7 @@ pytest tests/migration/test_migrations.py::TestMigrations::test_migration_idempo
 pytest tests/migration/test_migrations.py::TestMigrations::test_foreign_key_constraints -v
 
 # Check schema integrity
-python scripts/check_schema_integrity.py --database-url postgresql://user:pass@host/db
+python scripts/check_schema_integrity.py --database-url mysql+pymysql://user:pass@host/db
 ```
 
 ### Performance Tests
@@ -74,7 +74,7 @@ python scripts/test_migrations_production_like.py --size large
 
 # Custom database
 python scripts/test_migrations_production_like.py \
-    --database-url postgresql://user:pass@host/testdb \
+    --database-url mysql+pymysql://user:pass@host/testdb \
     --size medium
 ```
 
@@ -87,7 +87,7 @@ python scripts/test_migrations_production_like.py \
 createdb test_manual_db
 
 # 2. Set database URL
-export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/test_manual_db"
+export DATABASE_URL="mysql+pymysql://root:password@localhost:3306/test_manual_db?charset=utf8mb4"
 
 # 3. Run migration
 alembic upgrade head
@@ -251,10 +251,10 @@ WHERE tc.constraint_type = 'FOREIGN KEY'
 
 ```bash
 # Test database
-export TEST_MIGRATION_DATABASE_URL="postgresql://postgres:postgres@localhost:5432/test_migrations_db"
+export TEST_MIGRATION_DATABASE_URL="mysql+pymysql://root:password@localhost:3306/test_migrations_db?charset=utf8mb4"
 
 # Production database (for schema comparison)
-export DATABASE_URL="postgresql://user:pass@host:5432/prod_db"
+export DATABASE_URL="mysql+pymysql://user:pass@host:3306/prod_db?charset=utf8mb4"
 
 # Alembic config
 export ALEMBIC_CONFIG="alembic.ini"
@@ -269,7 +269,8 @@ createdb test_migrations_db
 
 ### Issue: Permission denied
 ```bash
-psql -c "GRANT ALL PRIVILEGES ON DATABASE test_migrations_db TO postgres;"
+mysql -u root -p -e "GRANT ALL PRIVILEGES ON test_migrations_db.* TO 'testuser'@'localhost';"
+mysql -u root -p -e "FLUSH PRIVILEGES;"
 ```
 
 ### Issue: Connection limit exceeded

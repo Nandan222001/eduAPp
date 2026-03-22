@@ -463,8 +463,8 @@ On every pull request:
 **Solution**:
 ```bash
 # Use Docker to match CI environment
-docker-compose up -d postgres redis
-export DATABASE_URL=postgresql://test_user:test_password@localhost:5432/test_db
+docker-compose up -d mysql redis
+export DATABASE_URL=mysql+pymysql://test_user:test_password@localhost:3306/test_db?charset=utf8mb4
 export REDIS_URL=redis://localhost:6379/0
 pytest
 ```

@@ -181,7 +181,7 @@ For developers interested in the implementation details:
 
 - **Technology**: SlowAPI with Redis backend
 - **Strategy**: Fixed window with automatic sliding
-- **Storage**: Redis for real-time limiting, PostgreSQL for historical data
+- **Storage**: Redis for real-time limiting, MySQL for historical data
 - **Granularity**: Per minute per user/IP
 - **Enforcement**: Applied via middleware at application level
 

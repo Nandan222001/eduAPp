@@ -145,8 +145,8 @@ def upgrade() -> None:
         sa.Column('institution_id', sa.Integer(), nullable=False),
         sa.Column('name', sa.String(length=255), nullable=False),
         sa.Column('template_type', 
-                  postgresql.ENUM('email', 'sms', 'push', 
-                                 name='notificationtype'), 
+                  sa.Enum('email', 'sms', 'push', 
+                         name='notificationtype'), 
                   nullable=False),
         sa.Column('subject', sa.String(length=500), nullable=True),
         sa.Column('body', sa.Text(), nullable=False),
@@ -192,9 +192,9 @@ def upgrade() -> None:
             sa.Column('institution_id', sa.Integer(), nullable=False),
             sa.Column('name', sa.String(length=255), nullable=False),
             sa.Column('template_type', 
-                      postgresql.ENUM('email', 'sms', 'push', 
-                                     name='notificationtype', 
-                                     create_type=False),  # Don't recreate
+                      sa.Enum('email', 'sms', 'push', 
+                             name='notificationtype', 
+                             create_type=False),  # Don't recreate
                       nullable=False),
             sa.Column('subject', sa.String(length=500), nullable=True),
             sa.Column('body', sa.Text(), nullable=False),
