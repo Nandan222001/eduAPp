@@ -6,9 +6,27 @@ import {
   TokenResponse,
   RefreshTokenRequest,
   User,
+  UserRole,
+  RoleInfo,
 } from '../types/auth';
 import { demoStudentUser, demoParentUser } from '../data/dummyData';
 import * as SecureStore from 'expo-secure-store';
+
+interface BackendUserResponse extends Omit<User, 'role'> {
+  role: RoleInfo;
+}
+
+const mapRoleSlugToUserRole = (roleSlug: string): UserRole => {
+  const roleMap: { [key: string]: UserRole } = {
+    'student': UserRole.STUDENT,
+    'teacher': UserRole.TEACHER,
+    'parent': UserRole.PARENT,
+    'admin': UserRole.ADMIN,
+    'institution_admin': UserRole.SUPER_ADMIN,
+  };
+  
+  return roleMap[roleSlug] || UserRole.STUDENT;
+};
 
 export const authApi = {
   login: async (credentials: LoginRequest): Promise<TokenResponse> => {
@@ -32,7 +50,6 @@ export const authApi = {
   },
 
   logout: async (refreshToken?: string): Promise<{ message: string }> => {
-    // Check if it's a demo user token
     if (refreshToken && (refreshToken.startsWith('demo_student_refresh_token_') || refreshToken.startsWith('demo_parent_refresh_token_'))) {
       return Promise.resolve({ message: 'Demo user logged out successfully' });
     }
@@ -44,7 +61,6 @@ export const authApi = {
   },
 
   refreshToken: async (data: RefreshTokenRequest): Promise<TokenResponse> => {
-    // Check if it's a demo user token
     if (data.refresh_token && (data.refresh_token.startsWith('demo_student_refresh_token_') || data.refresh_token.startsWith('demo_parent_refresh_token_'))) {
       const isStudent = data.refresh_token.startsWith('demo_student_refresh_token_');
       return Promise.resolve({
@@ -73,7 +89,13 @@ export const authApi = {
       console.error('Error retrieving access token:', error);
     }
     
-    return apiClient.get<User>('/auth/me');
+    const backendUser = await apiClient.get<BackendUserResponse>('/auth/me');
+    
+    return {
+      ...backendUser,
+      role: mapRoleSlugToUserRole(backendUser.role.slug),
+      roleInfo: backendUser.role,
+    };
   },
 
   requestOTP: async (data: OTPLoginRequest): Promise<{ message: string }> => {
