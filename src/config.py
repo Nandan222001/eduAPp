@@ -19,10 +19,12 @@ class Settings(BaseSettings):
     port: int = Field(default=8000, alias="PORT")
 
     database_host: str = Field(default="localhost", alias="DATABASE_HOST")
-    database_port: int = Field(default=5432, alias="DATABASE_PORT")
-    database_user: str = Field(default="postgres", alias="DATABASE_USER")
+    database_port: int = Field(default=3306, alias="DATABASE_PORT")
+    database_user: str = Field(default="mysql", alias="DATABASE_USER")
     database_password: str = Field(default="postgres", alias="DATABASE_PASSWORD")
-    database_name: str = Field(default="fastapi_db", alias="DATABASE_NAME")
+    database_name: str = Field(default="mysql_db", alias="DATABASE_NAME")
+    database_charset: str = Field(default="utf8mb4", alias="DATABASE_CHARSET")
+    database_connect_timeout: int = Field(default=10, alias="DATABASE_CONNECT_TIMEOUT")
 
     redis_host: str = Field(default="localhost", alias="REDIS_HOST")
     redis_port: int = Field(default=6379, alias="REDIS_PORT")
@@ -90,7 +92,7 @@ class Settings(BaseSettings):
 
     @property
     def database_url(self) -> str:
-        return f"postgresql://{self.database_user}:{self.database_password}@{self.database_host}:{self.database_port}/{self.database_name}"
+        return f"mysql+pymysql://{self.database_user}:{self.database_password}@{self.database_host}:{self.database_port}/{self.database_name}?charset={self.database_charset}&connect_timeout={self.database_connect_timeout}"
 
     @property
     def redis_url(self) -> str:
