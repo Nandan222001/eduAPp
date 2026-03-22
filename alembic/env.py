@@ -7,9 +7,6 @@ from src.database import Base
 import importlib.util
 from pathlib import Path
 
-# Load each model module file directly (without importing the package's
-# __init__.py). This avoids executing src.models.__init__.py which may import
-# optional modules that aren't present in this checkout.
 models_dir = Path(__file__).resolve().parent.parent / "src" / "models"
 for path in sorted(models_dir.glob("*.py")):
     if path.name == "__init__.py" or path.name.startswith("_"):
@@ -18,10 +15,8 @@ for path in sorted(models_dir.glob("*.py")):
     try:
         spec = importlib.util.spec_from_file_location(module_name, str(path))
         module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)  # type: ignore
+        spec.loader.exec_module(module)
     except Exception:
-        # Don't fail migrations because one model file errors; surface other
-        # issues later when/if they matter.
         pass
 
 config = context.config
@@ -41,6 +36,9 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        render_as_batch=True,
+        compare_type=True,
+        compare_server_default=True,
     )
 
     with context.begin_transaction():
@@ -55,7 +53,13 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(connection=connection, target_metadata=target_metadata)
+        context.configure(
+            connection=connection,
+            target_metadata=target_metadata,
+            render_as_batch=True,
+            compare_type=True,
+            compare_server_default=True,
+        )
 
         with context.begin_transaction():
             context.run_migrations()
