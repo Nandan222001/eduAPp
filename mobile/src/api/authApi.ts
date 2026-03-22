@@ -8,7 +8,8 @@ import {
   User,
 } from '../types/auth';
 import { demoStudentUser, demoParentUser } from '../data/dummyData';
-import * as SecureStore from 'expo-secure-store';
+import { secureStorage } from '../utils/secureStorage';
+import { STORAGE_KEYS } from '../constants';
 
 export const authApi = {
   login: async (credentials: LoginRequest): Promise<TokenResponse> => {
@@ -58,7 +59,7 @@ export const authApi = {
 
   getCurrentUser: async (): Promise<User> => {
     try {
-      const token = await SecureStore.getItemAsync('accessToken');
+      const token = await secureStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
       
       if (token) {
         if (token.startsWith('demo_student_access_token_')) {
