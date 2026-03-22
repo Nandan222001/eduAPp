@@ -278,8 +278,15 @@ class PerformanceMonitoringService:
         
         interval = self._calculate_time_interval(start_time, end_time)
         
+        if interval == 'minute':
+            trunc_expr = func.date_format(APIPerformanceMetric.timestamp, '%Y-%m-%d %H:%i:00')
+        elif interval == 'hour':
+            trunc_expr = func.date_format(APIPerformanceMetric.timestamp, '%Y-%m-%d %H:00:00')
+        else:
+            trunc_expr = func.date_format(APIPerformanceMetric.timestamp, '%Y-%m-%d')
+        
         query = self.db.query(
-            func.date_trunc(interval, APIPerformanceMetric.timestamp).label('time_bucket'),
+            trunc_expr.label('time_bucket'),
             func.count(APIPerformanceMetric.id).label('requests'),
             func.avg(APIPerformanceMetric.response_time_ms).label('avg_response_time'),
         ).filter(
@@ -293,7 +300,7 @@ class PerformanceMonitoringService:
         
         return [
             {
-                'timestamp': result.time_bucket.isoformat(),
+                'timestamp': result.time_bucket,
                 'requests': result.requests,
                 'avg_response_time_ms': round(result.avg_response_time, 2),
             }
@@ -419,8 +426,15 @@ class PerformanceMonitoringService:
         
         interval = self._calculate_time_interval(start_time, end_time)
         
+        if interval == 'minute':
+            trunc_expr = func.date_format(DatabaseQueryMetric.timestamp, '%Y-%m-%d %H:%i:00')
+        elif interval == 'hour':
+            trunc_expr = func.date_format(DatabaseQueryMetric.timestamp, '%Y-%m-%d %H:00:00')
+        else:
+            trunc_expr = func.date_format(DatabaseQueryMetric.timestamp, '%Y-%m-%d')
+        
         query = self.db.query(
-            func.date_trunc(interval, DatabaseQueryMetric.timestamp).label('time_bucket'),
+            trunc_expr.label('time_bucket'),
             func.count(DatabaseQueryMetric.id).label('queries'),
             func.avg(DatabaseQueryMetric.execution_time_ms).label('avg_execution_time'),
         ).filter(
@@ -434,7 +448,7 @@ class PerformanceMonitoringService:
         
         return [
             {
-                'timestamp': result.time_bucket.isoformat(),
+                'timestamp': result.time_bucket,
                 'queries': result.queries,
                 'avg_execution_time_ms': round(result.avg_execution_time, 2),
             }
@@ -521,8 +535,15 @@ class PerformanceMonitoringService:
         
         interval = self._calculate_time_interval(start_time, end_time)
         
+        if interval == 'minute':
+            trunc_expr = func.date_format(CacheMetric.timestamp, '%Y-%m-%d %H:%i:00')
+        elif interval == 'hour':
+            trunc_expr = func.date_format(CacheMetric.timestamp, '%Y-%m-%d %H:00:00')
+        else:
+            trunc_expr = func.date_format(CacheMetric.timestamp, '%Y-%m-%d')
+        
         query = self.db.query(
-            func.date_trunc(interval, CacheMetric.timestamp).label('time_bucket'),
+            trunc_expr.label('time_bucket'),
             func.count(CacheMetric.id).label('operations'),
             func.sum(func.cast(CacheMetric.hit, Integer)).label('hits'),
         ).filter(
@@ -536,7 +557,7 @@ class PerformanceMonitoringService:
         
         return [
             {
-                'timestamp': result.time_bucket.isoformat(),
+                'timestamp': result.time_bucket,
                 'operations': result.operations,
                 'hits': result.hits or 0,
                 'hit_rate': round(((result.hits or 0) / result.operations * 100), 2) if result.operations > 0 else 0.0,
@@ -632,8 +653,15 @@ class PerformanceMonitoringService:
         
         interval = self._calculate_time_interval(start_time, end_time)
         
+        if interval == 'minute':
+            trunc_expr = func.date_format(TaskQueueMetric.timestamp, '%Y-%m-%d %H:%i:00')
+        elif interval == 'hour':
+            trunc_expr = func.date_format(TaskQueueMetric.timestamp, '%Y-%m-%d %H:00:00')
+        else:
+            trunc_expr = func.date_format(TaskQueueMetric.timestamp, '%Y-%m-%d')
+        
         query = self.db.query(
-            func.date_trunc(interval, TaskQueueMetric.timestamp).label('time_bucket'),
+            trunc_expr.label('time_bucket'),
             func.count(TaskQueueMetric.id).label('tasks'),
             func.sum(func.case((TaskQueueMetric.status == 'SUCCESS', 1), else_=0)).label('successful'),
             func.sum(func.case((TaskQueueMetric.status == 'FAILURE', 1), else_=0)).label('failed'),
@@ -648,7 +676,7 @@ class PerformanceMonitoringService:
         
         return [
             {
-                'timestamp': result.time_bucket.isoformat(),
+                'timestamp': result.time_bucket,
                 'tasks': result.tasks,
                 'successful': result.successful,
                 'failed': result.failed,
@@ -768,8 +796,15 @@ class PerformanceMonitoringService:
         
         interval = self._calculate_time_interval(start_time, end_time)
         
+        if interval == 'minute':
+            trunc_expr = func.date_format(APIPerformanceMetric.timestamp, '%Y-%m-%d %H:%i:00')
+        elif interval == 'hour':
+            trunc_expr = func.date_format(APIPerformanceMetric.timestamp, '%Y-%m-%d %H:00:00')
+        else:
+            trunc_expr = func.date_format(APIPerformanceMetric.timestamp, '%Y-%m-%d')
+        
         query = self.db.query(
-            func.date_trunc(interval, APIPerformanceMetric.timestamp).label('time_bucket'),
+            trunc_expr.label('time_bucket'),
             func.count(distinct(APIPerformanceMetric.user_id)).label('active_users'),
         ).filter(
             APIPerformanceMetric.timestamp.between(start_time, end_time),
@@ -783,7 +818,7 @@ class PerformanceMonitoringService:
         
         return [
             {
-                'timestamp': result.time_bucket.isoformat(),
+                'timestamp': result.time_bucket,
                 'active_users': result.active_users,
                 'new_sessions': 0,
                 'total_sessions': 0,

@@ -170,9 +170,7 @@ class AnalyticsRepository:
         # Calculate average session duration
         avg_duration_stmt = select(
             func.avg(
-                func.extract(
-                    "epoch", UserSession.last_seen - UserSession.first_seen
-                )
+                func.timestampdiff(text('SECOND'), UserSession.first_seen, UserSession.last_seen)
             )
         ).where(base_filter)
         avg_duration_result = await self.db.execute(avg_duration_stmt)
@@ -319,7 +317,7 @@ class AnalyticsRepository:
 
         stmt = (
             select(
-                func.date_trunc("day", UserRetention.cohort_date).label("cohort_date"),
+                func.date_format(UserRetention.cohort_date, '%Y-%m-%d').label("cohort_date"),
                 func.count(func.distinct(UserRetention.user_id)).label("users_count"),
                 (
                     func.count(
@@ -371,7 +369,7 @@ class AnalyticsRepository:
                 ).label("retention_day_30"),
             )
             .where(base_filter)
-            .group_by(func.date_trunc("day", UserRetention.cohort_date))
+            .group_by(func.date_format(UserRetention.cohort_date, '%Y-%m-%d'))
             .order_by(desc("cohort_date"))
             .limit(cohort_days)
         )
@@ -381,7 +379,7 @@ class AnalyticsRepository:
 
         return [
             {
-                "cohort_date": row.cohort_date.isoformat() if row.cohort_date else "",
+                "cohort_date": row.cohort_date if row.cohort_date else "",
                 "users_count": row.users_count,
                 "retention_day_1": float(row.retention_day_1 or 0),
                 "retention_day_7": float(row.retention_day_7 or 0),
@@ -439,15 +437,9 @@ class AnalyticsRepository:
             select(
                 PerformanceMetric.metric_name,
                 func.avg(PerformanceMetric.metric_value).label("avg_value"),
-                func.percentile_cont(0.5).within_group(
-                    PerformanceMetric.metric_value
-                ).label("p50_value"),
-                func.percentile_cont(0.75).within_group(
-                    PerformanceMetric.metric_value
-                ).label("p75_value"),
-                func.percentile_cont(0.95).within_group(
-                    PerformanceMetric.metric_value
-                ).label("p95_value"),
+                func.avg(PerformanceMetric.metric_value).label("p50_value"),
+                func.avg(PerformanceMetric.metric_value).label("p75_value"),
+                func.avg(PerformanceMetric.metric_value).label("p95_value"),
                 func.count(
                     case((PerformanceMetric.rating == "good", 1), else_=None)
                 ).label("good_count"),

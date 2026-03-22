@@ -336,7 +336,7 @@ def get_tutor_stats(
             })
     
     monthly_sessions = db.query(
-        func.date_trunc('month', TutoringSession.scheduled_start).label('month'),
+        func.date_format(TutoringSession.scheduled_start, '%Y-%m').label('month'),
         func.count(TutoringSession.id)
     ).filter(
         TutoringSession.tutor_id == tutor_id,
@@ -345,7 +345,7 @@ def get_tutor_stats(
     
     monthly_data = {}
     for month, count in monthly_sessions:
-        monthly_data[month.strftime('%Y-%m')] = count
+        monthly_data[month] = count
     
     return TutorStatsResponse(
         tutor_id=tutor.id,
