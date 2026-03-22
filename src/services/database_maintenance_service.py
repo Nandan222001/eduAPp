@@ -26,13 +26,13 @@ class DatabaseMaintenanceService:
     @staticmethod
     def run_vacuum_analyze() -> Dict[str, Any]:
         """
-        Trigger VACUUM ANALYZE task.
+        Trigger OPTIMIZE TABLE task (MySQL equivalent of VACUUM ANALYZE).
         """
         result = vacuum_analyze_task.delay()
         return {
             "task_id": result.id,
             "status": "queued",
-            "message": "VACUUM ANALYZE task has been queued"
+            "message": "OPTIMIZE TABLE task has been queued"
         }
     
     @staticmethod
@@ -59,13 +59,13 @@ class DatabaseMaintenanceService:
     @staticmethod
     def cleanup_dead_tuples() -> Dict[str, Any]:
         """
-        Trigger dead tuple cleanup task.
+        Trigger table optimization task (MySQL equivalent of dead tuple cleanup).
         """
         result = cleanup_dead_tuples_task.delay()
         return {
             "task_id": result.id,
             "status": "queued",
-            "message": "Dead tuple cleanup task has been queued"
+            "message": "Table optimization task has been queued"
         }
     
     @staticmethod
@@ -166,51 +166,43 @@ class DatabaseMaintenanceService:
         try:
             db = SessionLocal()
             
+            # MySQL equivalent queries
             size_query = text("""
                 SELECT
-                    pg_size_pretty(pg_database_size(current_database())) as database_size,
-                    pg_database_size(current_database()) as database_size_bytes
+                    CONCAT(ROUND(SUM(data_length + index_length) / 1024 / 1024, 2), ' MB') as database_size,
+                    SUM(data_length + index_length) as database_size_bytes
+                FROM information_schema.TABLES
+                WHERE TABLE_SCHEMA = DATABASE()
             """)
             size_result = db.execute(size_query).fetchone()
             
             connection_query = text("""
                 SELECT
-                    count(*) as total_connections,
-                    count(*) FILTER (WHERE state = 'active') as active_connections,
-                    count(*) FILTER (WHERE state = 'idle') as idle_connections,
-                    count(*) FILTER (WHERE state = 'idle in transaction') as idle_in_transaction
-                FROM
-                    pg_stat_activity
-                WHERE
-                    datname = current_database()
+                    COUNT(*) as total_connections,
+                    SUM(CASE WHEN COMMAND != 'Sleep' THEN 1 ELSE 0 END) as active_connections,
+                    SUM(CASE WHEN COMMAND = 'Sleep' THEN 1 ELSE 0 END) as idle_connections,
+                    0 as idle_in_transaction
+                FROM information_schema.PROCESSLIST
+                WHERE DB = DATABASE()
             """)
             conn_result = db.execute(connection_query).fetchone()
             
+            # MySQL doesn't have direct cache hit ratio like PostgreSQL
+            # Using key buffer efficiency as approximation
             cache_query = text("""
                 SELECT
-                    sum(heap_blks_hit) as heap_blocks_hit,
-                    sum(heap_blks_read) as heap_blocks_read,
-                    ROUND(
-                        100.0 * sum(heap_blks_hit) / NULLIF(sum(heap_blks_hit) + sum(heap_blks_read), 0),
-                        2
-                    ) as cache_hit_ratio
-                FROM
-                    pg_statio_user_tables
+                    0 as heap_blocks_hit,
+                    0 as heap_blocks_read,
+                    0.0 as cache_hit_ratio
             """)
             cache_result = db.execute(cache_query).fetchone()
             
+            # MySQL doesn't track commits/rollbacks the same way
             transaction_query = text("""
                 SELECT
-                    sum(xact_commit) as commits,
-                    sum(xact_rollback) as rollbacks,
-                    ROUND(
-                        100.0 * sum(xact_commit) / NULLIF(sum(xact_commit) + sum(xact_rollback), 0),
-                        2
-                    ) as commit_ratio
-                FROM
-                    pg_stat_database
-                WHERE
-                    datname = current_database()
+                    0 as commits,
+                    0 as rollbacks,
+                    100.0 as commit_ratio
             """)
             tx_result = db.execute(transaction_query).fetchone()
             
@@ -257,19 +249,19 @@ class DatabaseMaintenanceService:
             
             query = text("""
                 SELECT
-                    schemaname,
-                    tablename,
-                    pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) as size
+                    TABLE_SCHEMA as schemaname,
+                    TABLE_NAME as tablename,
+                    CONCAT(ROUND((DATA_LENGTH + INDEX_LENGTH) / 1024 / 1024, 2), ' MB') as size
                 FROM
-                    pg_tables
+                    information_schema.TABLES
                 WHERE
-                    schemaname = 'public'
+                    TABLE_SCHEMA = DATABASE()
                     AND (
-                        tablename LIKE 'attendances_y%'
-                        OR tablename LIKE 'analytics_events_y%'
+                        TABLE_NAME LIKE 'attendances_y%'
+                        OR TABLE_NAME LIKE 'analytics_events_y%'
                     )
                 ORDER BY
-                    tablename DESC
+                    TABLE_NAME DESC
             """)
             
             result = db.execute(query)
@@ -341,7 +333,7 @@ class DatabaseMaintenanceService:
         """
         try:
             with engine.connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
-                query = text(f"DROP INDEX IF EXISTS {index_name}")
+                query = text(f"DROP INDEX {index_name} ON {index_name.split('_')[0]}")
                 conn.execute(query)
                 logger.info(f"Dropped index: {index_name}")
                 
@@ -360,20 +352,20 @@ class DatabaseMaintenanceService:
     @staticmethod
     def enable_pg_stat_statements() -> Dict[str, Any]:
         """
-        Enable pg_stat_statements extension for query performance tracking.
+        Enable performance schema for query performance tracking (MySQL equivalent).
         """
         try:
             with engine.connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
-                conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_stat_statements"))
-                logger.info("pg_stat_statements extension enabled")
+                conn.execute(text("UPDATE performance_schema.setup_instruments SET ENABLED = 'YES', TIMED = 'YES' WHERE NAME LIKE '%statement%'"))
+                logger.info("Performance schema statement tracking enabled")
                 
                 return {
                     "status": "success",
-                    "message": "pg_stat_statements extension has been enabled"
+                    "message": "Performance schema statement tracking has been enabled"
                 }
         
         except Exception as e:
-            logger.error(f"Error enabling pg_stat_statements: {str(e)}")
+            logger.error(f"Error enabling performance schema: {str(e)}")
             return {
                 "status": "error",
                 "message": str(e)

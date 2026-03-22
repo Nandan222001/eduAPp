@@ -1,6 +1,6 @@
 from typing import List, Optional, Tuple
 from datetime import datetime, timedelta
-from sqlalchemy import and_, or_, func, desc, asc
+from sqlalchemy import and_, or_, func, desc, asc, text
 from sqlalchemy.orm import Session, joinedload
 from src.models.study_material import (
     StudyMaterial, MaterialBookmark, MaterialAccessLog, MaterialShare, MaterialTag, MaterialType
@@ -94,7 +94,8 @@ class StudyMaterialRepository:
             query = query.filter(StudyMaterial.is_public == filters.is_public)
         
         if filters.tags:
-            query = query.filter(StudyMaterial.tags.overlap(filters.tags))
+            for tag in filters.tags:
+                query = query.filter(StudyMaterial.tags.contains(tag))
         
         if filters.date_from:
             query = query.filter(StudyMaterial.created_at >= filters.date_from)
@@ -447,16 +448,25 @@ class StudyMaterialRepository:
             StudyMaterial.title.ilike(search_term)
         ).limit(5).all()
         
-        tags_query = self.db.query(
-            func.unnest(StudyMaterial.tags).label('tag')
-        ).filter(
-            StudyMaterial.institution_id == institution_id,
-            StudyMaterial.is_active == True
-        ).distinct().subquery()
+        # MySQL JSON path extraction for tags
+        tags_subquery = text("""
+            SELECT DISTINCT JSON_UNQUOTE(JSON_EXTRACT(tags, CONCAT('$[', idx.n, ']'))) as tag
+            FROM study_materials
+            CROSS JOIN (
+                SELECT 0 as n UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4
+                UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9
+            ) idx
+            WHERE institution_id = :institution_id
+                AND is_active = 1
+                AND JSON_LENGTH(tags) > idx.n
+                AND JSON_UNQUOTE(JSON_EXTRACT(tags, CONCAT('$[', idx.n, ']'))) LIKE :search_term
+            LIMIT 5
+        """)
         
-        tags = self.db.query(tags_query.c.tag).filter(
-            tags_query.c.tag.ilike(search_term)
-        ).limit(5).all()
+        tags = self.db.execute(tags_subquery, {
+            "institution_id": institution_id,
+            "search_term": search_term
+        }).fetchall()
         
         subjects = self.db.query(
             Subject.id, Subject.name
