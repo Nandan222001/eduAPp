@@ -40,7 +40,7 @@ export const QuickGamificationWidget: React.FC<QuickGamificationWidgetProps> = (
       -1,
       true
     );
-  }, []);
+  }, [pulseScale]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: pulseScale.value }],
