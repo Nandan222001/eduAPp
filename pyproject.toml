@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "fastapi-app"
 version = "0.1.0"
-description = "FastAPI application with PostgreSQL, Redis, and Docker"
+description = "FastAPI application with MySQL, Redis, and Docker"
 authors = ["Your Name <you@example.com>"]
 readme = "README.md"
 
