@@ -1,5 +1,5 @@
 from datetime import datetime, date
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Date, Text, Numeric, Index, UniqueConstraint, Enum as SQLEnum, JSON, ARRAY
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Date, Text, Numeric, Index, UniqueConstraint, Enum as SQLEnum, JSON
 from sqlalchemy.orm import relationship
 from enum import Enum
 from src.database import Base
@@ -45,7 +45,7 @@ class StudentVenture(Base):
     venture_name = Column(String(200), nullable=False, index=True)
     tagline = Column(String(300), nullable=True)
     
-    founder_students = Column(ARRAY(Integer), nullable=False)
+    founder_students = Column(JSON, nullable=False)
     primary_founder_id = Column(Integer, ForeignKey('students.id', ondelete='CASCADE'), nullable=False, index=True)
     
     business_idea = Column(Text, nullable=False)
@@ -77,7 +77,7 @@ class StudentVenture(Base):
     team_roles = Column(JSON, nullable=True)
     achievements = Column(JSON, nullable=True)
     
-    pitch_competition_participations = Column(ARRAY(Integer), nullable=True)
+    pitch_competition_participations = Column(JSON, nullable=True)
     awards = Column(JSON, nullable=True)
     
     is_active = Column(Boolean, default=True, nullable=False)
@@ -112,7 +112,7 @@ class PitchCompetition(Base):
     description = Column(Text, nullable=False)
     theme = Column(String(200), nullable=True)
     
-    judges = Column(ARRAY(Integer), nullable=True)
+    judges = Column(JSON, nullable=True)
     judge_details = Column(JSON, nullable=True)
     
     prize_pool = Column(Numeric(12, 2), nullable=True)
@@ -131,7 +131,7 @@ class PitchCompetition(Base):
     status = Column(SQLEnum(CompetitionStatus), default=CompetitionStatus.UPCOMING, nullable=False, index=True)
     
     winner_venture_id = Column(Integer, ForeignKey('student_ventures.id', ondelete='SET NULL'), nullable=True, index=True)
-    runners_up = Column(ARRAY(Integer), nullable=True)
+    runners_up = Column(JSON, nullable=True)
     
     leaderboard = Column(JSON, nullable=True)
     final_results = Column(JSON, nullable=True)

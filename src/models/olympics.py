@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Text, Index, UniqueConstraint, Enum as SQLEnum, JSON, ARRAY, Numeric
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Text, Index, UniqueConstraint, Enum as SQLEnum, JSON, Numeric
 from sqlalchemy.orm import relationship
 from enum import Enum
 from src.database import Base
@@ -49,7 +49,7 @@ class Competition(Base):
     end_date = Column(DateTime, nullable=False)
     rules = Column(JSON, nullable=True)
     prize_pool = Column(JSON, nullable=True)
-    participating_institutions = Column(ARRAY(Integer), nullable=True)
+    participating_institutions = Column(JSON, nullable=True)
     banner_url = Column(String(500), nullable=True)
     organizer_id = Column(Integer, ForeignKey('users.id', ondelete='SET NULL'), nullable=True, index=True)
     is_active = Column(Boolean, default=True, nullable=False)
@@ -147,7 +147,7 @@ class CompetitionTeam(Base):
     event_id = Column(Integer, ForeignKey('competition_events.id', ondelete='CASCADE'), nullable=False, index=True)
     team_name = Column(String(200), nullable=False)
     team_leader_id = Column(Integer, ForeignKey('students.id', ondelete='SET NULL'), nullable=True, index=True)
-    members = Column(ARRAY(Integer), nullable=False)
+    members = Column(JSON, nullable=False)
     total_score = Column(Numeric(10, 2), default=0, nullable=False)
     rank = Column(Integer, nullable=True)
     avatar_url = Column(String(500), nullable=True)
