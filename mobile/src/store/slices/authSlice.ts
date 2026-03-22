@@ -8,6 +8,7 @@ import {
   LoginRequest,
   OTPLoginRequest,
   OTPVerifyRequest,
+  UserRole,
 } from '../../types/auth';
 
 const initialState: AuthState = {
@@ -204,6 +205,9 @@ const authSlice = createSlice({
     setUser: (state, action: PayloadAction<User>) => {
       state.user = action.payload;
     },
+    setActiveRole: (state, action: PayloadAction<UserRole>) => {
+      state.activeRole = action.payload;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -311,5 +315,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { clearError, setUser } = authSlice.actions;
+export const { clearError, setUser, setActiveRole } = authSlice.actions;
 export default authSlice.reducer;
