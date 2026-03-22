@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Text, Icon, Button } from '@rneui/themed';
 import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS } from '@constants';
 import { QRScanner } from '@components/shared';
@@ -30,23 +30,8 @@ export const QRScannerScreen: React.FC<Props> = ({ navigation }) => {
     qrScannerService.handleScanResult({ data, type, bounds: undefined }, navigation);
   };
 
-  const handleQuickAction = (action: string) => {
-    switch (action) {
-      case 'attendance':
-        Alert.alert('Quick Attendance', 'Scan QR code to mark attendance');
-        setShowScanner(true);
-        break;
-      case 'assignment':
-        Alert.alert('Quick Assignment', 'Scan QR code to view assignment');
-        setShowScanner(true);
-        break;
-      case 'schedule':
-        Alert.alert('Quick Schedule', 'Scan QR code to view schedule');
-        setShowScanner(true);
-        break;
-      default:
-        setShowScanner(true);
-    }
+  const handleQuickAction = (_action: string) => {
+    setShowScanner(true);
   };
 
   return (

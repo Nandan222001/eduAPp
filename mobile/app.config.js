@@ -151,6 +151,21 @@ export default ({ config }) => ({
   web: {
     favicon: './assets/favicon.png',
     bundler: 'metro',
+    build: {
+      babel: {
+        include: ['@react-native-async-storage/async-storage'],
+      },
+    },
+    config: {
+      firebase: {
+        // Optional: Configure Firebase for web if needed
+      },
+    },
+    // Performance optimizations
+    performance: {
+      maxAssetSize: 2000000, // 2MB warning threshold
+      maxEntrypointSize: 2000000, // 2MB warning threshold
+    },
   },
   plugins: [
     [
@@ -163,8 +178,20 @@ export default ({ config }) => ({
       },
     ],
     'expo-router',
-    'expo-secure-store',
-    'expo-local-authentication',
+    [
+      'expo-secure-store',
+      {
+        // Exclude from web platform - will use AsyncStorage instead
+        platforms: ['ios', 'android'],
+      },
+    ],
+    [
+      'expo-local-authentication',
+      {
+        // Exclude from web platform
+        platforms: ['ios', 'android'],
+      },
+    ],
     [
       '@sentry/react-native/expo',
       {

@@ -43,11 +43,47 @@ config.resolver = {
     '@constants': path.resolve(__dirname, 'src/constants'),
     '@theme': path.resolve(__dirname, 'src/theme'),
   },
+  // Platform-specific extensions for better tree-shaking
+  platforms: ['ios', 'android', 'web'],
+  // Exclude native-only modules from web bundle
+  blockList: [
+    // Will be filtered during runtime based on platform
+  ],
 };
 
 config.transformer = {
   ...config.transformer,
   assetPlugins: ['expo-asset/tools/hashAssetFiles'],
+  // Enable minification for production builds
+  minifierPath: 'metro-minify-terser',
+  minifierConfig: {
+    ecma: 8,
+    keep_classnames: false,
+    keep_fnames: false,
+    module: true,
+    mangle: {
+      module: true,
+      keep_classnames: false,
+      keep_fnames: false,
+    },
+    compress: {
+      ecma: 2017,
+      module: true,
+      // Enable dead code elimination
+      dead_code: true,
+      drop_console: process.env.NODE_ENV === 'production',
+      passes: 3,
+      pure_getters: true,
+      unsafe: true,
+      unsafe_comps: true,
+      unsafe_math: true,
+      unsafe_methods: true,
+    },
+    output: {
+      comments: false,
+      ascii_only: true,
+    },
+  },
   getTransformOptions: async () => ({
     transform: {
       experimentalImportSupport: false,

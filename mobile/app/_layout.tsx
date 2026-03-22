@@ -14,8 +14,6 @@ import { loadStoredAuth } from '@store/slices/authSlice';
 import { Loading, OfflineDataRefresher } from '@components';
 import { theme } from '@config/theme';
 import { authService } from '@utils/authService';
-import { initializeOfflineSupport } from '@utils/offlineInit';
-import { initializeIOSPlatform, checkIOSCompatibility } from '@utils/iosInit';
 
 // Prevent splash screen from auto-hiding (only on native platforms)
 if (Platform.OS !== 'web') {
@@ -46,9 +44,12 @@ function RootLayoutNav() {
       try {
         // Initialize platform-specific features first
         if (Platform.OS === 'ios') {
+          // Dynamic import for iOS-specific initialization
+          const { checkIOSCompatibility, initializeIOSPlatform } = await import('@utils/iosInit');
           await checkIOSCompatibility();
           await initializeIOSPlatform();
         } else if (Platform.OS === 'android') {
+          // Dynamic import for Android-specific initialization
           const { checkAndroidCompatibility, initializeAndroidPlatform } = await import('@utils/androidInit');
           await checkAndroidCompatibility();
           await initializeAndroidPlatform();
@@ -57,8 +58,9 @@ function RootLayoutNav() {
         // Load stored authentication
         await dispatch(loadStoredAuth()).unwrap();
         
-        // Initialize offline support on native platforms
+        // Initialize offline support on native platforms only
         if (Platform.OS !== 'web') {
+          const { initializeOfflineSupport } = await import('@utils/offlineInit');
           await initializeOfflineSupport();
         }
       } catch (error) {
