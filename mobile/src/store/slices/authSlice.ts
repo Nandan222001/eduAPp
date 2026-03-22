@@ -223,9 +223,9 @@ const authSlice = createSlice({
         state.refreshToken = action.payload.refreshToken;
         state.error = null;
         // Set activeRole based on user's role
-        if (action.payload.user.role?.slug) {
-          state.activeRole = action.payload.user.role.slug;
-          state.availableRoles = [action.payload.user.role.slug];
+        if (action.payload.user.roleInfo?.slug) {
+          state.activeRole = action.payload.user.roleInfo.slug;
+          state.availableRoles = [action.payload.user.roleInfo.slug];
         }
       })
       .addCase(login.rejected, (state, action) => {
@@ -257,9 +257,9 @@ const authSlice = createSlice({
         state.refreshToken = action.payload.refreshToken;
         state.error = null;
         // Set activeRole based on user's role
-        if (action.payload.user.role?.slug) {
-          state.activeRole = action.payload.user.role.slug;
-          state.availableRoles = [action.payload.user.role.slug];
+        if (action.payload.user.roleInfo?.slug) {
+          state.activeRole = action.payload.user.roleInfo.slug;
+          state.availableRoles = [action.payload.user.roleInfo.slug];
         }
       })
       .addCase(verifyOTP.rejected, (state, action) => {
@@ -279,9 +279,9 @@ const authSlice = createSlice({
         state.refreshToken = action.payload.refreshToken;
         state.error = null;
         // Set activeRole based on user's role
-        if (action.payload.user.role?.slug) {
-          state.activeRole = action.payload.user.role.slug;
-          state.availableRoles = [action.payload.user.role.slug];
+        if (action.payload.user.roleInfo?.slug) {
+          state.activeRole = action.payload.user.roleInfo.slug;
+          state.availableRoles = [action.payload.user.roleInfo.slug];
         }
       })
       .addCase(loginWithBiometric.rejected, (state, action) => {
@@ -310,9 +310,9 @@ const authSlice = createSlice({
           state.refreshToken = action.payload.refreshToken;
           state.biometricEnabled = action.payload.biometricEnabled;
           // Set activeRole based on user's role
-          if (action.payload.user.role?.slug) {
-            state.activeRole = action.payload.user.role.slug;
-            state.availableRoles = [action.payload.user.role.slug];
+          if (action.payload.user.roleInfo?.slug) {
+            state.activeRole = action.payload.user.roleInfo.slug;
+            state.availableRoles = [action.payload.user.roleInfo.slug];
           }
         }
       })
