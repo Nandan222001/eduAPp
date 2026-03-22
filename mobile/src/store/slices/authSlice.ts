@@ -216,16 +216,22 @@ const authSlice = createSlice({
         state.error = null;
       })
       .addCase(login.fulfilled, (state, action) => {
+        console.log('[DEBUG] login.fulfilled - Setting isAuthenticated to true');
+        console.log('[DEBUG] login.fulfilled - User:', action.payload.user);
+        console.log('[DEBUG] login.fulfilled - Has accessToken:', !!action.payload.accessToken);
+        console.log('[DEBUG] login.fulfilled - Has refreshToken:', !!action.payload.refreshToken);
         state.isLoading = false;
         state.isAuthenticated = true;
         state.user = action.payload.user;
         state.accessToken = action.payload.accessToken;
         state.refreshToken = action.payload.refreshToken;
         state.error = null;
+        console.log('[DEBUG] login.fulfilled - State after update - isAuthenticated:', state.isAuthenticated);
         // Set activeRole based on user's role
         if (action.payload.user.roleInfo?.slug) {
           state.activeRole = action.payload.user.roleInfo.slug;
           state.availableRoles = [action.payload.user.roleInfo.slug];
+          console.log('[DEBUG] login.fulfilled - activeRole set to:', state.activeRole);
         }
       })
       .addCase(login.rejected, (state, action) => {
@@ -302,18 +308,28 @@ const authSlice = createSlice({
         state.isLoading = true;
       })
       .addCase(loadStoredAuth.fulfilled, (state, action) => {
+        console.log('[DEBUG] loadStoredAuth.fulfilled - Rehydrating state');
+        console.log('[DEBUG] loadStoredAuth.fulfilled - Payload:', action.payload);
+        console.log('[DEBUG] loadStoredAuth.fulfilled - Has user:', !!action.payload?.user);
+        console.log('[DEBUG] loadStoredAuth.fulfilled - Has accessToken:', !!action.payload?.accessToken);
+        console.log('[DEBUG] loadStoredAuth.fulfilled - Has refreshToken:', !!action.payload?.refreshToken);
         state.isLoading = false;
         if (action.payload && action.payload.user && action.payload.accessToken && action.payload.refreshToken) {
+          console.log('[DEBUG] loadStoredAuth.fulfilled - All required data present, setting isAuthenticated to true');
           state.isAuthenticated = true;
           state.user = action.payload.user;
           state.accessToken = action.payload.accessToken;
           state.refreshToken = action.payload.refreshToken;
           state.biometricEnabled = action.payload.biometricEnabled;
+          console.log('[DEBUG] loadStoredAuth.fulfilled - State after update - isAuthenticated:', state.isAuthenticated);
           // Set activeRole based on user's role
           if (action.payload.user.roleInfo?.slug) {
             state.activeRole = action.payload.user.roleInfo.slug;
             state.availableRoles = [action.payload.user.roleInfo.slug];
+            console.log('[DEBUG] loadStoredAuth.fulfilled - activeRole set to:', state.activeRole);
           }
+        } else {
+          console.log('[DEBUG] loadStoredAuth.fulfilled - Missing required data, not setting isAuthenticated');
         }
       })
       .addCase(loadStoredAuth.rejected, (state) => {
