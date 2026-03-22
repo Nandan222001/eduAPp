@@ -17,33 +17,7 @@ export type { RootStackParamList, StudentTabRoutes, ParentTabRoutes } from './ro
 export * from './student';
 export * from './offline';
 export * from './parent';
-
-export interface User {
-  id: number;
-  email: string;
-  firstName: string;
-  lastName: string;
-  role: UserRole;
-  roles?: UserRole[];
-  institutionId?: number;
-}
-
-export enum UserRole {
-  STUDENT = 'student',
-  TEACHER = 'teacher',
-  PARENT = 'parent',
-  ADMIN = 'admin',
-  SUPER_ADMIN = 'super_admin',
-}
-
-export interface AuthState {
-  user: User | null;
-  token: string | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  availableRoles: UserRole[];
-  activeRole: UserRole | null;
-}
+export * from './auth';
 
 export interface ApiResponse<T> {
   data: T;

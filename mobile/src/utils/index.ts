@@ -17,3 +17,5 @@ export { biometricUtils } from './biometric';
 export { secureStorage } from './secureStorage';
 
 export { fileManager } from './fileManager';
+
+export { authService } from './authService';
