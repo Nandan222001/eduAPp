@@ -7,9 +7,7 @@ Create Date: 2024-01-15 10:00:00.000000
 """
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
 
-# revision identifiers, used by Alembic.
 revision = 'create_study_materials'
 down_revision = '005'
 branch_labels = None
@@ -17,19 +15,9 @@ depends_on = None
 
 
 def upgrade():
-    # Create material_type enum
-    material_type_enum = postgresql.ENUM(
-        'pdf', 'video', 'audio', 'image', 'document', 'presentation', 
-        'spreadsheet', 'archive', 'other',
-        name='materialtype',
-        create_type=False
-    )
-    material_type_enum.create(op.get_bind(), checkfirst=True)
-
-    # Create study_materials table
     op.create_table(
         'study_materials',
-        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('id', sa.Integer(), nullable=False, autoincrement=True),
         sa.Column('institution_id', sa.Integer(), nullable=False),
         sa.Column('subject_id', sa.Integer(), nullable=True),
         sa.Column('chapter_id', sa.Integer(), nullable=True),
@@ -41,17 +29,17 @@ def upgrade():
         sa.Column('file_path', sa.String(length=1000), nullable=False),
         sa.Column('file_name', sa.String(length=500), nullable=False),
         sa.Column('file_size', sa.BigInteger(), nullable=False),
-        sa.Column('material_type', material_type_enum, nullable=False),
+        sa.Column('material_type', sa.Enum('pdf', 'video', 'audio', 'image', 'document', 'presentation', 'spreadsheet', 'archive', 'other', name='materialtype'), nullable=False),
         sa.Column('mime_type', sa.String(length=200), nullable=True),
         sa.Column('thumbnail_path', sa.String(length=1000), nullable=True),
         sa.Column('preview_path', sa.String(length=1000), nullable=True),
         sa.Column('view_count', sa.Integer(), nullable=False, server_default='0'),
         sa.Column('download_count', sa.Integer(), nullable=False, server_default='0'),
-        sa.Column('tags', postgresql.ARRAY(sa.String()), nullable=True),
+        sa.Column('tags', sa.JSON(), nullable=True),
         sa.Column('is_public', sa.Boolean(), nullable=False, server_default='false'),
         sa.Column('is_active', sa.Boolean(), nullable=False, server_default='true'),
-        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
-        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
+        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
+        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP')),
         sa.ForeignKeyConstraint(['institution_id'], ['institutions.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['subject_id'], ['subjects.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['chapter_id'], ['chapters.id'], ondelete='SET NULL'),
@@ -70,19 +58,17 @@ def upgrade():
     op.create_index('idx_study_material_active', 'study_materials', ['is_active'])
     op.create_index('idx_study_material_public', 'study_materials', ['is_public'])
     op.create_index('idx_study_material_created', 'study_materials', ['created_at'])
-    op.create_index('idx_study_material_tags', 'study_materials', ['tags'], postgresql_using='gin')
 
-    # Create material_bookmarks table
     op.create_table(
         'material_bookmarks',
-        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('id', sa.Integer(), nullable=False, autoincrement=True),
         sa.Column('institution_id', sa.Integer(), nullable=False),
         sa.Column('material_id', sa.Integer(), nullable=False),
         sa.Column('user_id', sa.Integer(), nullable=False),
         sa.Column('notes', sa.Text(), nullable=True),
         sa.Column('is_favorite', sa.Boolean(), nullable=False, server_default='false'),
-        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
-        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
+        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
+        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP')),
         sa.ForeignKeyConstraint(['institution_id'], ['institutions.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['material_id'], ['study_materials.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
@@ -94,15 +80,14 @@ def upgrade():
     op.create_index('idx_material_bookmark_user', 'material_bookmarks', ['user_id'])
     op.create_index('idx_material_bookmark_favorite', 'material_bookmarks', ['is_favorite'])
 
-    # Create material_access_logs table
     op.create_table(
         'material_access_logs',
-        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('id', sa.Integer(), nullable=False, autoincrement=True),
         sa.Column('institution_id', sa.Integer(), nullable=False),
         sa.Column('material_id', sa.Integer(), nullable=False),
         sa.Column('user_id', sa.Integer(), nullable=False),
         sa.Column('action', sa.String(length=50), nullable=False),
-        sa.Column('accessed_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
+        sa.Column('accessed_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
         sa.ForeignKeyConstraint(['institution_id'], ['institutions.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['material_id'], ['study_materials.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
@@ -114,10 +99,9 @@ def upgrade():
     op.create_index('idx_material_access_action', 'material_access_logs', ['action'])
     op.create_index('idx_material_access_time', 'material_access_logs', ['accessed_at'])
 
-    # Create material_shares table
     op.create_table(
         'material_shares',
-        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('id', sa.Integer(), nullable=False, autoincrement=True),
         sa.Column('institution_id', sa.Integer(), nullable=False),
         sa.Column('material_id', sa.Integer(), nullable=False),
         sa.Column('shared_by', sa.Integer(), nullable=False),
@@ -126,7 +110,7 @@ def upgrade():
         sa.Column('message', sa.Text(), nullable=True),
         sa.Column('expires_at', sa.DateTime(), nullable=True),
         sa.Column('is_active', sa.Boolean(), nullable=False, server_default='true'),
-        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
+        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
         sa.ForeignKeyConstraint(['institution_id'], ['institutions.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['material_id'], ['study_materials.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['shared_by'], ['users.id'], ondelete='CASCADE'),
@@ -142,18 +126,17 @@ def upgrade():
     op.create_index('idx_material_share_active', 'material_shares', ['is_active'])
     op.create_index('idx_material_share_expires', 'material_shares', ['expires_at'])
 
-    # Create material_tags table
     op.create_table(
         'material_tags',
-        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('id', sa.Integer(), nullable=False, autoincrement=True),
         sa.Column('institution_id', sa.Integer(), nullable=False),
         sa.Column('name', sa.String(length=100), nullable=False),
         sa.Column('description', sa.Text(), nullable=True),
         sa.Column('color', sa.String(length=20), nullable=True),
         sa.Column('usage_count', sa.Integer(), nullable=False, server_default='0'),
         sa.Column('is_active', sa.Boolean(), nullable=False, server_default='true'),
-        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
-        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
+        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
+        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP')),
         sa.ForeignKeyConstraint(['institution_id'], ['institutions.id'], ondelete='CASCADE'),
         sa.PrimaryKeyConstraint('id'),
         sa.UniqueConstraint('institution_id', 'name', name='uq_institution_material_tag_name')
@@ -191,7 +174,6 @@ def downgrade():
     op.drop_index('idx_material_bookmark_institution', table_name='material_bookmarks')
     op.drop_table('material_bookmarks')
     
-    op.drop_index('idx_study_material_tags', table_name='study_materials')
     op.drop_index('idx_study_material_created', table_name='study_materials')
     op.drop_index('idx_study_material_public', table_name='study_materials')
     op.drop_index('idx_study_material_active', table_name='study_materials')
@@ -204,9 +186,4 @@ def downgrade():
     op.drop_index('idx_study_material_institution', table_name='study_materials')
     op.drop_table('study_materials')
     
-    material_type_enum = postgresql.ENUM(
-        'pdf', 'video', 'audio', 'image', 'document', 'presentation', 
-        'spreadsheet', 'archive', 'other',
-        name='materialtype'
-    )
-    material_type_enum.drop(op.get_bind(), checkfirst=True)
+    op.execute('DROP TYPE IF EXISTS materialtype')

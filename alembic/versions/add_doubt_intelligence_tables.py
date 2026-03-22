@@ -7,7 +7,6 @@ Create Date: 2024-01-15 10:00:00.000000
 """
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
 
 revision = 'doubt_intelligence_001'
 down_revision = '005'
@@ -16,7 +15,7 @@ depends_on = None
 
 
 def upgrade():
-    op.add_column('doubt_posts', sa.Column('auto_generated_tags', postgresql.ARRAY(sa.String()), nullable=True))
+    op.add_column('doubt_posts', sa.Column('auto_generated_tags', sa.JSON(), nullable=True))
     op.add_column('doubt_posts', sa.Column('priority', sa.Enum('LOW', 'MEDIUM', 'HIGH', 'URGENT', name='doubtpriority'), nullable=False, server_default='MEDIUM'))
     op.add_column('doubt_posts', sa.Column('difficulty', sa.Enum('EASY', 'MEDIUM', 'HARD', 'EXPERT', name='doubtdifficulty'), nullable=True))
     op.add_column('doubt_posts', sa.Column('priority_score', sa.Float(), nullable=False, server_default='0.0'))
@@ -33,16 +32,15 @@ def upgrade():
     op.create_index('idx_doubt_post_priority', 'doubt_posts', ['priority'])
     op.create_index('idx_doubt_post_priority_score', 'doubt_posts', ['priority_score'])
     op.create_index('idx_doubt_post_assigned_teacher', 'doubt_posts', ['assigned_teacher_id'])
-    op.create_index('idx_doubt_post_auto_tags', 'doubt_posts', ['auto_generated_tags'], postgresql_using='gin')
     
     op.create_table('doubt_embeddings',
-        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('id', sa.Integer(), nullable=False, autoincrement=True),
         sa.Column('doubt_id', sa.Integer(), nullable=False),
         sa.Column('embedding_model', sa.String(length=100), nullable=False, server_default='all-MiniLM-L6-v2'),
         sa.Column('embedding_vector', sa.Text(), nullable=False),
         sa.Column('embedding_dimension', sa.Integer(), nullable=False),
-        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
-        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
+        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
+        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP')),
         sa.ForeignKeyConstraint(['doubt_id'], ['doubt_posts.id'], ondelete='CASCADE'),
         sa.PrimaryKeyConstraint('id'),
         sa.UniqueConstraint('doubt_id')
@@ -51,14 +49,14 @@ def upgrade():
     op.create_index('idx_doubt_embedding_model', 'doubt_embeddings', ['embedding_model'])
     
     op.create_table('similar_doubts',
-        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('id', sa.Integer(), nullable=False, autoincrement=True),
         sa.Column('doubt_id', sa.Integer(), nullable=False),
         sa.Column('similar_doubt_id', sa.Integer(), nullable=False),
         sa.Column('institution_id', sa.Integer(), nullable=False),
         sa.Column('similarity_score', sa.Float(), nullable=False),
         sa.Column('semantic_similarity', sa.Float(), nullable=True),
         sa.Column('keyword_similarity', sa.Float(), nullable=True),
-        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
+        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
         sa.ForeignKeyConstraint(['doubt_id'], ['doubt_posts.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['similar_doubt_id'], ['doubt_posts.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['institution_id'], ['institutions.id'], ondelete='CASCADE'),
@@ -71,7 +69,7 @@ def upgrade():
     op.create_index('idx_similar_doubt_score', 'similar_doubts', ['similarity_score'])
     
     op.create_table('doubt_suggested_answers',
-        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('id', sa.Integer(), nullable=False, autoincrement=True),
         sa.Column('doubt_id', sa.Integer(), nullable=False),
         sa.Column('institution_id', sa.Integer(), nullable=False),
         sa.Column('source_type', sa.String(length=50), nullable=False),
@@ -82,7 +80,7 @@ def upgrade():
         sa.Column('source_metadata', sa.Text(), nullable=True),
         sa.Column('is_helpful', sa.Boolean(), nullable=True),
         sa.Column('helpful_votes', sa.Integer(), nullable=False, server_default='0'),
-        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
+        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
         sa.ForeignKeyConstraint(['doubt_id'], ['doubt_posts.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['institution_id'], ['institutions.id'], ondelete='CASCADE'),
         sa.PrimaryKeyConstraint('id')
@@ -93,7 +91,7 @@ def upgrade():
     op.create_index('idx_doubt_suggestion_confidence', 'doubt_suggested_answers', ['confidence_score'])
     
     op.create_table('teacher_doubt_stats',
-        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('id', sa.Integer(), nullable=False, autoincrement=True),
         sa.Column('teacher_id', sa.Integer(), nullable=False),
         sa.Column('institution_id', sa.Integer(), nullable=False),
         sa.Column('subject_id', sa.Integer(), nullable=True),
@@ -107,8 +105,8 @@ def upgrade():
         sa.Column('workload_score', sa.Float(), nullable=False, server_default='0.0'),
         sa.Column('availability_score', sa.Float(), nullable=False, server_default='1.0'),
         sa.Column('last_assigned_at', sa.DateTime(), nullable=True),
-        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
-        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
+        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
+        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP')),
         sa.ForeignKeyConstraint(['teacher_id'], ['teachers.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['institution_id'], ['institutions.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['subject_id'], ['subjects.id'], ondelete='CASCADE'),
@@ -128,7 +126,6 @@ def downgrade():
     op.drop_table('similar_doubts')
     op.drop_table('doubt_embeddings')
     
-    op.drop_index('idx_doubt_post_auto_tags', 'doubt_posts')
     op.drop_index('idx_doubt_post_assigned_teacher', 'doubt_posts')
     op.drop_index('idx_doubt_post_priority_score', 'doubt_posts')
     op.drop_index('idx_doubt_post_priority', 'doubt_posts')
@@ -147,5 +144,5 @@ def downgrade():
     op.drop_column('doubt_posts', 'priority')
     op.drop_column('doubt_posts', 'auto_generated_tags')
     
-    sa.Enum(name='doubtdifficulty').drop(op.get_bind())
-    sa.Enum(name='doubtpriority').drop(op.get_bind())
+    op.execute('DROP TYPE IF EXISTS doubtdifficulty')
+    op.execute('DROP TYPE IF EXISTS doubtpriority')

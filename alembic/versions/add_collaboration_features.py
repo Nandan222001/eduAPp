@@ -7,9 +7,7 @@ Create Date: 2024-01-15 10:00:00.000000
 """
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
 
-# revision identifiers, used by Alembic.
 revision = 'add_collaboration_features'
 down_revision = '005'
 branch_labels = None
@@ -17,25 +15,24 @@ depends_on = None
 
 
 def upgrade():
-    # Create study_buddy_profiles table
     op.create_table(
         'study_buddy_profiles',
-        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('id', sa.Integer(), nullable=False, autoincrement=True),
         sa.Column('institution_id', sa.Integer(), nullable=False),
         sa.Column('student_id', sa.Integer(), nullable=False),
         sa.Column('user_id', sa.Integer(), nullable=False),
-        sa.Column('subjects', postgresql.ARRAY(sa.Integer()), nullable=False),
+        sa.Column('subjects', sa.JSON(), nullable=False),
         sa.Column('performance_level', sa.String(length=50), nullable=False),
-        sa.Column('study_schedule', postgresql.JSON(), nullable=True),
-        sa.Column('preferred_study_times', postgresql.ARRAY(sa.String()), nullable=True),
+        sa.Column('study_schedule', sa.JSON(), nullable=True),
+        sa.Column('preferred_study_times', sa.JSON(), nullable=True),
         sa.Column('study_goals', sa.Text(), nullable=True),
         sa.Column('learning_style', sa.String(length=50), nullable=True),
-        sa.Column('availability_days', postgresql.ARRAY(sa.String()), nullable=True),
+        sa.Column('availability_days', sa.JSON(), nullable=True),
         sa.Column('preferred_group_size', sa.Integer(), nullable=False, server_default='4'),
         sa.Column('is_available', sa.Boolean(), nullable=False, server_default='true'),
         sa.Column('bio', sa.Text(), nullable=True),
-        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
-        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
+        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
+        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP')),
         sa.ForeignKeyConstraint(['institution_id'], ['institutions.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['student_id'], ['students.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
@@ -48,18 +45,17 @@ def upgrade():
     op.create_index('idx_buddy_profile_available', 'study_buddy_profiles', ['is_available'])
     op.create_index('idx_buddy_profile_performance', 'study_buddy_profiles', ['performance_level'])
 
-    # Create study_buddy_matches table
     op.create_table(
         'study_buddy_matches',
-        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('id', sa.Integer(), nullable=False, autoincrement=True),
         sa.Column('institution_id', sa.Integer(), nullable=False),
         sa.Column('requester_id', sa.Integer(), nullable=False),
         sa.Column('matched_student_id', sa.Integer(), nullable=False),
         sa.Column('match_score', sa.Float(), nullable=False),
-        sa.Column('common_subjects', postgresql.ARRAY(sa.Integer()), nullable=True),
+        sa.Column('common_subjects', sa.JSON(), nullable=True),
         sa.Column('match_reason', sa.Text(), nullable=True),
         sa.Column('status', sa.String(length=20), nullable=False, server_default='pending'),
-        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
+        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
         sa.Column('responded_at', sa.DateTime(), nullable=True),
         sa.ForeignKeyConstraint(['institution_id'], ['institutions.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['requester_id'], ['students.id'], ondelete='CASCADE'),
@@ -72,10 +68,9 @@ def upgrade():
     op.create_index('idx_buddy_match_status', 'study_buddy_matches', ['status'])
     op.create_index('idx_buddy_match_score', 'study_buddy_matches', ['match_score'])
 
-    # Create study_sessions table
     op.create_table(
         'study_sessions',
-        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('id', sa.Integer(), nullable=False, autoincrement=True),
         sa.Column('institution_id', sa.Integer(), nullable=False),
         sa.Column('group_id', sa.Integer(), nullable=True),
         sa.Column('created_by', sa.Integer(), nullable=False),
@@ -96,9 +91,9 @@ def upgrade():
         sa.Column('is_public', sa.Boolean(), nullable=False, server_default='true'),
         sa.Column('status', sa.String(length=20), nullable=False, server_default='scheduled'),
         sa.Column('notes', sa.Text(), nullable=True),
-        sa.Column('tags', postgresql.ARRAY(sa.String()), nullable=True),
-        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
-        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
+        sa.Column('tags', sa.JSON(), nullable=True),
+        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
+        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP')),
         sa.ForeignKeyConstraint(['institution_id'], ['institutions.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['group_id'], ['study_groups.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['created_by'], ['users.id'], ondelete='CASCADE'),
@@ -114,10 +109,9 @@ def upgrade():
     op.create_index('idx_study_session_scheduled', 'study_sessions', ['scheduled_start'])
     op.create_index('idx_study_session_public', 'study_sessions', ['is_public'])
 
-    # Create session_participants table
     op.create_table(
         'session_participants',
-        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('id', sa.Integer(), nullable=False, autoincrement=True),
         sa.Column('institution_id', sa.Integer(), nullable=False),
         sa.Column('session_id', sa.Integer(), nullable=False),
         sa.Column('user_id', sa.Integer(), nullable=False),
@@ -125,7 +119,7 @@ def upgrade():
         sa.Column('left_at', sa.DateTime(), nullable=True),
         sa.Column('duration_minutes', sa.Integer(), nullable=False, server_default='0'),
         sa.Column('is_organizer', sa.Boolean(), nullable=False, server_default='false'),
-        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
+        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
         sa.ForeignKeyConstraint(['institution_id'], ['institutions.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['session_id'], ['study_sessions.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
@@ -136,10 +130,9 @@ def upgrade():
     op.create_index('idx_session_participant_session', 'session_participants', ['session_id'])
     op.create_index('idx_session_participant_user', 'session_participants', ['user_id'])
 
-    # Create collaborative_notes table
     op.create_table(
         'collaborative_notes',
-        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('id', sa.Integer(), nullable=False, autoincrement=True),
         sa.Column('institution_id', sa.Integer(), nullable=False),
         sa.Column('group_id', sa.Integer(), nullable=True),
         sa.Column('session_id', sa.Integer(), nullable=True),
@@ -153,9 +146,9 @@ def upgrade():
         sa.Column('last_edited_by', sa.Integer(), nullable=True),
         sa.Column('view_count', sa.Integer(), nullable=False, server_default='0'),
         sa.Column('edit_count', sa.Integer(), nullable=False, server_default='0'),
-        sa.Column('tags', postgresql.ARRAY(sa.String()), nullable=True),
-        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
-        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
+        sa.Column('tags', sa.JSON(), nullable=True),
+        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
+        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP')),
         sa.ForeignKeyConstraint(['institution_id'], ['institutions.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['group_id'], ['study_groups.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['session_id'], ['study_sessions.id'], ondelete='SET NULL'),
@@ -173,14 +166,13 @@ def upgrade():
     op.create_index('idx_collab_note_public', 'collaborative_notes', ['is_public'])
     op.create_index('idx_collab_note_created', 'collaborative_notes', ['created_at'])
 
-    # Create note_editors table
     op.create_table(
         'note_editors',
-        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('id', sa.Integer(), nullable=False, autoincrement=True),
         sa.Column('note_id', sa.Integer(), nullable=False),
         sa.Column('user_id', sa.Integer(), nullable=False),
         sa.Column('can_edit', sa.Boolean(), nullable=False, server_default='true'),
-        sa.Column('added_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
+        sa.Column('added_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
         sa.Column('last_edit_at', sa.DateTime(), nullable=True),
         sa.ForeignKeyConstraint(['note_id'], ['collaborative_notes.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
@@ -190,16 +182,15 @@ def upgrade():
     op.create_index('idx_note_editor_note', 'note_editors', ['note_id'])
     op.create_index('idx_note_editor_user', 'note_editors', ['user_id'])
 
-    # Create note_revisions table
     op.create_table(
         'note_revisions',
-        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('id', sa.Integer(), nullable=False, autoincrement=True),
         sa.Column('note_id', sa.Integer(), nullable=False),
         sa.Column('user_id', sa.Integer(), nullable=False),
         sa.Column('content', sa.Text(), nullable=False),
         sa.Column('version', sa.Integer(), nullable=False),
         sa.Column('change_description', sa.String(length=500), nullable=True),
-        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
+        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
         sa.ForeignKeyConstraint(['note_id'], ['collaborative_notes.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
         sa.PrimaryKeyConstraint('id')
@@ -209,16 +200,15 @@ def upgrade():
     op.create_index('idx_note_revision_version', 'note_revisions', ['version'])
     op.create_index('idx_note_revision_created', 'note_revisions', ['created_at'])
 
-    # Create peer_tutor_profiles table
     op.create_table(
         'peer_tutor_profiles',
-        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('id', sa.Integer(), nullable=False, autoincrement=True),
         sa.Column('institution_id', sa.Integer(), nullable=False),
         sa.Column('student_id', sa.Integer(), nullable=False),
         sa.Column('user_id', sa.Integer(), nullable=False),
-        sa.Column('expertise_subjects', postgresql.ARRAY(sa.Integer()), nullable=False),
+        sa.Column('expertise_subjects', sa.JSON(), nullable=False),
         sa.Column('hourly_rate', sa.Float(), nullable=True),
-        sa.Column('availability_schedule', postgresql.JSON(), nullable=True),
+        sa.Column('availability_schedule', sa.JSON(), nullable=True),
         sa.Column('bio', sa.Text(), nullable=True),
         sa.Column('qualifications', sa.Text(), nullable=True),
         sa.Column('total_sessions', sa.Integer(), nullable=False, server_default='0'),
@@ -226,8 +216,8 @@ def upgrade():
         sa.Column('total_earnings', sa.Float(), nullable=False, server_default='0.0'),
         sa.Column('is_active', sa.Boolean(), nullable=False, server_default='true'),
         sa.Column('is_verified', sa.Boolean(), nullable=False, server_default='false'),
-        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
-        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
+        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
+        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP')),
         sa.ForeignKeyConstraint(['institution_id'], ['institutions.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['student_id'], ['students.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
@@ -241,10 +231,9 @@ def upgrade():
     op.create_index('idx_tutor_profile_verified', 'peer_tutor_profiles', ['is_verified'])
     op.create_index('idx_tutor_profile_rating', 'peer_tutor_profiles', ['average_rating'])
 
-    # Create tutoring_requests table
     op.create_table(
         'tutoring_requests',
-        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('id', sa.Integer(), nullable=False, autoincrement=True),
         sa.Column('institution_id', sa.Integer(), nullable=False),
         sa.Column('student_id', sa.Integer(), nullable=False),
         sa.Column('tutor_id', sa.Integer(), nullable=True),
@@ -256,7 +245,7 @@ def upgrade():
         sa.Column('duration_minutes', sa.Integer(), nullable=False, server_default='60'),
         sa.Column('offered_rate', sa.Float(), nullable=True),
         sa.Column('status', sa.String(length=20), nullable=False, server_default='open'),
-        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
+        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
         sa.Column('matched_at', sa.DateTime(), nullable=True),
         sa.Column('completed_at', sa.DateTime(), nullable=True),
         sa.ForeignKeyConstraint(['institution_id'], ['institutions.id'], ondelete='CASCADE'),
@@ -273,10 +262,9 @@ def upgrade():
     op.create_index('idx_tutoring_request_status', 'tutoring_requests', ['status'])
     op.create_index('idx_tutoring_request_created', 'tutoring_requests', ['created_at'])
 
-    # Create tutoring_sessions table
     op.create_table(
         'tutoring_sessions',
-        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('id', sa.Integer(), nullable=False, autoincrement=True),
         sa.Column('institution_id', sa.Integer(), nullable=False),
         sa.Column('request_id', sa.Integer(), nullable=False),
         sa.Column('tutor_id', sa.Integer(), nullable=False),
@@ -293,8 +281,8 @@ def upgrade():
         sa.Column('student_feedback', sa.Text(), nullable=True),
         sa.Column('tutor_notes', sa.Text(), nullable=True),
         sa.Column('status', sa.String(length=20), nullable=False, server_default='scheduled'),
-        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
-        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
+        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
+        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP')),
         sa.ForeignKeyConstraint(['institution_id'], ['institutions.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['request_id'], ['tutoring_requests.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['tutor_id'], ['peer_tutor_profiles.id'], ondelete='CASCADE'),
@@ -308,10 +296,9 @@ def upgrade():
     op.create_index('idx_tutoring_session_status', 'tutoring_sessions', ['status'])
     op.create_index('idx_tutoring_session_scheduled', 'tutoring_sessions', ['scheduled_start'])
 
-    # Create group_performance_analytics table
     op.create_table(
         'group_performance_analytics',
-        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('id', sa.Integer(), nullable=False, autoincrement=True),
         sa.Column('institution_id', sa.Integer(), nullable=False),
         sa.Column('group_id', sa.Integer(), nullable=False),
         sa.Column('period_start', sa.DateTime(), nullable=False),
@@ -319,14 +306,14 @@ def upgrade():
         sa.Column('total_study_hours', sa.Float(), nullable=False, server_default='0.0'),
         sa.Column('total_sessions', sa.Integer(), nullable=False, server_default='0'),
         sa.Column('average_attendance', sa.Float(), nullable=False, server_default='0.0'),
-        sa.Column('member_performance', postgresql.JSON(), nullable=True),
-        sa.Column('subject_distribution', postgresql.JSON(), nullable=True),
-        sa.Column('activity_metrics', postgresql.JSON(), nullable=True),
+        sa.Column('member_performance', sa.JSON(), nullable=True),
+        sa.Column('subject_distribution', sa.JSON(), nullable=True),
+        sa.Column('activity_metrics', sa.JSON(), nullable=True),
         sa.Column('engagement_score', sa.Float(), nullable=False, server_default='0.0'),
         sa.Column('collaboration_score', sa.Float(), nullable=False, server_default='0.0'),
         sa.Column('overall_performance', sa.Float(), nullable=False, server_default='0.0'),
-        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
-        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
+        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
+        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP')),
         sa.ForeignKeyConstraint(['institution_id'], ['institutions.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['group_id'], ['study_groups.id'], ondelete='CASCADE'),
         sa.PrimaryKeyConstraint('id')

@@ -1,4 +1,3 @@
-revision = '024_create_document_vault'
 """create document vault tables
 
 Revision ID: 024_create_document_vault
@@ -9,7 +8,6 @@ Create Date: 2024-01-18 10:00:00.000000
 from typing import Sequence, Union
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
 
 revision: str = '024_create_document_vault'
 down_revision: Union[str, None] = '023_create_conference'
@@ -20,7 +18,7 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     op.create_table(
         'family_documents',
-        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('id', sa.Integer(), nullable=False, autoincrement=True),
         sa.Column('institution_id', sa.Integer(), nullable=False),
         sa.Column('student_id', sa.Integer(), nullable=False),
         sa.Column('uploaded_by_user_id', sa.Integer(), nullable=True),
@@ -32,10 +30,10 @@ def upgrade() -> None:
         sa.Column('file_size', sa.Integer(), nullable=True),
         sa.Column('mime_type', sa.String(length=100), nullable=True),
         sa.Column('expiry_date', sa.DateTime(), nullable=True),
-        sa.Column('shared_with', postgresql.ARRAY(sa.String()), nullable=True),
+        sa.Column('shared_with', sa.JSON(), nullable=True),
         sa.Column('uploaded_by_role', sa.String(length=50), nullable=True),
         sa.Column('ocr_text', sa.Text(), nullable=True),
-        sa.Column('metadata', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
+        sa.Column('metadata', sa.JSON(), nullable=True),
         sa.Column('is_sensitive', sa.Boolean(), nullable=False),
         sa.Column('is_archived', sa.Boolean(), nullable=False),
         sa.Column('is_deleted', sa.Boolean(), nullable=False),
@@ -61,7 +59,7 @@ def upgrade() -> None:
 
     op.create_table(
         'document_access_logs',
-        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('id', sa.Integer(), nullable=False, autoincrement=True),
         sa.Column('document_id', sa.Integer(), nullable=False),
         sa.Column('user_id', sa.Integer(), nullable=True),
         sa.Column('institution_id', sa.Integer(), nullable=True),
@@ -72,7 +70,7 @@ def upgrade() -> None:
         sa.Column('user_name', sa.String(length=255), nullable=True),
         sa.Column('access_granted', sa.Boolean(), nullable=False),
         sa.Column('denial_reason', sa.String(length=255), nullable=True),
-        sa.Column('metadata', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
+        sa.Column('metadata', sa.JSON(), nullable=True),
         sa.Column('created_at', sa.DateTime(), nullable=False),
         sa.ForeignKeyConstraint(['document_id'], ['family_documents.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='SET NULL'),
@@ -89,15 +87,15 @@ def upgrade() -> None:
 
     op.create_table(
         'document_shares',
-        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('id', sa.Integer(), nullable=False, autoincrement=True),
         sa.Column('document_id', sa.Integer(), nullable=False),
         sa.Column('shared_by_user_id', sa.Integer(), nullable=True),
         sa.Column('shared_with_user_id', sa.Integer(), nullable=True),
         sa.Column('share_type', sa.String(length=50), nullable=False),
-        sa.Column('permissions', postgresql.ARRAY(sa.String()), nullable=True),
+        sa.Column('permissions', sa.JSON(), nullable=True),
         sa.Column('expiry_date', sa.DateTime(), nullable=True),
         sa.Column('is_active', sa.Boolean(), nullable=False),
-        sa.Column('metadata', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
+        sa.Column('metadata', sa.JSON(), nullable=True),
         sa.Column('created_at', sa.DateTime(), nullable=False),
         sa.Column('updated_at', sa.DateTime(), nullable=False),
         sa.Column('revoked_at', sa.DateTime(), nullable=True),
@@ -114,7 +112,7 @@ def upgrade() -> None:
 
     op.create_table(
         'document_expiration_alerts',
-        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('id', sa.Integer(), nullable=False, autoincrement=True),
         sa.Column('document_id', sa.Integer(), nullable=False),
         sa.Column('user_id', sa.Integer(), nullable=True),
         sa.Column('institution_id', sa.Integer(), nullable=True),
@@ -122,7 +120,7 @@ def upgrade() -> None:
         sa.Column('days_before_expiry', sa.Integer(), nullable=False),
         sa.Column('sent_at', sa.DateTime(), nullable=True),
         sa.Column('is_sent', sa.Boolean(), nullable=False),
-        sa.Column('metadata', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
+        sa.Column('metadata', sa.JSON(), nullable=True),
         sa.Column('created_at', sa.DateTime(), nullable=False),
         sa.ForeignKeyConstraint(['document_id'], ['family_documents.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='SET NULL'),

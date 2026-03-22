@@ -9,7 +9,6 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
 
 revision: str = '001'
 down_revision: Union[str, None] = None
@@ -19,7 +18,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     op.create_table('institutions',
-        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('id', sa.Integer(), nullable=False, autoincrement=True),
         sa.Column('name', sa.String(length=255), nullable=False),
         sa.Column('slug', sa.String(length=100), nullable=False),
         sa.Column('domain', sa.String(length=255), nullable=True),
@@ -39,7 +38,7 @@ def upgrade() -> None:
     op.create_index('idx_institution_created', 'institutions', ['created_at'], unique=False)
 
     op.create_table('permissions',
-        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('id', sa.Integer(), nullable=False, autoincrement=True),
         sa.Column('name', sa.String(length=100), nullable=False),
         sa.Column('slug', sa.String(length=100), nullable=False),
         sa.Column('resource', sa.String(length=100), nullable=False),
@@ -57,7 +56,7 @@ def upgrade() -> None:
     op.create_index('idx_permission_resource_action', 'permissions', ['resource', 'action'], unique=True)
 
     op.create_table('roles',
-        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('id', sa.Integer(), nullable=False, autoincrement=True),
         sa.Column('name', sa.String(length=100), nullable=False),
         sa.Column('slug', sa.String(length=100), nullable=False),
         sa.Column('description', sa.Text(), nullable=True),
@@ -89,7 +88,7 @@ def upgrade() -> None:
     op.create_index('idx_role_permissions_permission', 'role_permissions', ['permission_id'], unique=False)
 
     op.create_table('subscriptions',
-        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('id', sa.Integer(), nullable=False, autoincrement=True),
         sa.Column('institution_id', sa.Integer(), nullable=False),
         sa.Column('plan_name', sa.String(length=100), nullable=False),
         sa.Column('status', sa.String(length=50), nullable=False),
@@ -120,7 +119,7 @@ def upgrade() -> None:
     op.create_index('idx_subscription_status', 'subscriptions', ['status'], unique=False)
 
     op.create_table('users',
-        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('id', sa.Integer(), nullable=False, autoincrement=True),
         sa.Column('institution_id', sa.Integer(), nullable=False),
         sa.Column('role_id', sa.Integer(), nullable=False),
         sa.Column('email', sa.String(length=255), nullable=False),
@@ -149,17 +148,17 @@ def upgrade() -> None:
     op.create_index('idx_user_active', 'users', ['is_active'], unique=False)
 
     op.create_table('audit_logs',
-        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('id', sa.Integer(), nullable=False, autoincrement=True),
         sa.Column('institution_id', sa.Integer(), nullable=True),
         sa.Column('user_id', sa.Integer(), nullable=True),
         sa.Column('table_name', sa.String(length=100), nullable=False),
         sa.Column('record_id', sa.Integer(), nullable=True),
         sa.Column('action', sa.String(length=50), nullable=False),
-        sa.Column('old_values', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
-        sa.Column('new_values', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
+        sa.Column('old_values', sa.JSON(), nullable=True),
+        sa.Column('new_values', sa.JSON(), nullable=True),
         sa.Column('ip_address', sa.String(length=45), nullable=True),
         sa.Column('user_agent', sa.Text(), nullable=True),
-        sa.Column('metadata', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
+        sa.Column('metadata', sa.JSON(), nullable=True),
         sa.Column('created_at', sa.DateTime(), nullable=False),
         sa.ForeignKeyConstraint(['institution_id'], ['institutions.id'], ondelete='SET NULL'),
         sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='SET NULL'),
@@ -177,178 +176,8 @@ def upgrade() -> None:
     op.create_index('idx_audit_log_action', 'audit_logs', ['action'], unique=False)
     op.create_index('idx_audit_log_created', 'audit_logs', ['created_at'], unique=False)
 
-    op.execute("""
-        CREATE OR REPLACE FUNCTION audit_trigger_func()
-        RETURNS TRIGGER AS $$
-        DECLARE
-            audit_row audit_logs%ROWTYPE;
-            institution_id_val INTEGER;
-        BEGIN
-            IF TG_OP = 'DELETE' THEN
-                audit_row.action = 'DELETE';
-                audit_row.old_values = row_to_json(OLD)::jsonb;
-                audit_row.new_values = NULL;
-                audit_row.record_id = OLD.id;
-                IF TG_TABLE_NAME = 'institutions' THEN
-                    institution_id_val = OLD.id;
-                ELSIF TG_TABLE_NAME = 'users' THEN
-                    institution_id_val = OLD.institution_id;
-                ELSIF TG_TABLE_NAME = 'roles' THEN
-                    institution_id_val = OLD.institution_id;
-                ELSIF TG_TABLE_NAME = 'subscriptions' THEN
-                    institution_id_val = OLD.institution_id;
-                ELSE
-                    institution_id_val = NULL;
-                END IF;
-            ELSIF TG_OP = 'UPDATE' THEN
-                audit_row.action = 'UPDATE';
-                audit_row.old_values = row_to_json(OLD)::jsonb;
-                audit_row.new_values = row_to_json(NEW)::jsonb;
-                audit_row.record_id = NEW.id;
-                IF TG_TABLE_NAME = 'institutions' THEN
-                    institution_id_val = NEW.id;
-                ELSIF TG_TABLE_NAME = 'users' THEN
-                    institution_id_val = NEW.institution_id;
-                ELSIF TG_TABLE_NAME = 'roles' THEN
-                    institution_id_val = NEW.institution_id;
-                ELSIF TG_TABLE_NAME = 'subscriptions' THEN
-                    institution_id_val = NEW.institution_id;
-                ELSE
-                    institution_id_val = NULL;
-                END IF;
-            ELSIF TG_OP = 'INSERT' THEN
-                audit_row.action = 'INSERT';
-                audit_row.old_values = NULL;
-                audit_row.new_values = row_to_json(NEW)::jsonb;
-                audit_row.record_id = NEW.id;
-                IF TG_TABLE_NAME = 'institutions' THEN
-                    institution_id_val = NEW.id;
-                ELSIF TG_TABLE_NAME = 'users' THEN
-                    institution_id_val = NEW.institution_id;
-                ELSIF TG_TABLE_NAME = 'roles' THEN
-                    institution_id_val = NEW.institution_id;
-                ELSIF TG_TABLE_NAME = 'subscriptions' THEN
-                    institution_id_val = NEW.institution_id;
-                ELSE
-                    institution_id_val = NULL;
-                END IF;
-            END IF;
-            
-            audit_row.table_name = TG_TABLE_NAME;
-            audit_row.institution_id = institution_id_val;
-            audit_row.user_id = current_setting('app.current_user_id', true)::integer;
-            audit_row.created_at = NOW();
-            
-            INSERT INTO audit_logs (institution_id, user_id, table_name, record_id, action, old_values, new_values, created_at)
-            VALUES (audit_row.institution_id, audit_row.user_id, audit_row.table_name, audit_row.record_id, 
-                    audit_row.action, audit_row.old_values, audit_row.new_values, audit_row.created_at);
-            
-            IF TG_OP = 'DELETE' THEN
-                RETURN OLD;
-            ELSE
-                RETURN NEW;
-            END IF;
-        EXCEPTION
-            WHEN OTHERS THEN
-                IF TG_OP = 'DELETE' THEN
-                    RETURN OLD;
-                ELSE
-                    RETURN NEW;
-                END IF;
-        END;
-        $$ LANGUAGE plpgsql;
-    """)
-
-    op.execute("""
-        CREATE TRIGGER audit_institutions_trigger
-        AFTER INSERT OR UPDATE OR DELETE ON institutions
-        FOR EACH ROW EXECUTE FUNCTION audit_trigger_func();
-    """)
-
-    op.execute("""
-        CREATE TRIGGER audit_users_trigger
-        AFTER INSERT OR UPDATE OR DELETE ON users
-        FOR EACH ROW EXECUTE FUNCTION audit_trigger_func();
-    """)
-
-    op.execute("""
-        CREATE TRIGGER audit_roles_trigger
-        AFTER INSERT OR UPDATE OR DELETE ON roles
-        FOR EACH ROW EXECUTE FUNCTION audit_trigger_func();
-    """)
-
-    op.execute("""
-        CREATE TRIGGER audit_subscriptions_trigger
-        AFTER INSERT OR UPDATE OR DELETE ON subscriptions
-        FOR EACH ROW EXECUTE FUNCTION audit_trigger_func();
-    """)
-
-    op.execute("ALTER TABLE institutions ENABLE ROW LEVEL SECURITY;")
-    op.execute("ALTER TABLE users ENABLE ROW LEVEL SECURITY;")
-    op.execute("ALTER TABLE roles ENABLE ROW LEVEL SECURITY;")
-    op.execute("ALTER TABLE subscriptions ENABLE ROW LEVEL SECURITY;")
-    op.execute("ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;")
-
-    op.execute("""
-        CREATE POLICY institutions_isolation_policy ON institutions
-        USING (
-            id = current_setting('app.current_institution_id', true)::integer
-            OR current_setting('app.bypass_rls', true)::boolean = true
-        );
-    """)
-
-    op.execute("""
-        CREATE POLICY users_isolation_policy ON users
-        USING (
-            institution_id = current_setting('app.current_institution_id', true)::integer
-            OR current_setting('app.bypass_rls', true)::boolean = true
-        );
-    """)
-
-    op.execute("""
-        CREATE POLICY roles_isolation_policy ON roles
-        USING (
-            (institution_id = current_setting('app.current_institution_id', true)::integer OR institution_id IS NULL)
-            OR current_setting('app.bypass_rls', true)::boolean = true
-        );
-    """)
-
-    op.execute("""
-        CREATE POLICY subscriptions_isolation_policy ON subscriptions
-        USING (
-            institution_id = current_setting('app.current_institution_id', true)::integer
-            OR current_setting('app.bypass_rls', true)::boolean = true
-        );
-    """)
-
-    op.execute("""
-        CREATE POLICY audit_logs_isolation_policy ON audit_logs
-        USING (
-            institution_id = current_setting('app.current_institution_id', true)::integer
-            OR current_setting('app.bypass_rls', true)::boolean = true
-        );
-    """)
-
 
 def downgrade() -> None:
-    op.execute("DROP POLICY IF EXISTS audit_logs_isolation_policy ON audit_logs;")
-    op.execute("DROP POLICY IF EXISTS subscriptions_isolation_policy ON subscriptions;")
-    op.execute("DROP POLICY IF EXISTS roles_isolation_policy ON roles;")
-    op.execute("DROP POLICY IF EXISTS users_isolation_policy ON users;")
-    op.execute("DROP POLICY IF EXISTS institutions_isolation_policy ON institutions;")
-
-    op.execute("ALTER TABLE audit_logs DISABLE ROW LEVEL SECURITY;")
-    op.execute("ALTER TABLE subscriptions DISABLE ROW LEVEL SECURITY;")
-    op.execute("ALTER TABLE roles DISABLE ROW LEVEL SECURITY;")
-    op.execute("ALTER TABLE users DISABLE ROW LEVEL SECURITY;")
-    op.execute("ALTER TABLE institutions DISABLE ROW LEVEL SECURITY;")
-
-    op.execute("DROP TRIGGER IF EXISTS audit_subscriptions_trigger ON subscriptions;")
-    op.execute("DROP TRIGGER IF EXISTS audit_roles_trigger ON roles;")
-    op.execute("DROP TRIGGER IF EXISTS audit_users_trigger ON users;")
-    op.execute("DROP TRIGGER IF EXISTS audit_institutions_trigger ON institutions;")
-    op.execute("DROP FUNCTION IF EXISTS audit_trigger_func();")
-
     op.drop_index('idx_audit_log_created', table_name='audit_logs')
     op.drop_index('idx_audit_log_action', table_name='audit_logs')
     op.drop_index('idx_audit_log_table_record', table_name='audit_logs')

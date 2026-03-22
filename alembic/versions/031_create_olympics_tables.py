@@ -7,7 +7,6 @@ Create Date: 2024-01-31 10:00:00.000000
 """
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects.postgresql import JSON, ARRAY
 
 revision = '031'
 down_revision = 'homework_scanner_001'
@@ -16,26 +15,24 @@ depends_on = None
 
 
 def upgrade():
-    competition_scope_enum = sa.Enum('class', 'school', 'inter_school', 'national', name='competitionscope', create_type=True)
-    
     op.create_table('competitions',
-        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('id', sa.Integer(), nullable=False, autoincrement=True),
         sa.Column('institution_id', sa.Integer(), nullable=False),
         sa.Column('title', sa.String(length=200), nullable=False),
         sa.Column('description', sa.Text(), nullable=True),
         sa.Column('competition_type', sa.Enum('math_olympiad', 'speed_challenge', 'quiz_battle', 'coding_contest', 'essay', 'science_experiment', name='competitiontype'), nullable=False),
-        sa.Column('scope', competition_scope_enum, nullable=False),
+        sa.Column('scope', sa.Enum('class', 'school', 'inter_school', 'national', name='competitionscope'), nullable=False),
         sa.Column('status', sa.Enum('draft', 'upcoming', 'ongoing', 'completed', 'cancelled', name='competitionstatus'), nullable=False, server_default='draft'),
         sa.Column('start_date', sa.DateTime(), nullable=False),
         sa.Column('end_date', sa.DateTime(), nullable=False),
-        sa.Column('rules', JSON, nullable=True),
-        sa.Column('prize_pool', JSON, nullable=True),
-        sa.Column('participating_institutions', ARRAY(sa.Integer), nullable=True),
+        sa.Column('rules', sa.JSON(), nullable=True),
+        sa.Column('prize_pool', sa.JSON(), nullable=True),
+        sa.Column('participating_institutions', sa.JSON(), nullable=True),
         sa.Column('banner_url', sa.String(length=500), nullable=True),
         sa.Column('organizer_id', sa.Integer(), nullable=True),
         sa.Column('is_active', sa.Boolean(), nullable=False, server_default='true'),
         sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
-        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
+        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP')),
         sa.ForeignKeyConstraint(['institution_id'], ['institutions.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['organizer_id'], ['users.id'], ondelete='SET NULL'),
         sa.PrimaryKeyConstraint('id')
@@ -48,7 +45,7 @@ def upgrade():
     op.create_index('idx_competition_organizer', 'competitions', ['organizer_id'])
     
     op.create_table('competition_events',
-        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('id', sa.Integer(), nullable=False, autoincrement=True),
         sa.Column('institution_id', sa.Integer(), nullable=False),
         sa.Column('competition_id', sa.Integer(), nullable=False),
         sa.Column('event_name', sa.String(length=200), nullable=False),
@@ -56,13 +53,13 @@ def upgrade():
         sa.Column('event_type', sa.Enum('individual', 'team', 'relay', name='eventtype'), nullable=False),
         sa.Column('max_participants', sa.Integer(), nullable=True),
         sa.Column('duration_minutes', sa.Integer(), nullable=True),
-        sa.Column('question_set', JSON, nullable=True),
-        sa.Column('scoring_rules', JSON, nullable=True),
+        sa.Column('question_set', sa.JSON(), nullable=True),
+        sa.Column('scoring_rules', sa.JSON(), nullable=True),
         sa.Column('start_time', sa.DateTime(), nullable=True),
         sa.Column('end_time', sa.DateTime(), nullable=True),
         sa.Column('is_active', sa.Boolean(), nullable=False, server_default='true'),
         sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
-        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
+        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP')),
         sa.ForeignKeyConstraint(['institution_id'], ['institutions.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['competition_id'], ['competitions.id'], ondelete='CASCADE'),
         sa.PrimaryKeyConstraint('id')
@@ -73,18 +70,18 @@ def upgrade():
     op.create_index('idx_event_times', 'competition_events', ['start_time', 'end_time'])
     
     op.create_table('competition_teams',
-        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('id', sa.Integer(), nullable=False, autoincrement=True),
         sa.Column('institution_id', sa.Integer(), nullable=False),
         sa.Column('event_id', sa.Integer(), nullable=False),
         sa.Column('team_name', sa.String(length=200), nullable=False),
         sa.Column('team_leader_id', sa.Integer(), nullable=True),
-        sa.Column('members', ARRAY(sa.Integer), nullable=False),
+        sa.Column('members', sa.JSON(), nullable=False),
         sa.Column('total_score', sa.Numeric(precision=10, scale=2), nullable=False, server_default='0'),
         sa.Column('rank', sa.Integer(), nullable=True),
         sa.Column('avatar_url', sa.String(length=500), nullable=True),
         sa.Column('is_active', sa.Boolean(), nullable=False, server_default='true'),
         sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
-        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
+        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP')),
         sa.ForeignKeyConstraint(['institution_id'], ['institutions.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['event_id'], ['competition_events.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['team_leader_id'], ['students.id'], ondelete='SET NULL'),
@@ -98,7 +95,7 @@ def upgrade():
     op.create_index('idx_team_rank', 'competition_teams', ['rank'])
     
     op.create_table('competition_entries',
-        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('id', sa.Integer(), nullable=False, autoincrement=True),
         sa.Column('institution_id', sa.Integer(), nullable=False),
         sa.Column('event_id', sa.Integer(), nullable=False),
         sa.Column('participant_student_id', sa.Integer(), nullable=False),
@@ -106,13 +103,13 @@ def upgrade():
         sa.Column('score', sa.Numeric(precision=10, scale=2), nullable=False, server_default='0'),
         sa.Column('rank', sa.Integer(), nullable=True),
         sa.Column('time_taken', sa.Integer(), nullable=True),
-        sa.Column('submission_data', JSON, nullable=True),
+        sa.Column('submission_data', sa.JSON(), nullable=True),
         sa.Column('status', sa.String(length=50), nullable=False, server_default='registered'),
         sa.Column('submitted_at', sa.DateTime(), nullable=True),
         sa.Column('graded_at', sa.DateTime(), nullable=True),
         sa.Column('certificate_url', sa.String(length=500), nullable=True),
         sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
-        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
+        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP')),
         sa.ForeignKeyConstraint(['institution_id'], ['institutions.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['event_id'], ['competition_events.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['participant_student_id'], ['students.id'], ondelete='CASCADE'),
@@ -129,16 +126,16 @@ def upgrade():
     op.create_index('idx_entry_status', 'competition_entries', ['status'])
     
     op.create_table('competition_leaderboards',
-        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('id', sa.Integer(), nullable=False, autoincrement=True),
         sa.Column('institution_id', sa.Integer(), nullable=False),
         sa.Column('competition_id', sa.Integer(), nullable=False),
-        sa.Column('scope', competition_scope_enum, nullable=False),
-        sa.Column('rankings', JSON, nullable=False),
-        sa.Column('last_updated', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
+        sa.Column('scope', sa.Enum('class', 'school', 'inter_school', 'national', name='competitionscope2'), nullable=False),
+        sa.Column('rankings', sa.JSON(), nullable=False),
+        sa.Column('last_updated', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP')),
         sa.Column('total_participants', sa.Integer(), nullable=False, server_default='0'),
-        sa.Column('metadata', JSON, nullable=True),
+        sa.Column('metadata', sa.JSON(), nullable=True),
         sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
-        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
+        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP')),
         sa.ForeignKeyConstraint(['institution_id'], ['institutions.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['competition_id'], ['competitions.id'], ondelete='CASCADE'),
         sa.PrimaryKeyConstraint('id'),
@@ -189,5 +186,6 @@ def downgrade():
     
     op.execute('DROP TYPE IF EXISTS eventtype')
     op.execute('DROP TYPE IF EXISTS competitionstatus')
+    op.execute('DROP TYPE IF EXISTS competitionscope2')
     op.execute('DROP TYPE IF EXISTS competitionscope')
     op.execute('DROP TYPE IF EXISTS competitiontype')

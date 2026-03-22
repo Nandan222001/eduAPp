@@ -7,7 +7,6 @@ Create Date: 2024-01-15 10:00:00.000000
 """
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
 
 revision = 'add_mobile_auth_security'
 down_revision = '005'
@@ -34,7 +33,7 @@ def upgrade():
     op.create_index('idx_user_device_fingerprint', 'user_devices', ['device_fingerprint'], unique=False)
 
     op.create_table('mobile_auth_events',
-        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('id', sa.Integer(), nullable=False, autoincrement=True),
         sa.Column('user_id', sa.Integer(), nullable=False),
         sa.Column('device_id', sa.Integer(), nullable=True),
         sa.Column('event_type', sa.String(length=50), nullable=False),
@@ -44,8 +43,8 @@ def upgrade():
         sa.Column('device_fingerprint', sa.String(length=255), nullable=True),
         sa.Column('ip_address', sa.String(length=45), nullable=True),
         sa.Column('location', sa.String(length=255), nullable=True),
-        sa.Column('device_info', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
-        sa.Column('metadata', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
+        sa.Column('device_info', sa.JSON(), nullable=True),
+        sa.Column('metadata', sa.JSON(), nullable=True),
         sa.Column('created_at', sa.DateTime(), nullable=False),
         sa.ForeignKeyConstraint(['device_id'], ['user_devices.id'], ondelete='SET NULL'),
         sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
@@ -60,7 +59,7 @@ def upgrade():
     op.create_index(op.f('ix_mobile_auth_events_user_id'), 'mobile_auth_events', ['user_id'], unique=False)
 
     op.create_table('biometric_sessions',
-        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('id', sa.Integer(), nullable=False, autoincrement=True),
         sa.Column('user_id', sa.Integer(), nullable=False),
         sa.Column('device_id', sa.Integer(), nullable=False),
         sa.Column('session_token', sa.String(length=255), nullable=False),
@@ -82,7 +81,7 @@ def upgrade():
     op.create_index(op.f('ix_biometric_sessions_user_id'), 'biometric_sessions', ['user_id'], unique=False)
 
     op.create_table('sensitive_operation_logs',
-        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('id', sa.Integer(), nullable=False, autoincrement=True),
         sa.Column('user_id', sa.Integer(), nullable=False),
         sa.Column('device_id', sa.Integer(), nullable=True),
         sa.Column('operation_type', sa.String(length=100), nullable=False),
@@ -91,7 +90,7 @@ def upgrade():
         sa.Column('reauth_method', sa.String(length=50), nullable=True),
         sa.Column('reauth_success', sa.Boolean(), nullable=True),
         sa.Column('ip_address', sa.String(length=45), nullable=True),
-        sa.Column('metadata', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
+        sa.Column('metadata', sa.JSON(), nullable=True),
         sa.Column('created_at', sa.DateTime(), nullable=False),
         sa.ForeignKeyConstraint(['device_id'], ['user_devices.id'], ondelete='SET NULL'),
         sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
@@ -106,7 +105,7 @@ def upgrade():
     op.create_index(op.f('ix_sensitive_operation_logs_user_id'), 'sensitive_operation_logs', ['user_id'], unique=False)
 
     op.create_table('pin_attempts',
-        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('id', sa.Integer(), nullable=False, autoincrement=True),
         sa.Column('user_id', sa.Integer(), nullable=False),
         sa.Column('device_id', sa.Integer(), nullable=True),
         sa.Column('success', sa.Boolean(), nullable=False),

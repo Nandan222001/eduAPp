@@ -7,7 +7,6 @@ Create Date: 2024-01-15 10:00:00.000000
 """
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects.postgresql import JSONB
 
 revision = '018a_impersonation_debug'
 down_revision = '017'
@@ -18,7 +17,7 @@ depends_on = None
 def upgrade():
     op.create_table(
         'impersonation_logs',
-        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('id', sa.Integer(), nullable=False, autoincrement=True),
         sa.Column('super_admin_id', sa.Integer(), nullable=True),
         sa.Column('impersonated_user_id', sa.Integer(), nullable=True),
         sa.Column('institution_id', sa.Integer(), nullable=True),
@@ -27,7 +26,7 @@ def upgrade():
         sa.Column('ended_at', sa.DateTime(), nullable=True),
         sa.Column('ip_address', sa.String(length=45), nullable=True),
         sa.Column('user_agent', sa.Text(), nullable=True),
-        sa.Column('actions_performed', JSONB, nullable=True),
+        sa.Column('actions_performed', sa.JSON(), nullable=True),
         sa.Column('is_active', sa.Boolean(), nullable=False, server_default='true'),
         sa.ForeignKeyConstraint(['super_admin_id'], ['users.id'], ondelete='SET NULL'),
         sa.ForeignKeyConstraint(['impersonated_user_id'], ['users.id'], ondelete='SET NULL'),
@@ -42,7 +41,7 @@ def upgrade():
 
     op.create_table(
         'activity_logs',
-        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('id', sa.Integer(), nullable=False, autoincrement=True),
         sa.Column('institution_id', sa.Integer(), nullable=True),
         sa.Column('user_id', sa.Integer(), nullable=True),
         sa.Column('activity_type', sa.String(length=100), nullable=False),
@@ -51,8 +50,8 @@ def upgrade():
         sa.Column('method', sa.String(length=10), nullable=True),
         sa.Column('status_code', sa.Integer(), nullable=True),
         sa.Column('description', sa.Text(), nullable=True),
-        sa.Column('request_data', JSONB, nullable=True),
-        sa.Column('response_data', JSONB, nullable=True),
+        sa.Column('request_data', sa.JSON(), nullable=True),
+        sa.Column('response_data', sa.JSON(), nullable=True),
         sa.Column('error_message', sa.Text(), nullable=True),
         sa.Column('ip_address', sa.String(length=45), nullable=True),
         sa.Column('user_agent', sa.Text(), nullable=True),
@@ -70,12 +69,12 @@ def upgrade():
 
     op.create_table(
         'session_replays',
-        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('id', sa.Integer(), nullable=False, autoincrement=True),
         sa.Column('session_id', sa.String(length=255), nullable=False),
         sa.Column('user_id', sa.Integer(), nullable=True),
         sa.Column('institution_id', sa.Integer(), nullable=True),
-        sa.Column('events', JSONB, nullable=False),
-        sa.Column('metadata', JSONB, nullable=True),
+        sa.Column('events', sa.JSON(), nullable=False),
+        sa.Column('metadata', sa.JSON(), nullable=True),
         sa.Column('started_at', sa.DateTime(), nullable=False),
         sa.Column('ended_at', sa.DateTime(), nullable=True),
         sa.Column('duration_seconds', sa.Integer(), nullable=True),

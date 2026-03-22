@@ -7,9 +7,7 @@ Create Date: 2024-01-15 00:00:00.000000
 """
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
 
-# revision identifiers, used by Alembic.
 revision = 'add_recommendation_tables'
 down_revision = '005'
 branch_labels = None
@@ -17,10 +15,9 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Create external_content table
     op.create_table(
         'external_content',
-        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('id', sa.Integer(), nullable=False, autoincrement=True),
         sa.Column('institution_id', sa.Integer(), nullable=False),
         sa.Column('source', sa.Enum('khan_academy', 'youtube_edu', 'openstax', 'coursera', 'mit_ocw', 'edx', name='externalcontentsource'), nullable=False),
         sa.Column('external_id', sa.String(length=255), nullable=True),
@@ -36,10 +33,10 @@ def upgrade() -> None:
         sa.Column('language', sa.String(length=10), nullable=False, server_default='en'),
         sa.Column('view_count', sa.Integer(), nullable=False, server_default='0'),
         sa.Column('recommendation_count', sa.Integer(), nullable=False, server_default='0'),
-        sa.Column('metadata', postgresql.ARRAY(sa.String()), nullable=True),
+        sa.Column('metadata', sa.JSON(), nullable=True),
         sa.Column('is_active', sa.Boolean(), nullable=False, server_default='true'),
-        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
-        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
+        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
+        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP')),
         sa.ForeignKeyConstraint(['institution_id'], ['institutions.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['subject_id'], ['subjects.id'], ondelete='SET NULL'),
         sa.ForeignKeyConstraint(['chapter_id'], ['chapters.id'], ondelete='SET NULL'),
@@ -53,14 +50,13 @@ def upgrade() -> None:
     op.create_index('idx_external_content_topic', 'external_content', ['topic_id'])
     op.create_index('idx_external_content_active', 'external_content', ['is_active'])
 
-    # Create external_content_access_logs table
     op.create_table(
         'external_content_access_logs',
-        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('id', sa.Integer(), nullable=False, autoincrement=True),
         sa.Column('institution_id', sa.Integer(), nullable=False),
         sa.Column('content_id', sa.Integer(), nullable=False),
         sa.Column('user_id', sa.Integer(), nullable=False),
-        sa.Column('accessed_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
+        sa.Column('accessed_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
         sa.Column('duration_seconds', sa.Integer(), nullable=True),
         sa.Column('completion_percentage', sa.Integer(), nullable=True),
         sa.ForeignKeyConstraint(['institution_id'], ['institutions.id'], ondelete='CASCADE'),
@@ -73,10 +69,9 @@ def upgrade() -> None:
     op.create_index('idx_external_access_user', 'external_content_access_logs', ['user_id'])
     op.create_index('idx_external_access_time', 'external_content_access_logs', ['accessed_at'])
 
-    # Create content_effectiveness_scores table
     op.create_table(
         'content_effectiveness_scores',
-        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('id', sa.Integer(), nullable=False, autoincrement=True),
         sa.Column('institution_id', sa.Integer(), nullable=False),
         sa.Column('material_id', sa.Integer(), nullable=True),
         sa.Column('external_content_id', sa.Integer(), nullable=True),
@@ -87,9 +82,9 @@ def upgrade() -> None:
         sa.Column('unique_students', sa.Integer(), nullable=False, server_default='0'),
         sa.Column('total_accesses', sa.Integer(), nullable=False, server_default='0'),
         sa.Column('positive_outcomes', sa.Integer(), nullable=False, server_default='0'),
-        sa.Column('last_calculated_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
-        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
-        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
+        sa.Column('last_calculated_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
+        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
+        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP')),
         sa.ForeignKeyConstraint(['institution_id'], ['institutions.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['material_id'], ['study_materials.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['external_content_id'], ['external_content.id'], ondelete='CASCADE'),
@@ -100,10 +95,9 @@ def upgrade() -> None:
     op.create_index('idx_effectiveness_external', 'content_effectiveness_scores', ['external_content_id'])
     op.create_index('idx_effectiveness_score', 'content_effectiveness_scores', ['effectiveness_score'])
 
-    # Create student_learning_preferences table
     op.create_table(
         'student_learning_preferences',
-        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('id', sa.Integer(), nullable=False, autoincrement=True),
         sa.Column('institution_id', sa.Integer(), nullable=False),
         sa.Column('student_id', sa.Integer(), nullable=False),
         sa.Column('visual_score', sa.Numeric(precision=5, scale=2), nullable=False, server_default='0.25'),
@@ -117,9 +111,9 @@ def upgrade() -> None:
         sa.Column('text_preference_weight', sa.Numeric(precision=5, scale=2), nullable=True),
         sa.Column('interactive_preference_weight', sa.Numeric(precision=5, scale=2), nullable=True),
         sa.Column('total_materials_accessed', sa.Integer(), nullable=False, server_default='0'),
-        sa.Column('last_updated_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
-        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
-        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
+        sa.Column('last_updated_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP')),
+        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
+        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP')),
         sa.ForeignKeyConstraint(['institution_id'], ['institutions.id'], ondelete='CASCADE'),
         sa.ForeignKeyConstraint(['student_id'], ['students.id'], ondelete='CASCADE'),
         sa.PrimaryKeyConstraint('id'),
@@ -131,7 +125,6 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    # Drop tables in reverse order
     op.drop_index('idx_learning_pref_style', table_name='student_learning_preferences')
     op.drop_index('idx_learning_pref_student', table_name='student_learning_preferences')
     op.drop_index('idx_learning_pref_institution', table_name='student_learning_preferences')
@@ -157,5 +150,4 @@ def downgrade() -> None:
     op.drop_index('idx_external_content_institution', table_name='external_content')
     op.drop_table('external_content')
 
-    # Drop enum type
     op.execute('DROP TYPE IF EXISTS externalcontentsource')
