@@ -126,6 +126,3 @@ def downgrade():
     op.drop_index('idx_attendance_student', table_name='attendances')
     op.drop_index('idx_attendance_institution', table_name='attendances')
     op.drop_table('attendances')
-    
-    op.execute('DROP TYPE IF EXISTS correctionstatus')
-    op.execute('DROP TYPE IF EXISTS attendancestatus')
