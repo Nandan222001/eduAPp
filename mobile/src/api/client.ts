@@ -104,6 +104,18 @@ class ApiClient {
           throw new Error('No refresh token available');
         }
 
+        if (refreshToken.startsWith('demo_student_refresh_token_') || refreshToken.startsWith('demo_parent_refresh_token_')) {
+          const isStudent = refreshToken.startsWith('demo_student_refresh_token_');
+          const newAccessToken = isStudent 
+            ? `demo_student_access_token_${Date.now()}`
+            : `demo_parent_access_token_${Date.now()}`;
+          
+          await secureStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, newAccessToken);
+          await secureStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
+          
+          return newAccessToken;
+        }
+
         const response = await axios.post(
           `${API_BASE_URL}/api/${API_VERSION}/auth/refresh`,
           { refresh_token: refreshToken }

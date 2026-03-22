@@ -15,6 +15,13 @@ export const authService = {
       const refreshToken = await secureStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
 
       if (accessToken && refreshToken) {
+        const isDemoUser = this.isDemoToken(accessToken);
+        
+        if (isDemoUser) {
+          this.startAutoRefresh();
+          return true;
+        }
+
         await this.checkAndRefreshIfNeeded();
         this.startAutoRefresh();
         return true;
@@ -24,6 +31,10 @@ export const authService = {
       console.error('Failed to initialize auth:', error);
       return false;
     }
+  },
+
+  isDemoToken(token: string): boolean {
+    return token.startsWith('demo_student_access_token_') || token.startsWith('demo_parent_access_token_');
   },
 
   startAutoRefresh() {
@@ -46,9 +57,23 @@ export const authService = {
   async refreshTokens() {
     try {
       const refreshToken = await secureStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
+      const accessToken = await secureStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
 
       if (!refreshToken) {
         throw new Error('No refresh token available');
+      }
+
+      if (accessToken && this.isDemoToken(accessToken)) {
+        const isStudent = refreshToken.startsWith('demo_student_refresh_token_');
+        const newAccessToken = isStudent 
+          ? `demo_student_access_token_${Date.now()}`
+          : `demo_parent_access_token_${Date.now()}`;
+        
+        await secureStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, newAccessToken);
+        await secureStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
+
+        this.startAutoRefresh();
+        return true;
       }
 
       const response = await authApi.refreshToken({ refresh_token: refreshToken });
@@ -70,13 +95,8 @@ export const authService = {
 
   async clearSession() {
     try {
-      await secureStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
-      await secureStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
-      await secureStorage.removeItem(STORAGE_KEYS.USER_DATA);
-      await secureStorage.removeItem(STORAGE_KEYS.ACTIVE_ROLE);
-
+      await secureStorage.clearAll();
       this.stopAutoRefresh();
-
       store.dispatch(logout());
     } catch (error) {
       console.error('Failed to clear session:', error);
@@ -98,6 +118,10 @@ export const authService = {
 
   isTokenExpiringSoon(token: string): boolean {
     try {
+      if (this.isDemoToken(token)) {
+        return false;
+      }
+
       const payload = JSON.parse(atob(token.split('.')[1]));
       const expirationTime = payload.exp * 1000;
       const currentTime = Date.now();
