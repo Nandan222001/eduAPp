@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -16,7 +16,24 @@ import { LoadingState } from '@components/shared/LoadingState';
 import { ErrorState } from '@components/shared/ErrorState';
 import { EmptyState } from '@components/shared/EmptyState';
 import { COLORS, SPACING } from '@constants';
+import { isDemoUser, demoDataApi } from '@api/demoDataApi';
 import type { ChildAttendanceRecord } from '../../types/parent';
+
+interface ChildInfo {
+  id: number;
+  firstName: string;
+  lastName: string;
+  grade: string;
+  section: string;
+}
+
+interface AttendanceData {
+  todayStatus: string;
+  percentage: number;
+  attendedClasses: number;
+  totalClasses: number;
+  monthlyRecords: ChildAttendanceRecord[];
+}
 
 export const AttendanceScreen = () => {
   const [selectedChildId, setSelectedChildId] = useState<number | null>(null);
@@ -25,11 +42,16 @@ export const AttendanceScreen = () => {
   const currentDate = new Date();
   const [month, setMonth] = useState(currentDate.getMonth() + 1);
   const [year, setYear] = useState(currentDate.getFullYear());
+  const [demoChildren, setDemoChildren] = useState<ChildInfo[] | null>(null);
+  const [demoAttendance, setDemoAttendance] = useState<AttendanceData | null>(null);
+  const [demoLoading, setDemoLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [isDemo, setIsDemo] = useState(false);
 
-  const { data: children, isLoading: isLoadingChildren, isError: isErrorChildren } = useChildren();
+  const { data: apiChildren, isLoading: isLoadingChildren, isError: isErrorChildren } = useChildren();
 
   const {
-    data: attendanceData,
+    data: apiAttendanceData,
     isLoading: isLoadingAttendance,
     isError: isErrorAttendance,
     error,
@@ -40,17 +62,103 @@ export const AttendanceScreen = () => {
     year,
   });
 
+  const loadDemoChildren = async () => {
+    try {
+      const childrenData = await demoDataApi.parent.getChildren();
+      const transformedChildren: ChildInfo[] = childrenData.map((child) => ({
+        id: child.id,
+        firstName: child.first_name,
+        lastName: child.last_name,
+        grade: child.grade,
+        section: child.class_name,
+      }));
+      setDemoChildren(transformedChildren);
+      return transformedChildren;
+    } catch (err) {
+      console.error('Error loading demo children:', err);
+      return [];
+    }
+  };
+
+  const loadDemoAttendance = async (childId: number) => {
+    setDemoLoading(true);
+    try {
+      const calendar = await demoDataApi.parent.getAttendanceCalendar(childId, year, month);
+      const todayAtt = await demoDataApi.parent.getTodayAttendance(childId);
+      const stats = await demoDataApi.parent.getChildStats(childId);
+
+      const monthlyRecords: ChildAttendanceRecord[] = Object.entries(calendar).map(([date, record]) => ({
+        date,
+        status: record.status,
+        subject: record.subject,
+        remarks: record.notes,
+      }));
+
+      const totalRecords = monthlyRecords.length;
+      const presentRecords = monthlyRecords.filter(r => r.status === 'present').length;
+      const percentage = totalRecords > 0 ? (presentRecords / totalRecords) * 100 : stats.attendance_percentage;
+
+      setDemoAttendance({
+        todayStatus: todayAtt.status === 'not_marked' ? 'not_marked' : todayAtt.status,
+        percentage: percentage,
+        attendedClasses: presentRecords,
+        totalClasses: totalRecords,
+        monthlyRecords,
+      });
+    } catch (err) {
+      console.error('Error loading demo attendance:', err);
+    } finally {
+      setDemoLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const checkDemoUser = async () => {
+      const demo = await isDemoUser();
+      setIsDemo(demo);
+    };
+    checkDemoUser();
+  }, []);
+
+  useEffect(() => {
+    if (isDemo) {
+      loadDemoChildren();
+    }
+  }, [isDemo]);
+
+  useEffect(() => {
+    if (isDemo && selectedChildId) {
+      loadDemoAttendance(selectedChildId);
+    }
+  }, [isDemo, selectedChildId, month, year]);
+
+  const handleRefresh = async () => {
+    if (isDemo) {
+      setRefreshing(true);
+      if (selectedChildId) {
+        await loadDemoAttendance(selectedChildId);
+      }
+      setRefreshing(false);
+    } else {
+      refetch();
+    }
+  };
+
+  const children = isDemo ? demoChildren : apiChildren;
+  const attendanceData = isDemo ? demoAttendance : apiAttendanceData;
+  const isLoading = isDemo ? demoLoading : (isLoadingChildren || isLoadingAttendance);
+
   React.useEffect(() => {
     if (children && children.length > 0 && !selectedChildId) {
       setSelectedChildId(children[0].id);
     }
   }, [children, selectedChildId]);
 
-  if (isLoadingChildren || (isLoadingAttendance && selectedChildId)) {
+  if (isLoading) {
     return <LoadingState message="Loading attendance..." />;
   }
 
-  if (isErrorChildren || isErrorAttendance) {
+  if (!isDemo && (isErrorChildren || isErrorAttendance)) {
     return (
       <ErrorState
         message={error?.message || 'Failed to load attendance'}
@@ -124,7 +232,12 @@ export const AttendanceScreen = () => {
   return (
     <ScrollView
       style={styles.container}
-      refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
+      refreshControl={
+        <RefreshControl
+          refreshing={isDemo ? refreshing : isRefetching}
+          onRefresh={handleRefresh}
+        />
+      }
     >
       <Card containerStyle={styles.card}>
         <Card.Title>Select Child</Card.Title>

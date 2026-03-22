@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -16,17 +16,63 @@ import { LoadingState } from '@components/shared/LoadingState';
 import { ErrorState } from '@components/shared/ErrorState';
 import { EmptyState } from '@components/shared/EmptyState';
 import { COLORS, SPACING } from '@constants';
+import { isDemoUser, demoDataApi } from '@api/demoDataApi';
 
 const screenWidth = Dimensions.get('window').width;
+
+interface ChildInfo {
+  id: number;
+  firstName: string;
+  lastName: string;
+  grade: string;
+  section: string;
+}
+
+interface SubjectGrade {
+  subject: string;
+  percentage: number;
+  grade: string;
+  trend: 'improving' | 'declining' | 'stable';
+}
+
+interface TermComparison {
+  term: string;
+  percentage: number;
+}
+
+interface RecentGrade {
+  id: number;
+  subject: string;
+  examName: string;
+  obtainedMarks: number;
+  totalMarks: number;
+  percentage: number;
+  examDate: string;
+  grade: string;
+  term: string;
+}
+
+interface GradesData {
+  overallGrade: string;
+  overallPercentage: number;
+  subjectGrades: SubjectGrade[];
+  termComparison: TermComparison[];
+  recentGrades: RecentGrade[];
+}
 
 export const GradesScreen = () => {
   const [selectedChildId, setSelectedChildId] = useState<number | null>(null);
   const [selectorVisible, setSelectorVisible] = useState(false);
+  const [demoChildren, setDemoChildren] = useState<ChildInfo[] | null>(null);
+  const [demoGrades, setDemoGrades] = useState<GradesData | null>(null);
+  const [demoLoading, setDemoLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [isDemo, setIsDemo] = useState(false);
 
-  const { data: children, isLoading: isLoadingChildren, isError: isErrorChildren } = useChildren();
+  const { data: apiChildren, isLoading: isLoadingChildren, isError: isErrorChildren } = useChildren();
 
   const {
-    data: gradesData,
+    data: apiGradesData,
     isLoading: isLoadingGrades,
     isError: isErrorGrades,
     error,
@@ -34,17 +80,131 @@ export const GradesScreen = () => {
     isRefetching,
   } = useChildGrades(selectedChildId);
 
+  const loadDemoChildren = async () => {
+    try {
+      const childrenData = await demoDataApi.parent.getChildren();
+      const transformedChildren: ChildInfo[] = childrenData.map((child) => ({
+        id: child.id,
+        firstName: child.first_name,
+        lastName: child.last_name,
+        grade: child.grade,
+        section: child.class_name,
+      }));
+      setDemoChildren(transformedChildren);
+      return transformedChildren;
+    } catch (err) {
+      console.error('Error loading demo children:', err);
+      return [];
+    }
+  };
+
+  const loadDemoGrades = async (childId: number) => {
+    setDemoLoading(true);
+    try {
+      const examResults = await demoDataApi.parent.getExamResults(childId);
+      const subjectPerformance = await demoDataApi.parent.getSubjectPerformance(childId);
+      const recentGrades = await demoDataApi.parent.getRecentGrades(childId, 10);
+
+      const subjectGrades: SubjectGrade[] = subjectPerformance.map(perf => ({
+        subject: perf.subject_name,
+        percentage: perf.average_score,
+        grade: getLetterGrade(perf.average_score),
+        trend: perf.trend,
+      }));
+
+      const termComparison: TermComparison[] = examResults.map(result => ({
+        term: result.term,
+        percentage: result.percentage,
+      }));
+
+      const transformedRecentGrades: RecentGrade[] = recentGrades.map(grade => ({
+        id: grade.id,
+        subject: grade.subject_name,
+        examName: grade.exam_name,
+        obtainedMarks: grade.marks_obtained,
+        totalMarks: grade.total_marks,
+        percentage: grade.percentage,
+        examDate: grade.date,
+        grade: grade.grade,
+        term: grade.term || 'N/A',
+      }));
+
+      const overallPercentage = examResults.length > 0
+        ? examResults.reduce((sum, r) => sum + r.percentage, 0) / examResults.length
+        : subjectGrades.length > 0
+        ? subjectGrades.reduce((sum, s) => sum + s.percentage, 0) / subjectGrades.length
+        : 0;
+
+      setDemoGrades({
+        overallGrade: getLetterGrade(overallPercentage),
+        overallPercentage,
+        subjectGrades,
+        termComparison,
+        recentGrades: transformedRecentGrades,
+      });
+    } catch (err) {
+      console.error('Error loading demo grades:', err);
+    } finally {
+      setDemoLoading(false);
+    }
+  };
+
+  const getLetterGrade = (percentage: number): string => {
+    if (percentage >= 90) return 'A+';
+    if (percentage >= 80) return 'A';
+    if (percentage >= 70) return 'B';
+    if (percentage >= 60) return 'C';
+    if (percentage >= 50) return 'D';
+    return 'F';
+  };
+
+  useEffect(() => {
+    const checkDemoUser = async () => {
+      const demo = await isDemoUser();
+      setIsDemo(demo);
+    };
+    checkDemoUser();
+  }, []);
+
+  useEffect(() => {
+    if (isDemo) {
+      loadDemoChildren();
+    }
+  }, [isDemo]);
+
+  useEffect(() => {
+    if (isDemo && selectedChildId) {
+      loadDemoGrades(selectedChildId);
+    }
+  }, [isDemo, selectedChildId]);
+
+  const handleRefresh = async () => {
+    if (isDemo) {
+      setRefreshing(true);
+      if (selectedChildId) {
+        await loadDemoGrades(selectedChildId);
+      }
+      setRefreshing(false);
+    } else {
+      refetch();
+    }
+  };
+
+  const children = isDemo ? demoChildren : apiChildren;
+  const gradesData = isDemo ? demoGrades : apiGradesData;
+  const isLoading = isDemo ? demoLoading : (isLoadingChildren || isLoadingGrades);
+
   React.useEffect(() => {
     if (children && children.length > 0 && !selectedChildId) {
       setSelectedChildId(children[0].id);
     }
   }, [children, selectedChildId]);
 
-  if (isLoadingChildren || (isLoadingGrades && selectedChildId)) {
+  if (isLoading) {
     return <LoadingState message="Loading grades..." />;
   }
 
-  if (isErrorChildren || isErrorGrades) {
+  if (!isDemo && (isErrorChildren || isErrorGrades)) {
     return (
       <ErrorState message={error?.message || 'Failed to load grades'} onRetry={() => refetch()} />
     );
@@ -104,7 +264,12 @@ export const GradesScreen = () => {
   return (
     <ScrollView
       style={styles.container}
-      refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
+      refreshControl={
+        <RefreshControl
+          refreshing={isDemo ? refreshing : isRefetching}
+          onRefresh={handleRefresh}
+        />
+      }
     >
       <Card containerStyle={styles.card}>
         <Card.Title>Select Child</Card.Title>

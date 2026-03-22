@@ -76,22 +76,22 @@ export const DashboardScreen = () => {
   const [demoData, setDemoData] = useState<DashboardData | null>(null);
   const [demoLoading, setDemoLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const isDemo = isDemoUser();
+  const [isDemo, setIsDemo] = useState(false);
   const { data: apiData, isLoading: apiLoading, isError, error, refetch, isRefetching } = useParentDashboard();
 
   const loadDemoData = async () => {
     setDemoLoading(true);
     try {
-      const children = await demoDataApi.parents.getChildren();
+      const children = await demoDataApi.parent.getChildren();
       const aggregatedAttendance: AggregatedAttendance[] = [];
       const recentGrades: RecentGrade[] = [];
       const feePayments: FeePaymentStatus[] = [];
 
       for (const child of children) {
-        const childStats = await demoDataApi.parents.getChildStats(child.id);
-        const todayAtt = await demoDataApi.parents.getTodayAttendance(child.id);
-        const grades = await demoDataApi.parents.getRecentGrades(child.id, 5);
-        const fees = await demoDataApi.parents.getFeePayments(child.id);
+        const childStats = await demoDataApi.parent.getChildStats(child.id);
+        const todayAtt = await demoDataApi.parent.getTodayAttendance(child.id);
+        const grades = await demoDataApi.parent.getRecentGrades(child.id, 5);
+        const fees = await demoDataApi.parent.getFeePayments(child.id);
 
         aggregatedAttendance.push({
           childId: child.id,
@@ -146,7 +146,7 @@ export const DashboardScreen = () => {
 
       const todayAlerts: TodayAlert[] = [];
       for (const child of children) {
-        const todayAtt = await demoDataApi.parents.getTodayAttendance(child.id);
+        const todayAtt = await demoDataApi.parent.getTodayAttendance(child.id);
         if (todayAtt.status === 'absent' || todayAtt.status === 'late') {
           todayAlerts.push({
             childName: `${child.first_name} ${child.last_name}`,
@@ -168,6 +168,14 @@ export const DashboardScreen = () => {
       setDemoLoading(false);
     }
   };
+
+  useEffect(() => {
+    const checkDemoUser = async () => {
+      const demo = await isDemoUser();
+      setIsDemo(demo);
+    };
+    checkDemoUser();
+  }, []);
 
   useEffect(() => {
     if (isDemo) {
