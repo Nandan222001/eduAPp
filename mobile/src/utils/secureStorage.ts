@@ -12,13 +12,17 @@ const TOKEN_KEYS = {
 // Lazy load SecureStore only on native platforms
 let SecureStore: any = null;
 if (Platform.OS !== 'web') {
-  SecureStore = require('expo-secure-store');
+  try {
+    SecureStore = require('expo-secure-store');
+  } catch (error) {
+    console.warn('expo-secure-store not available, falling back to AsyncStorage');
+  }
 }
 
 // Storage abstraction layer
 const storage = {
   setItem: async (key: string, value: string): Promise<void> => {
-    if (Platform.OS === 'web') {
+    if (Platform.OS === 'web' || !SecureStore) {
       await AsyncStorage.setItem(key, value);
     } else {
       await SecureStore.setItemAsync(key, value);
@@ -26,7 +30,7 @@ const storage = {
   },
 
   getItem: async (key: string): Promise<string | null> => {
-    if (Platform.OS === 'web') {
+    if (Platform.OS === 'web' || !SecureStore) {
       return await AsyncStorage.getItem(key);
     } else {
       return await SecureStore.getItemAsync(key);
@@ -34,7 +38,7 @@ const storage = {
   },
 
   deleteItem: async (key: string): Promise<void> => {
-    if (Platform.OS === 'web') {
+    if (Platform.OS === 'web' || !SecureStore) {
       await AsyncStorage.removeItem(key);
     } else {
       await SecureStore.deleteItemAsync(key);
