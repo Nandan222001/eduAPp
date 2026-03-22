@@ -1,3 +1,11 @@
+export enum UserRole {
+  STUDENT = 'student',
+  TEACHER = 'teacher',
+  PARENT = 'parent',
+  ADMIN = 'admin',
+  SUPER_ADMIN = 'super_admin',
+}
+
 export interface LoginRequest {
   email: string;
   password: string;
@@ -51,7 +59,8 @@ export interface User {
   email_verified: boolean;
   last_login?: string;
   permissions: string[];
-  role?: RoleInfo;
+  role: UserRole;
+  roleInfo?: RoleInfo;
   institution?: InstitutionInfo;
 }
 
@@ -63,6 +72,8 @@ export interface AuthState {
   isLoading: boolean;
   error: string | null;
   biometricEnabled: boolean;
+  activeRole: UserRole | null;
+  availableRoles: UserRole[];
 }
 
 export interface BiometricConfig {
