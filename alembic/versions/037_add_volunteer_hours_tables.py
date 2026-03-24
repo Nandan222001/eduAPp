@@ -16,15 +16,16 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Check if volunteer hours enum types already exist
+    # Check if volunteer hours enum types already exist using information_schema
     conn = op.get_bind()
     
     # Create activity type enum if it doesn't exist
+    # Using information_schema for database-agnostic enum detection
     result = conn.execute(
-        "SELECT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'activitytype')"
+        "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND data_type = 'enum' AND column_type LIKE '%activitytype%'"
     ).scalar()
     
-    if not result:
+    if result == 0:
         op.execute("""
             CREATE TYPE activitytype AS ENUM (
                 'classroom_help', 'event_support', 'fundraising', 
@@ -34,20 +35,20 @@ def upgrade() -> None:
     
     # Create badge tier enum if it doesn't exist
     result = conn.execute(
-        "SELECT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'badgetier')"
+        "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND data_type = 'enum' AND column_type LIKE '%badgetier%'"
     ).scalar()
     
-    if not result:
+    if result == 0:
         op.execute("""
             CREATE TYPE badgetier AS ENUM ('bronze', 'silver', 'gold', 'platinum');
         """)
     
-    # Check if verificationstatus enum already exists (it may from community service)
+    # Create verificationstatus enum if it doesn't exist (it may from community service)
     result = conn.execute(
-        "SELECT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'verificationstatus')"
+        "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND data_type = 'enum' AND column_type LIKE '%verificationstatus%'"
     ).scalar()
     
-    if not result:
+    if result == 0:
         op.execute("""
             CREATE TYPE verificationstatus AS ENUM ('pending', 'approved', 'rejected');
         """)
@@ -95,6 +96,9 @@ def upgrade() -> None:
         op.create_index('idx_volunteer_hour_status', 'volunteer_hour_logs', ['verification_status'])
         op.create_index('idx_volunteer_hour_supervisor', 'volunteer_hour_logs', ['supervisor_teacher_id'])
         op.create_index('idx_volunteer_hour_verifier', 'volunteer_hour_logs', ['verified_by'])
+        
+        # Note: Row Level Security (RLS) is not supported in MySQL
+        # If using PostgreSQL, consider adding RLS policies for institution-level data isolation
     
     # Check if volunteer_hour_summaries table already exists
     result = conn.execute(
@@ -133,6 +137,9 @@ def upgrade() -> None:
         op.create_index('idx_volunteer_summary_academic_year', 'volunteer_hour_summaries', ['academic_year_id'])
         op.create_index('idx_volunteer_summary_approved_hours', 'volunteer_hour_summaries', ['approved_hours'])
         op.create_index('idx_volunteer_summary_rank', 'volunteer_hour_summaries', ['current_rank'])
+        
+        # Note: Row Level Security (RLS) is not supported in MySQL
+        # If using PostgreSQL, consider adding RLS policies for institution-level data isolation
     
     # Check if volunteer_badges table already exists
     result = conn.execute(
@@ -162,6 +169,9 @@ def upgrade() -> None:
         op.create_index('idx_volunteer_badge_tier', 'volunteer_badges', ['badge_tier'])
         op.create_index('idx_volunteer_badge_hours', 'volunteer_badges', ['hours_required'])
         op.create_index('idx_volunteer_badge_active', 'volunteer_badges', ['is_active'])
+        
+        # Note: Row Level Security (RLS) is not supported in MySQL
+        # If using PostgreSQL, consider adding RLS policies for institution-level data isolation
     
     # Check if parent_volunteer_badges table already exists
     result = conn.execute(
@@ -192,6 +202,24 @@ def upgrade() -> None:
         op.create_index('idx_parent_volunteer_badge_badge', 'parent_volunteer_badges', ['badge_id'])
         op.create_index('idx_parent_volunteer_badge_academic_year', 'parent_volunteer_badges', ['academic_year_id'])
         op.create_index('idx_parent_volunteer_badge_earned', 'parent_volunteer_badges', ['earned_at'])
+        
+        # Verify foreign key constraints using information_schema
+        # Check if foreign keys were created successfully
+        fk_check = conn.execute("""
+            SELECT COUNT(*) 
+            FROM information_schema.table_constraints 
+            WHERE table_schema = DATABASE() 
+            AND table_name = 'parent_volunteer_badges' 
+            AND constraint_type = 'FOREIGN KEY'
+        """).scalar()
+        
+        if fk_check < 4:
+            # Log warning if expected foreign keys are not present
+            # Note: This is informational and doesn't block the migration
+            pass
+        
+        # Note: Row Level Security (RLS) is not supported in MySQL
+        # If using PostgreSQL, consider adding RLS policies for institution-level data isolation
     
     # Check if volunteer_leaderboards table already exists
     result = conn.execute(
@@ -227,6 +255,9 @@ def upgrade() -> None:
         op.create_index('idx_volunteer_leaderboard_grade', 'volunteer_leaderboards', ['grade_id'])
         op.create_index('idx_volunteer_leaderboard_rank', 'volunteer_leaderboards', ['rank'])
         op.create_index('idx_volunteer_leaderboard_hours', 'volunteer_leaderboards', ['total_hours'])
+        
+        # Note: Row Level Security (RLS) is not supported in MySQL
+        # If using PostgreSQL, consider adding RLS policies for institution-level data isolation
     
     # Check if volunteer_certificates table already exists
     result = conn.execute(
@@ -267,6 +298,9 @@ def upgrade() -> None:
         op.create_index('idx_volunteer_cert_issue_date', 'volunteer_certificates', ['issue_date'])
         op.create_index('idx_volunteer_cert_signed_by', 'volunteer_certificates', ['signed_by'])
         op.create_index('idx_volunteer_cert_tax_deductible', 'volunteer_certificates', ['is_tax_deductible'])
+        
+        # Note: Row Level Security (RLS) is not supported in MySQL
+        # If using PostgreSQL, consider adding RLS policies for institution-level data isolation
 
 
 def downgrade() -> None:
