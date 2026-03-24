@@ -1,10 +1,10 @@
 import { demoDataApi, isDemoUser } from '../demoDataApi';
-import { useAuthStore } from '../../store/authStore';
+import { useAuthStore } from '@store/authStore';
 import { dummyData, demoStudentUser, demoParentUser } from '../../data/dummyData';
 import { studentApi } from '../student';
 import { parentApi } from '../parent';
 
-jest.mock('../../store/authStore');
+jest.mock('@store/authStore');
 jest.mock('../student');
 jest.mock('../parent');
 
