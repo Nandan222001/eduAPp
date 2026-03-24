@@ -1,270 +1,254 @@
 # Expo Router Migration Guide
 
-This comprehensive guide documents the migration from React Navigation to Expo Router, including architectural changes, removed files, new patterns, platform-specific considerations, and troubleshooting steps.
+This comprehensive guide documents the migration from React Navigation to Expo Router, including removed navigation files, changes to routing patterns, deep linking configuration, path alias troubleshooting, and detailed code examples.
 
 ## Table of Contents
 
 - [Overview](#overview)
-- [Removed Files](#removed-files)
-- [New File-Based Routing Structure](#new-file-based-routing-structure)
-- [Platform-Specific Storage Handling](#platform-specific-storage-handling)
-- [Navigation Patterns](#navigation-patterns)
-- [Deep Linking Configuration](#deep-linking-configuration)
-- [Platform-Specific Considerations](#platform-specific-considerations)
-- [Troubleshooting Guide](#troubleshooting-guide)
+- [Removed Navigation Files](#removed-navigation-files)
+- [File-Based Routing Structure](#file-based-routing-structure)
+- [Navigation Pattern Changes](#navigation-pattern-changes)
+- [Deep Linking with Expo Router](#deep-linking-with-expo-router)
+- [Path Alias Configuration](#path-alias-configuration)
+- [Troubleshooting Common Import Errors](#troubleshooting-common-import-errors)
+- [Migration Examples: Old vs New](#migration-examples-old-vs-new)
 - [Testing Checklist](#testing-checklist)
-- [Developer Setup Instructions](#developer-setup-instructions)
 
 ---
 
 ## Overview
 
-The migration to Expo Router introduces file-based routing, similar to Next.js, replacing the imperative navigation approach of React Navigation. This change provides:
+The migration from React Navigation to Expo Router represents a fundamental shift in how navigation is handled in the application.
 
-- **Type-safe routing** with automatic TypeScript types
-- **Simplified deep linking** with automatic configuration
-- **Better code organization** with file-system-based structure
-- **Improved developer experience** with less boilerplate
-- **Universal app support** for web, iOS, and Android from a single codebase
+### What Changed
+
+| Aspect | React Navigation (Old) | Expo Router (New) |
+|--------|----------------------|-------------------|
+| **Route Definition** | Imperative, code-based | Declarative, file-based |
+| **Navigation Container** | `<NavigationContainer>` wrapper | Built-in via `<Slot>` |
+| **Type Safety** | Manual type definitions | Auto-generated from files |
+| **Deep Linking** | Manual configuration | Automatic from file structure |
+| **Screen Access** | Via navigator prop | Via hooks (`useRouter`) |
+| **URL Structure** | Separate configuration | Mirrors file structure |
 
 ### Key Benefits
 
-1. **Automatic route generation**: File structure defines routes automatically
-2. **Type safety**: Routes are typed based on file structure
-3. **SEO-friendly**: Web URLs match your file structure
-4. **Deep linking**: Works out of the box with minimal configuration
-5. **Code splitting**: Automatic lazy loading for better performance
+✅ **Automatic Route Generation** - Files in `app/` directory automatically become routes  
+✅ **Type-Safe Navigation** - TypeScript types generated from file structure  
+✅ **Simplified Deep Linking** - URLs automatically map to file paths  
+✅ **Better DX** - Less boilerplate, faster development  
+✅ **Web Support** - Clean URLs that work seamlessly on web
 
 ---
 
-## Removed Files
+## Removed Navigation Files
 
-The following legacy files were removed as part of the migration:
+The following files were removed during the migration. Their functionality has been replaced by Expo Router's file-based routing and layout system.
 
-### 1. `App.tsx` (Root Component)
+### 1. AuthNavigator.tsx
 
-**Previous Location:** `mobile/App.tsx`
+**Previous Location:** `src/navigation/AuthNavigator.tsx`
 
-**Purpose:** Served as the root component for React Navigation setup. Managed:
-- `NavigationContainer` wrapper
-- Redux Provider setup
-- Theme Provider configuration
-- Authentication state initialization
-- Navigation linking configuration
+**What It Did:**
+- Configured stack navigator for authentication screens
+- Defined routes for login, register, forgot password, OTP flows
+- Set screen options (headers, transitions, gestures)
 
-**Replaced By:** `app/_layout.tsx`
-
-**Key Changes:**
-- Uses `Slot` component instead of `NavigationContainer`
-- All provider setup remains but navigation is handled by Expo Router
-- Route protection logic moved to layout effects
-- Deep linking handled by Expo Router automatically
-
-**Migration Example:**
-
+**Example of Old Code:**
 ```typescript
-// ❌ OLD: App.tsx with React Navigation
-import { NavigationContainer } from '@react-navigation/native';
-import { RootNavigator } from './src/navigation/RootNavigator';
+// ❌ OLD: src/navigation/AuthNavigator.tsx
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import LoginScreen from '../screens/auth/LoginScreen';
+import RegisterScreen from '../screens/auth/RegisterScreen';
+import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
 
-export default function App() {
+const Stack = createNativeStackNavigator();
+
+export function AuthNavigator() {
   return (
-    <Provider store={store}>
-      <NavigationContainer>
-        <RootNavigator />
-      </NavigationContainer>
-    </Provider>
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="Login" component={LoginScreen} />
+      <Stack.Screen name="Register" component={RegisterScreen} />
+      <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+    </Stack.Navigator>
   );
 }
+```
 
-// ✅ NEW: app/_layout.tsx with Expo Router
-import { Slot } from 'expo-router';
-import { Provider } from 'react-redux';
+**Replaced By:** `app/(auth)/_layout.tsx`
+
+```typescript
+// ✅ NEW: app/(auth)/_layout.tsx
+import React from 'react';
+import { Stack } from 'expo-router';
+
+export default function AuthLayout() {
+  return (
+    <Stack
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+      <Stack.Screen name="login" />
+      <Stack.Screen name="register" />
+      <Stack.Screen name="forgot-password" />
+      <Stack.Screen name="reset-password" />
+      <Stack.Screen name="otp-login" />
+      <Stack.Screen name="otp-verify" />
+    </Stack>
+  );
+}
+```
+
+**File Structure:**
+```
+app/(auth)/
+├── _layout.tsx         → Stack navigator configuration
+├── login.tsx           → /login route
+├── register.tsx        → /register route
+├── forgot-password.tsx → /forgot-password route
+├── reset-password.tsx  → /reset-password route
+├── otp-login.tsx       → /otp-login route
+└── otp-verify.tsx      → /otp-verify route
+```
+
+---
+
+### 2. MainNavigator.tsx
+
+**Previous Location:** `src/navigation/MainNavigator.tsx`
+
+**What It Did:**
+- Root navigator that switched between Auth and Main app
+- Handled authentication state checking
+- Conditionally rendered auth or main stack based on login state
+
+**Example of Old Code:**
+```typescript
+// ❌ OLD: src/navigation/MainNavigator.tsx
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useAppSelector } from '../store/hooks';
+import { AuthNavigator } from './AuthNavigator';
+import { TabNavigator } from './TabNavigator';
+
+const Stack = createNativeStackNavigator();
+
+export function MainNavigator() {
+  const { isAuthenticated } = useAppSelector(state => state.auth);
+
+  return (
+    <NavigationContainer>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        {isAuthenticated ? (
+          <Stack.Screen name="Main" component={TabNavigator} />
+        ) : (
+          <Stack.Screen name="Auth" component={AuthNavigator} />
+        )}
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+}
+```
+
+**Replaced By:** `app/_layout.tsx` with route guards
+
+```typescript
+// ✅ NEW: app/_layout.tsx (simplified excerpt)
+import { Slot, useRouter, useSegments } from 'expo-router';
+import { useAppSelector } from '@store/hooks';
+
+function RootLayoutNav() {
+  const router = useRouter();
+  const segments = useSegments();
+  const { isAuthenticated, isLoading } = useAppSelector(state => state.auth);
+
+  useEffect(() => {
+    if (isLoading) return; // Wait for auth check
+
+    const inAuthGroup = segments[0] === '(auth)';
+
+    // Redirect logic
+    if (!isAuthenticated && !inAuthGroup) {
+      router.replace('/(auth)/login');
+    } else if (isAuthenticated && inAuthGroup) {
+      router.replace('/(tabs)/student');
+    }
+  }, [isAuthenticated, segments, isLoading]);
+
+  return <Slot />;
+}
 
 export default function RootLayout() {
   return (
     <Provider store={store}>
-      <Slot />
+      <RootLayoutNav />
     </Provider>
   );
 }
 ```
 
-### 2. `RootNavigator.tsx` and Navigation Files
+---
 
-**Previous Locations:**
-- `src/navigation/RootNavigator.tsx`
-- `src/navigation/MainNavigator.tsx`
-- `src/navigation/AuthNavigator.tsx`
-- `src/navigation/StudentNavigator.tsx`
-- `src/navigation/ParentNavigator.tsx`
-- `src/navigation/StudentTabNavigator.tsx`
-- `src/navigation/ParentTabNavigator.tsx`
+### 3. StudentTabNavigator.tsx
 
-**Purpose:** 
-- Defined navigation stacks and screen configurations
-- Managed screen transitions and options
-- Configured tab navigators
-- Handled navigation type definitions
+**Previous Location:** `src/navigation/StudentTabNavigator.tsx`
 
-**Replaced By:** File-based routing structure in `app/` directory with `_layout.tsx` files
+**What It Did:**
+- Created bottom tab navigator for student role
+- Defined tabs: Home, Assignments, Schedule, Grades, Profile
+- Configured tab icons, labels, and badge counts
+- Set tab bar styling and active/inactive colors
 
-**What Happened to Each:**
-
-| Old Navigator | New Approach | Location |
-|---------------|--------------|----------|
-| `RootNavigator` | Root layout with route guards | `app/_layout.tsx` |
-| `AuthNavigator` | Auth group layout | `app/(auth)/_layout.tsx` |
-| `StudentTabNavigator` | Student tabs layout | `app/(tabs)/student/_layout.tsx` |
-| `ParentTabNavigator` | Parent tabs layout | `app/(tabs)/parent/_layout.tsx` |
-| `MainNavigator` | Tabs group layout | `app/(tabs)/_layout.tsx` |
-
-### 3. Navigation Type Definitions
-
-**Previous Files:**
-- `src/types/navigation.ts`
-- Custom route param types
-- Screen prop types
-
-**Replaced By:** Expo Router's auto-generated typed routes
-
-**Example:**
-
+**Example of Old Code:**
 ```typescript
-// ❌ OLD: Manual type definitions
-export type RootStackParamList = {
-  Login: undefined;
-  AssignmentDetail: { id: string };
-};
+// ❌ OLD: src/navigation/StudentTabNavigator.tsx
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Icon } from '@rneui/themed';
+import HomeScreen from '../screens/student/HomeScreen';
+import AssignmentsScreen from '../screens/student/AssignmentsScreen';
+import ScheduleScreen from '../screens/student/ScheduleScreen';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'AssignmentDetail'>;
+const Tab = createBottomTabNavigator();
 
-// ✅ NEW: Auto-generated types (no manual definition needed)
-import { useLocalSearchParams } from 'expo-router';
-
-function AssignmentDetail() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+export function StudentTabNavigator() {
+  return (
+    <Tab.Navigator
+      screenOptions={{
+        tabBarActiveTintColor: '#2089dc',
+        tabBarInactiveTintColor: 'gray',
+        headerShown: true,
+      }}
+    >
+      <Tab.Screen
+        name="Home"
+        component={HomeScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <Icon name="home" type="material" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Assignments"
+        component={AssignmentsScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <Icon name="assignment" type="material" color={color} size={size} />
+          ),
+        }}
+      />
+      {/* More tabs... */}
+    </Tab.Navigator>
+  );
 }
 ```
 
-### 4. Navigation Linking Configuration
-
-**Previous Configuration:** Manual linking config in `App.tsx`
+**Replaced By:** `app/(tabs)/student/_layout.tsx`
 
 ```typescript
-// ❌ OLD: Manual linking configuration
-const linking = {
-  prefixes: ['edutrack://', 'https://edutrack.app'],
-  config: {
-    screens: {
-      Login: 'login',
-      AssignmentDetail: 'assignments/:id',
-    },
-  },
-};
-```
-
-**Replaced By:** Automatic linking based on file structure with configuration in `app.json`
-
----
-
-## New File-Based Routing Structure
-
-### Directory Structure Overview
-
-```
-app/
-├── _layout.tsx              → Root layout (wraps all routes, handles auth)
-├── index.tsx                → Entry point (/) - redirects based on auth
-├── +not-found.tsx           → 404 page
-├── +html.tsx                → HTML wrapper for web platform
-│
-├── (auth)/                  → Auth group (parentheses hide from URL)
-│   ├── _layout.tsx          → Auth stack layout
-│   ├── login.tsx            → /login
-│   ├── register.tsx         → /register
-│   ├── forgot-password.tsx  → /forgot-password
-│   ├── otp-login.tsx        → /otp-login
-│   ├── otp-verify.tsx       → /otp-verify
-│   └── reset-password.tsx   → /reset-password
-│
-├── (tabs)/                  → Tab navigation group
-│   ├── _layout.tsx          → Main tabs layout (role router)
-│   ├── student/             → Student role tabs
-│   │   ├── _layout.tsx      → Student tab bar configuration
-│   │   ├── index.tsx        → /student (Dashboard)
-│   │   ├── assignments.tsx  → /student/assignments
-│   │   ├── grades.tsx       → /student/grades
-│   │   ├── schedule.tsx     → /student/schedule
-│   │   ├── profile.tsx      → /student/profile
-│   │   ├── ai-predictions.tsx     → /student/ai-predictions (hidden tab)
-│   │   ├── homework-scanner.tsx   → /student/homework-scanner (hidden tab)
-│   │   └── study-buddy.tsx        → /student/study-buddy (hidden tab)
-│   └── parent/              → Parent role tabs
-│       ├── _layout.tsx      → Parent tab bar configuration
-│       ├── index.tsx        → /parent (Dashboard)
-│       ├── children.tsx     → /parent/children
-│       ├── communication.tsx → /parent/communication
-│       ├── reports.tsx      → /parent/reports
-│       └── profile.tsx      → /parent/profile
-│
-├── assignments/             → Assignment stack screens
-│   └── [id].tsx            → /assignments/:id (dynamic route)
-│
-├── courses/                 → Course stack screens
-│   └── [id].tsx            → /courses/:id
-│
-├── children/                → Children detail screens
-│   └── [id].tsx            → /children/:id
-│
-├── messages/                → Messaging screens
-│   ├── index.tsx           → /messages (list)
-│   └── [id].tsx            → /messages/:id (conversation)
-│
-├── notifications/           → Notification screens
-│   ├── _layout.tsx         → Notifications stack layout
-│   ├── index.tsx           → /notifications (list)
-│   └── [id].tsx            → /notifications/:id (detail)
-│
-├── profile.tsx              → /profile (global profile)
-└── settings.tsx             → /settings (global settings)
-```
-
-### File Naming Conventions
-
-| Pattern | Purpose | Example | URL |
-|---------|---------|---------|-----|
-| `_layout.tsx` | Layout component (wraps child routes) | `app/_layout.tsx` | N/A (wrapper only) |
-| `index.tsx` | Default route for directory | `app/student/index.tsx` | `/student` |
-| `[param].tsx` | Dynamic route parameter | `assignments/[id].tsx` | `/assignments/123` |
-| `[...param].tsx` | Catch-all dynamic route | `docs/[...slug].tsx` | `/docs/a/b/c` |
-| `(group)/` | Route group (hidden from URL) | `(auth)/login.tsx` | `/login` (not `/auth/login`) |
-| `+not-found.tsx` | 404 error page | `app/+not-found.tsx` | Any unmatched route |
-| `+html.tsx` | Web-only HTML root | `app/+html.tsx` | N/A (HTML wrapper) |
-| `filename.tsx` | Regular route | `settings.tsx` | `/settings` |
-| `filename.web.tsx` | Web-specific route | `scanner.web.tsx` | `/scanner` (web only) |
-| `filename.native.tsx` | Native-specific route | `camera.native.tsx` | `/camera` (iOS/Android only) |
-
-### Layout Files Explained
-
-Layout files (`_layout.tsx`) wrap child routes and provide shared UI/logic:
-
-**Root Layout** (`app/_layout.tsx`):
-- Sets up providers (Redux, Theme, Query Client)
-- Implements authentication guards
-- Handles deep linking
-- Manages app initialization
-- Wraps all routes with common functionality
-
-**Group Layouts** (`app/(auth)/_layout.tsx`, `app/(tabs)/_layout.tsx`):
-- Configure navigation patterns (Stack, Tabs, etc.)
-- Set screen options (headers, styling)
-- Provide group-specific context
-
-**Example Tab Layout:**
-
-```typescript
-// app/(tabs)/student/_layout.tsx
+// ✅ NEW: app/(tabs)/student/_layout.tsx
+import React from 'react';
 import { Tabs } from 'expo-router';
 import { Icon } from '@rneui/themed';
 
@@ -274,12 +258,14 @@ export default function StudentTabsLayout() {
       screenOptions={{
         headerShown: true,
         tabBarActiveTintColor: '#2089dc',
+        tabBarInactiveTintColor: 'gray',
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
           title: 'Home',
+          tabBarLabel: 'Home',
           tabBarIcon: ({ color, size }) => (
             <Icon name="home" type="material" color={color} size={size} />
           ),
@@ -289,19 +275,115 @@ export default function StudentTabsLayout() {
         name="assignments"
         options={{
           title: 'Assignments',
+          tabBarLabel: 'Assignments',
           tabBarIcon: ({ color, size }) => (
             <Icon name="assignment" type="material" color={color} size={size} />
           ),
         }}
       />
-      {/* Hidden tabs (accessible via navigation but not in tab bar) */}
-      <Tabs.Screen
-        name="ai-predictions"
+      {/* More tabs... */}
+    </Tabs>
+  );
+}
+```
+
+**File Structure:**
+```
+app/(tabs)/student/
+├── _layout.tsx         → Tab navigator configuration
+├── index.tsx           → Home tab (/student)
+├── assignments.tsx     → Assignments tab
+├── schedule.tsx        → Schedule tab
+├── grades.tsx          → Grades tab
+└── profile.tsx         → Profile tab
+```
+
+---
+
+### 4. ParentTabNavigator.tsx
+
+**Previous Location:** `src/navigation/ParentTabNavigator.tsx`
+
+**What It Did:**
+- Created bottom tab navigator for parent role
+- Defined tabs: Dashboard, Children, Communication, Reports, Profile
+- Configured parent-specific tab icons and navigation
+
+**Example of Old Code:**
+```typescript
+// ❌ OLD: src/navigation/ParentTabNavigator.tsx
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Icon } from '@rneui/themed';
+import DashboardScreen from '../screens/parent/DashboardScreen';
+import ChildrenScreen from '../screens/parent/ChildrenScreen';
+
+const Tab = createBottomTabNavigator();
+
+export function ParentTabNavigator() {
+  return (
+    <Tab.Navigator>
+      <Tab.Screen
+        name="Dashboard"
+        component={DashboardScreen}
         options={{
-          title: 'AI Predictions',
-          href: null, // Hides from tab bar
+          tabBarIcon: ({ color, size }) => (
+            <Icon name="dashboard" type="material" color={color} size={size} />
+          ),
         }}
       />
+      <Tab.Screen
+        name="Children"
+        component={ChildrenScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <Icon name="people" type="material" color={color} size={size} />
+          ),
+        }}
+      />
+      {/* More tabs... */}
+    </Tab.Navigator>
+  );
+}
+```
+
+**Replaced By:** `app/(tabs)/parent/_layout.tsx`
+
+```typescript
+// ✅ NEW: app/(tabs)/parent/_layout.tsx
+import React from 'react';
+import { Tabs } from 'expo-router';
+import { Icon } from '@rneui/themed';
+
+export default function ParentTabsLayout() {
+  return (
+    <Tabs
+      screenOptions={{
+        headerShown: true,
+        tabBarActiveTintColor: '#2089dc',
+        tabBarInactiveTintColor: 'gray',
+      }}
+    >
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: 'Dashboard',
+          tabBarLabel: 'Dashboard',
+          tabBarIcon: ({ color, size }) => (
+            <Icon name="dashboard" type="material" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="children"
+        options={{
+          title: 'Children',
+          tabBarLabel: 'Children',
+          tabBarIcon: ({ color, size }) => (
+            <Icon name="people" type="material" color={color} size={size} />
+          ),
+        }}
+      />
+      {/* More tabs... */}
     </Tabs>
   );
 }
@@ -309,900 +391,841 @@ export default function StudentTabsLayout() {
 
 ---
 
-## Platform-Specific Storage Handling
+### 5. Navigation Type Definitions
 
-### The Problem: SecureStore Web Incompatibility
+**Previous Location:** `src/types/navigation.ts`
 
-**Issue:** `expo-secure-store` provides hardware-backed encryption on native platforms but is not available on web, causing runtime errors:
+**What It Did:**
+- Manually defined TypeScript types for all navigation routes
+- Typed screen props and navigation props
+- Defined param lists for each navigator
 
+**Example of Old Code:**
+```typescript
+// ❌ OLD: src/types/navigation.ts
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
+
+export type RootStackParamList = {
+  Auth: undefined;
+  Main: undefined;
+};
+
+export type AuthStackParamList = {
+  Login: undefined;
+  Register: undefined;
+  ForgotPassword: undefined;
+};
+
+export type MainTabParamList = {
+  Home: undefined;
+  Assignments: undefined;
+  AssignmentDetail: { assignmentId: string };
+  Profile: undefined;
+};
+
+// Screen props
+export type LoginScreenProps = NativeStackScreenProps<AuthStackParamList, 'Login'>;
+export type AssignmentDetailProps = NativeStackScreenProps<MainTabParamList, 'AssignmentDetail'>;
 ```
-Error: expo-secure-store is not available on web
-```
 
-### The Solution: Platform-Aware Storage Abstraction
-
-**Implementation:** `src/utils/secureStorage.ts`
+**Replaced By:** Auto-generated types from Expo Router
 
 ```typescript
-import { Platform } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+// ✅ NEW: No manual definitions needed!
+// Types are auto-generated in .expo/types/router.d.ts
 
-// Lazy load SecureStore only on native platforms
-let SecureStore: any = null;
-if (Platform.OS !== 'web') {
-  SecureStore = require('expo-secure-store');
+import { useLocalSearchParams } from 'expo-router';
+
+function AssignmentDetail() {
+  // Type-safe params without manual definitions
+  const { assignmentId } = useLocalSearchParams<{ assignmentId: string }>();
+  // assignmentId is correctly typed as string
 }
-
-// Storage abstraction layer
-const storage = {
-  setItem: async (key: string, value: string): Promise<void> => {
-    if (Platform.OS === 'web') {
-      await AsyncStorage.setItem(key, value);
-    } else {
-      await SecureStore.setItemAsync(key, value);
-    }
-  },
-
-  getItem: async (key: string): Promise<string | null> => {
-    if (Platform.OS === 'web') {
-      return await AsyncStorage.getItem(key);
-    } else {
-      return await SecureStore.getItemAsync(key);
-    }
-  },
-
-  deleteItem: async (key: string): Promise<void> => {
-    if (Platform.OS === 'web') {
-      await AsyncStorage.removeItem(key);
-    } else {
-      await SecureStore.deleteItemAsync(key);
-    }
-  },
-};
-
-export const secureStorage = {
-  setAccessToken: async (token: string) => {
-    await storage.setItem('accessToken', token);
-  },
-  
-  getAccessToken: async () => {
-    return await storage.getItem('accessToken');
-  },
-  
-  // ... more methods
-};
-```
-
-### Platform Storage Comparison
-
-| Aspect | Native (iOS/Android) | Web |
-|--------|---------------------|-----|
-| **Backend** | expo-secure-store | AsyncStorage (localStorage) |
-| **Encryption** | Hardware-backed (Keychain/Keystore) | None (plain text) |
-| **Security** | High - OS-level encryption | Low - readable in dev tools |
-| **Persistence** | Survives app reinstall (iOS Keychain) | Cleared when cache cleared |
-| **Size Limit** | ~2KB per item (iOS), ~1MB (Android) | ~5-10MB total (browser dependent) |
-| **Access** | App-only | Browser-accessible |
-
-### Security Considerations
-
-#### For Native Platforms (iOS/Android):
-
-✅ **Secure:**
-- Uses hardware-backed encryption (Keychain on iOS, Keystore on Android)
-- Data encrypted at rest
-- Requires device authentication to access in some cases
-- Data survives app reinstalls (iOS)
-
-#### For Web Platform:
-
-⚠️ **Less Secure:**
-- Stored in browser's localStorage (plain text)
-- Accessible via browser dev tools
-- No encryption by default
-- Cleared when user clears browser cache
-
-**Production Recommendations for Web:**
-1. **Use HTTPOnly Cookies**: For session tokens, prefer server-side cookies
-2. **Implement Encryption**: Encrypt sensitive data before storing in localStorage
-3. **Short-Lived Tokens**: Use refresh token rotation and short access token expiry
-4. **Content Security Policy**: Implement CSP headers to prevent XSS attacks
-5. **Secure HTTPS**: Always use HTTPS in production
-
-### Migration Impact
-
-**Good News:** No code changes needed! The abstraction layer handles everything:
-
-```typescript
-// Works on all platforms (iOS, Android, Web)
-await secureStorage.setAccessToken(token);
-const token = await secureStorage.getAccessToken();
-await secureStorage.clearTokens();
-```
-
-### Platform-Specific Features
-
-#### Native-Only Features
-
-Some features are automatically disabled on web:
-
-```typescript
-// In app/_layout.tsx
-if (Platform.OS !== 'web') {
-  // Native-only: Splash screen
-  const SplashScreen = require('expo-splash-screen');
-  SplashScreen.preventAutoHideAsync();
-  
-  // Native-only: Offline support
-  await initializeOfflineSupport();
-  
-  // Native-only: Background sync
-  await setupBackgroundSync();
-}
-```
-
-#### Web Stubs for Native Modules
-
-Native-only modules are stubbed for web (see `src/utils/stubs/*.web.ts`):
-
-```typescript
-// src/utils/stubs/auth.web.ts
-export const hasHardwareAsync = async () => false;
-export const authenticateAsync = async () => ({ success: false });
-```
-
-**Configured in `webpack.config.js`:**
-
-```javascript
-config.resolve.alias = {
-  'expo-camera': path.resolve(__dirname, 'src/utils/stubs/camera.web.ts'),
-  'expo-local-authentication': path.resolve(__dirname, 'src/utils/stubs/auth.web.ts'),
-  'expo-notifications': path.resolve(__dirname, 'src/utils/stubs/notifications.web.ts'),
-  // ... more stubs
-};
 ```
 
 ---
 
-## Navigation Patterns
+## File-Based Routing Structure
 
-### 1. Programmatic Navigation
+Expo Router uses your file structure to automatically generate routes.
 
+### Directory Structure
+
+```
+app/
+├── _layout.tsx              → Root layout (wraps all routes)
+├── index.tsx                → Entry point (/)
+├── +not-found.tsx           → 404 page
+│
+├── (auth)/                  → Auth group (hidden from URL)
+│   ├── _layout.tsx          → Auth stack configuration
+│   ├── login.tsx            → /login
+│   ├── register.tsx         → /register
+│   └── forgot-password.tsx  → /forgot-password
+│
+├── (tabs)/                  → Tab navigation group
+│   ├── _layout.tsx          → Role-based tab router
+│   ├── student/             → Student role routes
+│   │   ├── _layout.tsx      → Student tab bar
+│   │   ├── index.tsx        → /student (home)
+│   │   ├── assignments.tsx  → /student/assignments
+│   │   └── grades.tsx       → /student/grades
+│   └── parent/              → Parent role routes
+│       ├── _layout.tsx      → Parent tab bar
+│       ├── index.tsx        → /parent (dashboard)
+│       └── children.tsx     → /parent/children
+│
+├── assignments/             → Assignment routes
+│   └── [id].tsx            → /assignments/:id (dynamic)
+│
+├── courses/                 → Course routes
+│   └── [id].tsx            → /courses/:id
+│
+├── profile.tsx              → /profile
+└── settings.tsx             → /settings
+```
+
+### File Naming Conventions
+
+| Pattern | Purpose | Example | Generated Route |
+|---------|---------|---------|----------------|
+| `filename.tsx` | Regular route | `settings.tsx` | `/settings` |
+| `index.tsx` | Directory default | `student/index.tsx` | `/student` |
+| `[param].tsx` | Dynamic segment | `[id].tsx` | `/assignments/123` |
+| `[...rest].tsx` | Catch-all route | `[...slug].tsx` | `/docs/a/b/c` |
+| `(group)/` | Layout group (hidden) | `(auth)/login.tsx` | `/login` (not `/auth/login`) |
+| `_layout.tsx` | Layout wrapper | `_layout.tsx` | N/A (wrapper only) |
+| `+not-found.tsx` | 404 error page | `+not-found.tsx` | Unmatched routes |
+
+### Layout Files (`_layout.tsx`)
+
+Layout files wrap their child routes and can:
+- Configure navigation patterns (Stack, Tabs, Drawer)
+- Set screen options (headers, transitions)
+- Provide shared UI (headers, footers)
+- Share state/context with children
+
+**Example:**
 ```typescript
-import { useRouter } from 'expo-router';
+// app/(tabs)/student/_layout.tsx
+import { Tabs } from 'expo-router';
 
-function MyComponent() {
+export default function StudentLayout() {
+  return (
+    <Tabs>
+      <Tabs.Screen name="index" options={{ title: 'Home' }} />
+      <Tabs.Screen name="grades" options={{ title: 'Grades' }} />
+    </Tabs>
+  );
+}
+```
+
+---
+
+## Navigation Pattern Changes
+
+### 1. Screen Access
+
+**React Navigation (Old):**
+```typescript
+// ❌ OLD: Screens receive navigation prop
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+
+type NavigationProp = NativeStackNavigationProp<MainTabParamList>;
+
+function MyScreen({ navigation, route }) {
+  // Via prop
+  navigation.navigate('AssignmentDetail', { assignmentId: '123' });
+  
+  // Or via hook
+  const nav = useNavigation<NavigationProp>();
+  nav.navigate('AssignmentDetail', { assignmentId: '123' });
+  
+  // Access params
+  const { assignmentId } = route.params;
+}
+```
+
+**Expo Router (New):**
+```typescript
+// ✅ NEW: Use hooks, no props needed
+import { useRouter, useLocalSearchParams } from 'expo-router';
+
+function MyScreen() {
   const router = useRouter();
-
-  // Push new route (can go back)
+  const { assignmentId } = useLocalSearchParams<{ assignmentId: string }>();
+  
+  // Navigate with router
   router.push('/assignments/123');
   
-  // Replace current route (cannot go back)
-  router.replace('/(auth)/login');
-  
-  // Go back
-  router.back();
-  
-  // Navigate with params
-  router.push({
-    pathname: '/assignments/[id]',
-    params: { id: '123', mode: 'edit' }
-  });
-  
-  // Navigate to external URL
-  router.push('https://example.com');
+  // Or use paths
+  router.push(`/assignments/${assignmentId}`);
 }
 ```
 
-### 2. Link Component
+### 2. Navigation Methods
 
+| Action | React Navigation (Old) | Expo Router (New) |
+|--------|----------------------|-------------------|
+| **Navigate** | `navigation.navigate('Screen', params)` | `router.push('/screen')` or `router.push({ pathname: '/screen', params })` |
+| **Replace** | `navigation.replace('Screen')` | `router.replace('/screen')` |
+| **Go Back** | `navigation.goBack()` | `router.back()` |
+| **Pop to Top** | `navigation.popToTop()` | `router.dismiss()` or `router.dismissAll()` |
+| **Reset** | `navigation.reset({ routes: [...] })` | Navigate to desired route with `replace` |
+
+### 3. Passing Parameters
+
+**React Navigation (Old):**
 ```typescript
-import { Link } from 'expo-router';
+// ❌ OLD: Pass params as second argument
+navigation.navigate('AssignmentDetail', { 
+  assignmentId: '123',
+  mode: 'edit'
+});
 
-// Simple link
-<Link href="/assignments/123">View Assignment</Link>
-
-// Link with params
-<Link 
-  href={{
-    pathname: '/assignments/[id]',
-    params: { id: assignment.id, mode: 'view' }
-  }}
->
-  View Assignment
-</Link>
-
-// Replace instead of push
-<Link href="/login" replace>
-  Back to Login
-</Link>
-
-// External link
-<Link href="https://example.com" target="_blank">
-  External Site
-</Link>
+// Access params
+const { assignmentId, mode } = route.params;
 ```
 
-### 3. Accessing Route Parameters
-
+**Expo Router (New):**
 ```typescript
-import { useLocalSearchParams, useGlobalSearchParams } from 'expo-router';
+// ✅ NEW: Multiple ways to pass params
 
-function AssignmentDetail() {
-  // Local params (current route only)
-  const local = useLocalSearchParams<{ id: string }>();
-  console.log(local.id); // "123"
-  
-  // Global params (includes parent route params)
-  const global = useGlobalSearchParams<{ id: string; childId?: string }>();
-  console.log(global.id, global.childId);
-}
+// Method 1: String interpolation
+router.push(`/assignments/${assignmentId}?mode=edit`);
+
+// Method 2: Object with params
+router.push({
+  pathname: '/assignments/[id]',
+  params: { id: '123', mode: 'edit' }
+});
+
+// Access params
+const { id, mode } = useLocalSearchParams<{ id: string; mode?: string }>();
 ```
 
-### 4. Getting Current Route
+### 4. Nested Navigation
 
+**React Navigation (Old):**
 ```typescript
-import { usePathname, useSegments } from 'expo-router';
-
-function NavigationInfo() {
-  const pathname = usePathname(); // "/assignments/123"
-  const segments = useSegments(); // ["assignments", "123"]
-  
-  const isAuthRoute = segments[0] === '(auth)';
-  const isTabRoute = segments[0] === '(tabs)';
-}
+// ❌ OLD: Navigate through nested navigators
+navigation.navigate('Main', {
+  screen: 'StudentTabs',
+  params: {
+    screen: 'Assignments',
+    params: { assignmentId: '123' }
+  }
+});
 ```
 
-### 5. Protected Routes Pattern
-
-Implemented in `app/_layout.tsx`:
-
+**Expo Router (New):**
 ```typescript
-import { useRouter, useSegments } from 'expo-router';
-import { useAppSelector } from '@store/hooks';
+// ✅ NEW: Direct path-based navigation
+router.push('/student/assignments');
+router.push('/assignments/123');
 
+// No need to specify parent navigators!
+```
+
+### 5. Conditional Rendering vs Route Guards
+
+**React Navigation (Old):**
+```typescript
+// ❌ OLD: Conditional rendering in navigator
+<Stack.Navigator>
+  {isAuthenticated ? (
+    <>
+      <Stack.Screen name="Home" component={HomeScreen} />
+      <Stack.Screen name="Profile" component={ProfileScreen} />
+    </>
+  ) : (
+    <>
+      <Stack.Screen name="Login" component={LoginScreen} />
+      <Stack.Screen name="Register" component={RegisterScreen} />
+    </>
+  )}
+</Stack.Navigator>
+```
+
+**Expo Router (New):**
+```typescript
+// ✅ NEW: Route guards in root layout
 function RootLayoutNav() {
   const router = useRouter();
   const segments = useSegments();
-  const { isAuthenticated, isLoading, activeRole } = useAppSelector(state => state.auth);
+  const { isAuthenticated, isLoading } = useAppSelector(state => state.auth);
 
   useEffect(() => {
-    if (isLoading) return; // Wait for auth to initialize
+    if (isLoading) return;
     
     const inAuthGroup = segments[0] === '(auth)';
     
-    // Redirect to login if not authenticated
     if (!isAuthenticated && !inAuthGroup) {
       router.replace('/(auth)/login');
-    } 
-    // Redirect to app if authenticated and on auth screen
-    else if (isAuthenticated && inAuthGroup) {
-      if (activeRole === 'parent') {
-        router.replace('/(tabs)/parent');
-      } else {
-        router.replace('/(tabs)/student');
-      }
+    } else if (isAuthenticated && inAuthGroup) {
+      router.replace('/(tabs)/student');
     }
-  }, [isAuthenticated, activeRole, segments, isLoading]);
+  }, [isAuthenticated, segments, isLoading]);
 
   return <Slot />;
 }
 ```
 
-### 6. Modal Routes
+### 6. Tab Visibility
 
+**React Navigation (Old):**
 ```typescript
-// Defined in layout
-<Stack>
-  <Stack.Screen name="home" />
-  <Stack.Screen 
-    name="modal" 
-    options={{
-      presentation: 'modal',
-      animation: 'slide_from_bottom',
-    }} 
-  />
-</Stack>
-
-// Navigate to modal
-router.push('/modal');
+// ❌ OLD: Conditional tab rendering
+<Tab.Navigator>
+  <Tab.Screen name="Home" component={HomeScreen} />
+  {isPremium && <Tab.Screen name="Premium" component={PremiumScreen} />}
+</Tab.Navigator>
 ```
 
-### 7. Nested Navigation
-
+**Expo Router (New):**
 ```typescript
-// Parent: app/courses/[id].tsx
-function CourseDetail() {
-  const { id } = useLocalSearchParams<{ id: string }>();
-  // Nested link to lessons
-  return (
-    <Link href={`/courses/${id}/lessons`}>
-      View Lessons
-    </Link>
-  );
-}
-
-// Child: app/courses/[id]/lessons.tsx
-function CourseLessons() {
-  const { id } = useLocalSearchParams<{ id: string }>();
-  // Still has access to parent's id param
-}
+// ✅ NEW: Use href: null to hide tabs
+<Tabs>
+  <Tabs.Screen name="index" options={{ title: 'Home' }} />
+  <Tabs.Screen 
+    name="ai-predictions" 
+    options={{
+      title: 'AI Predictions',
+      href: null, // Hidden from tab bar, but accessible via navigation
+    }} 
+  />
+</Tabs>
 ```
 
 ---
 
-## Deep Linking Configuration
+## Deep Linking with Expo Router
 
-### URL Scheme Configuration
+One of Expo Router's biggest advantages is automatic deep linking support.
 
-Configured in `app.json`:
+### Automatic URL Mapping
 
-```json
-{
-  "expo": {
-    "scheme": "edutrack",
-    "ios": {
-      "bundleIdentifier": "com.edutrack.app",
-      "associatedDomains": [
+Expo Router automatically creates URL schemes based on your file structure:
+
+| File Path | Generated URL |
+|-----------|---------------|
+| `app/login.tsx` | `edutrack://login` |
+| `app/assignments/[id].tsx` | `edutrack://assignments/123` |
+| `app/courses/[id]/lessons.tsx` | `edutrack://courses/math101/lessons` |
+| `app/(tabs)/student/index.tsx` | `edutrack://student` |
+
+### Configuration in `app.config.js`
+
+```javascript
+export default {
+  expo: {
+    // Custom URL scheme
+    scheme: "edutrack",
+    
+    // iOS Universal Links
+    ios: {
+      bundleIdentifier: "com.edutrack.app",
+      associatedDomains: [
         "applinks:edutrack.app",
         "applinks:*.edutrack.app"
       ]
     },
-    "android": {
-      "package": "com.edutrack.app",
-      "intentFilters": [
+    
+    // Android App Links
+    android: {
+      package: "com.edutrack.app",
+      intentFilters: [
         {
-          "action": "VIEW",
-          "autoVerify": true,
-          "data": [
+          action: "VIEW",
+          autoVerify: true,
+          data: [
             {
-              "scheme": "https",
-              "host": "edutrack.app",
-              "pathPrefix": "/"
+              scheme: "https",
+              host: "edutrack.app",
+              pathPrefix: "/"
             },
             {
-              "scheme": "edutrack"
+              scheme: "edutrack"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          category: ["BROWSABLE", "DEFAULT"]
         }
       ]
     }
   }
+};
+```
+
+### Deep Link Utilities
+
+The app includes utilities in `src/utils/deepLinking.ts`:
+
+```typescript
+import * as Linking from 'expo-linking';
+
+// Parse a deep link URL
+export function parseDeepLink(url: string): DeepLinkRoute | null {
+  const parsed = Linking.parse(url);
+  return {
+    path: parsed.path,
+    params: parsed.queryParams as Record<string, string>
+  };
+}
+
+// Create a deep link
+export function createDeepLink(path: string, params?: Record<string, string>): string {
+  const queryString = params 
+    ? '?' + Object.entries(params)
+        .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+        .join('&')
+    : '';
+  
+  return `edutrack://${path}${queryString}`;
+}
+
+// Validate deep link
+export function isValidDeepLink(url: string): boolean {
+  return url.startsWith('edutrack://') || 
+         url.startsWith('https://edutrack.app') ||
+         url.includes('edutrack.app');
 }
 ```
 
-### Supported URL Formats
+### Deep Link Handling in `app/_layout.tsx`
 
-Expo Router automatically supports multiple URL formats:
+```typescript
+const handleDeepLink = useCallback((url: string) => {
+  if (!isValidDeepLink(url)) {
+    console.warn('Invalid deep link:', url);
+    return;
+  }
 
-#### 1. Custom Scheme (All Platforms)
-```
-edutrack://login
-edutrack://assignments/123
-edutrack://student/grades
-edutrack://courses/math101?tab=materials
-```
+  const normalizedUrl = normalizeDeepLink(url);
+  const route = parseDeepLink(normalizedUrl);
+  
+  if (!route) {
+    console.warn('Failed to parse deep link:', url);
+    return;
+  }
 
-#### 2. Universal Links (iOS)
-```
-https://edutrack.app/login
-https://edutrack.app/assignments/123
-https://edutrack.app/student/grades
-```
+  console.log('Deep link navigation:', route);
 
-#### 3. App Links (Android)
-```
-https://edutrack.app/login
-https://edutrack.app/assignments/123
-https://edutrack.app/student/grades
-```
+  // Check authentication
+  if (!isAuthenticated && !route.path.startsWith('(auth)')) {
+    router.replace({
+      pathname: '/(auth)/login',
+      params: { returnPath: route.path, ...route.params }
+    });
+    return;
+  }
 
-#### 4. Web URLs (Development/Production)
-```
-http://localhost:8081/login
-https://edutrack.app/assignments/123
-```
+  // Navigate to the route
+  if (route.params && Object.keys(route.params).length > 0) {
+    router.push({
+      pathname: route.path,
+      params: route.params
+    });
+  } else {
+    router.push(route.path);
+  }
+}, [isAuthenticated, router]);
 
-### Dynamic Route Deep Linking
+// Listen for initial URL (app opened via link)
+useEffect(() => {
+  const handleInitialURL = async () => {
+    const url = await getInitialURL();
+    if (url) {
+      handleDeepLink(url);
+    }
+  };
+  handleInitialURL();
+}, [handleDeepLink]);
 
-Dynamic routes automatically work with deep links:
-
-```
-URL: edutrack://assignments/123
-Maps to: app/assignments/[id].tsx
-Params: { id: "123" }
-
-URL: edutrack://courses/math101?tab=materials
-Maps to: app/courses/[id].tsx
-Params: { id: "math101", tab: "materials" }
-
-URL: edutrack://children/child1/grades
-Maps to: app/children/[id]/[tab].tsx
-Params: { id: "child1", tab: "grades" }
+// Listen for URL changes (app already open)
+useEffect(() => {
+  const subscription = addDeepLinkListener((url) => {
+    handleDeepLink(url);
+  });
+  return () => subscription.remove();
+}, [handleDeepLink]);
 ```
 
 ### Testing Deep Links
 
 #### iOS Simulator
 ```bash
-# Custom scheme
 xcrun simctl openurl booted edutrack://assignments/123
-
-# Universal link
-xcrun simctl openurl booted https://edutrack.app/assignments/123
-
-# With parameters
 xcrun simctl openurl booted "edutrack://courses/math101?tab=materials"
 ```
 
-#### Android Emulator/Device
+#### Android Emulator
 ```bash
-# Custom scheme
 adb shell am start -W -a android.intent.action.VIEW \
   -d "edutrack://assignments/123" \
   com.edutrack.app
-
-# App link
-adb shell am start -W -a android.intent.action.VIEW \
-  -d "https://edutrack.app/assignments/123" \
-  com.edutrack.app
-
-# With parameters
-adb shell am start -W -a android.intent.action.VIEW \
-  -d "edutrack://courses/math101?tab=materials" \
-  com.edutrack.app
 ```
 
-#### Web Browser (Development)
-```bash
-# Start dev server
-npm start
-
-# Navigate in browser to:
+#### Web Browser
+```
 http://localhost:8081/assignments/123
 http://localhost:8081/student/grades
-http://localhost:8081/login?returnUrl=/assignments/123
 ```
-
-#### Real Device Testing
-
-**iOS:**
-1. Create a note in Notes app
-2. Type the deep link URL (e.g., `edutrack://assignments/123`)
-3. Tap the link
-4. Choose "Open in EduTrack" when prompted
-
-**Android:**
-1. Send yourself an SMS or email with the link
-2. Tap the link in the message
-3. Choose "EduTrack" from the app picker
 
 ---
 
-## Platform-Specific Considerations
+## Path Alias Configuration
 
-### iOS Configuration
+The project uses path aliases to simplify imports and avoid relative path hell.
 
-#### 1. Associated Domains Setup
+### Configuration Files
 
-**In `app.json`:**
-```json
-{
-  "ios": {
-    "associatedDomains": [
-      "applinks:edutrack.app",
-      "applinks:*.edutrack.app"
-    ]
-  }
-}
-```
+Path aliases must be configured in **three places** to work correctly:
 
-#### 2. Apple App Site Association (AASA) File
-
-**Server Configuration Required:**
-
-Create file at: `https://edutrack.app/.well-known/apple-app-site-association`
+#### 1. TypeScript Configuration (`tsconfig.json`)
 
 ```json
 {
-  "applinks": {
-    "apps": [],
-    "details": [
-      {
-        "appID": "TEAMID.com.edutrack.app",
-        "paths": [
-          "/assignments/*",
-          "/courses/*",
-          "/student/*",
-          "/parent/*",
-          "/login",
-          "/register"
-        ]
-      }
-    ]
-  }
-}
-```
-
-**Requirements:**
-- Must be served over HTTPS (not HTTP)
-- Must return `Content-Type: application/json`
-- Must be accessible without authentication
-- Replace `TEAMID` with your Apple Team ID
-- No file extension (.json) in the filename
-
-**Verify AASA:**
-```bash
-curl -v https://edutrack.app/.well-known/apple-app-site-association
-```
-
-#### 3. iOS Capabilities
-
-- Enable "Associated Domains" in Xcode (handled by EAS Build)
-- Add domains with `applinks:` prefix
-- Test on real device (simulator has limitations)
-
-### Android Configuration
-
-#### 1. Intent Filters
-
-Already configured in `app.json` - handles both custom schemes and App Links.
-
-#### 2. Digital Asset Links File
-
-**Server Configuration Required:**
-
-Create file at: `https://edutrack.app/.well-known/assetlinks.json`
-
-```json
-[
-  {
-    "relation": ["delegate_permission/common.handle_all_urls"],
-    "target": {
-      "namespace": "android_app",
-      "package_name": "com.edutrack.app",
-      "sha256_cert_fingerprints": [
-        "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99"
-      ]
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@components": ["src/components"],
+      "@components/*": ["src/components/*"],
+      "@screens": ["src/screens"],
+      "@screens/*": ["src/screens/*"],
+      "@store": ["src/store"],
+      "@store/*": ["src/store/*"],
+      "@utils": ["src/utils"],
+      "@utils/*": ["src/utils/*"],
+      "@config": ["src/config"],
+      "@config/*": ["src/config/*"],
+      "@types": ["src/types"],
+      "@types/*": ["src/types/*"],
+      "@api": ["src/api"],
+      "@api/*": ["src/api/*"],
+      "@hooks": ["src/hooks"],
+      "@hooks/*": ["src/hooks/*"],
+      "@services": ["src/services"],
+      "@services/*": ["src/services/*"],
+      "@constants": ["src/constants"],
+      "@constants/*": ["src/constants/*"],
+      "@theme": ["src/theme"],
+      "@theme/*": ["src/theme/*"]
     }
   }
-]
-```
-
-**Get Certificate Fingerprint:**
-
-```bash
-# For debug builds
-keytool -list -v -keystore ~/.android/debug.keystore \
-  -alias androiddebugkey \
-  -storepass android \
-  -keypass android | grep SHA256
-
-# For release builds (use your keystore)
-keytool -list -v -keystore release.keystore \
-  -alias release | grep SHA256
-```
-
-**Verify Asset Links:**
-```bash
-curl https://edutrack.app/.well-known/assetlinks.json
-```
-
-#### 3. Testing Intent Filters
-
-```bash
-# Verify intent filter is registered
-adb shell dumpsys package com.edutrack.app | grep -A 10 "android.intent.action.VIEW"
-
-# Test App Link verification
-adb shell pm get-app-links com.edutrack.app
-```
-
-### Web Configuration
-
-#### 1. Metro Bundler Setup
-
-**`app.json` web configuration:**
-```json
-{
-  "web": {
-    "bundler": "metro",
-    "output": "single",
-    "favicon": "./assets/favicon.png"
-  }
 }
 ```
 
-#### 2. HTML5 History API
-
-Expo Router automatically uses clean URLs (no hash routing):
-
-```
-✅ https://edutrack.app/assignments/123
-❌ https://edutrack.app/#/assignments/123
-```
-
-#### 3. Server Configuration for SPAs
-
-**Required:** Configure server to serve `index.html` for all routes.
-
-**Nginx:**
-```nginx
-server {
-  listen 80;
-  server_name edutrack.app;
-  root /var/www/edutrack;
-  index index.html;
-
-  location / {
-    try_files $uri $uri/ /index.html;
-  }
-  
-  # Optional: Cache static assets
-  location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
-    expires 1y;
-    add_header Cache-Control "public, immutable";
-  }
-}
-```
-
-**Apache (`.htaccess`):**
-```apache
-<IfModule mod_rewrite.c>
-  RewriteEngine On
-  RewriteBase /
-  RewriteRule ^index\.html$ - [L]
-  RewriteCond %{REQUEST_FILENAME} !-f
-  RewriteCond %{REQUEST_FILENAME} !-d
-  RewriteRule . /index.html [L]
-</IfModule>
-```
-
-**Vercel (`vercel.json`):**
-```json
-{
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
-  ]
-}
-```
-
-**Netlify (`_redirects` file):**
-```
-/*    /index.html   200
-```
-
-#### 4. MIME Type Configuration
-
-Already configured in `metro.config.js`:
+#### 2. Babel Configuration (`babel.config.js`)
 
 ```javascript
-config.server = {
-  enhanceMiddleware: (middleware) => {
-    return (req, res, next) => {
-      // Set proper MIME types
-      if (req.url.endsWith('.js') || req.url.endsWith('.mjs')) {
-        res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-      } else if (req.url.endsWith('.json')) {
-        res.setHeader('Content-Type', 'application/json; charset=utf-8');
-      }
-      // ... more types
-      return middleware(req, res, next);
-    };
-  },
+module.exports = function(api) {
+  api.cache(true);
+  return {
+    presets: ['babel-preset-expo'],
+    plugins: [
+      [
+        'module-resolver',
+        {
+          root: ['./src'],
+          alias: {
+            '@': './src',
+            '@components': './src/components',
+            '@screens': './src/screens',
+            '@store': './src/store',
+            '@utils': './src/utils',
+            '@config': './src/config',
+            '@types': './src/types',
+            '@api': './src/api',
+            '@hooks': './src/hooks',
+            '@services': './src/services',
+            '@constants': './src/constants',
+            '@theme': './src/theme',
+          },
+        },
+      ],
+      'react-native-reanimated/plugin',
+    ],
+  };
 };
 ```
 
-#### 5. Web Performance Optimizations
-
-**Implemented in `webpack.config.js`:**
+#### 3. Metro Configuration (`metro.config.js`)
 
 ```javascript
-// Code splitting for better performance
-config.optimization = {
-  splitChunks: {
-    chunks: 'all',
-    cacheGroups: {
-      vendors: {
-        test: /[\\/]node_modules[\\/]/,
-        priority: -10,
-      },
-    },
-  },
+const { getDefaultConfig } = require('expo/metro-config');
+const path = require('path');
+
+const config = getDefaultConfig(__dirname);
+
+// Add path alias resolution
+config.resolver.extraNodeModules = {
+  '@': path.resolve(__dirname, 'src'),
+  '@components': path.resolve(__dirname, 'src/components'),
+  '@screens': path.resolve(__dirname, 'src/screens'),
+  '@store': path.resolve(__dirname, 'src/store'),
+  '@utils': path.resolve(__dirname, 'src/utils'),
+  '@config': path.resolve(__dirname, 'src/config'),
+  '@types': path.resolve(__dirname, 'src/types'),
+  '@api': path.resolve(__dirname, 'src/api'),
+  '@hooks': path.resolve(__dirname, 'src/hooks'),
+  '@services': path.resolve(__dirname, 'src/services'),
+  '@constants': path.resolve(__dirname, 'src/constants'),
+  '@theme': path.resolve(__dirname, 'src/theme'),
 };
 
-// Bundle size limits
-config.performance = {
-  maxAssetSize: 2000000,      // 2MB
-  maxEntrypointSize: 2000000, // 2MB
-};
+module.exports = config;
+```
+
+### Available Aliases
+
+| Alias | Resolves To | Example Usage |
+|-------|-------------|---------------|
+| `@components` | `src/components` | `import { Button } from '@components/shared/Button'` |
+| `@screens` | `src/screens` | `import HomeScreen from '@screens/student/HomeScreen'` |
+| `@store` | `src/store` | `import { store } from '@store'` |
+| `@utils` | `src/utils` | `import { formatDate } from '@utils/dateHelpers'` |
+| `@config` | `src/config` | `import { API_URL } from '@config/env'` |
+| `@types` | `src/types` | `import type { User } from '@types/user'` |
+| `@api` | `src/api` | `import { studentApi } from '@api/studentApi'` |
+| `@hooks` | `src/hooks` | `import { useAuth } from '@hooks/useAuth'` |
+| `@services` | `src/services` | `import { authService } from '@services/auth'` |
+| `@constants` | `src/constants` | `import { COLORS } from '@constants/theme'` |
+| `@theme` | `src/theme` | `import { theme } from '@theme'` |
+
+### Why Three Configurations?
+
+- **TypeScript (`tsconfig.json`)**: Provides IntelliSense and type checking in your IDE
+- **Babel (`babel.config.js`)**: Transforms aliases during JavaScript transpilation
+- **Metro (`metro.config.js`)**: Resolves aliases during bundling for React Native
+
+All three must match or you'll get import errors!
+
+---
+
+## Troubleshooting Common Import Errors
+
+### Error: "Unable to resolve module @components/Button"
+
+**Symptom:**
+```
+Error: Unable to resolve module @components/Button from app/index.tsx:
+Module @components/Button does not exist in the Haste module map
+```
+
+**Causes:**
+1. Path aliases not configured in all three places (tsconfig, babel, metro)
+2. Metro cache not cleared after configuration changes
+3. TypeScript server not restarted
+4. Typo in alias or import path
+
+**Solutions:**
+
+✅ **Step 1: Verify all three configs match**
+
+Check that aliases are identical in:
+- `tsconfig.json` → `compilerOptions.paths`
+- `babel.config.js` → `plugins.module-resolver.alias`
+- `metro.config.js` → `resolver.extraNodeModules`
+
+✅ **Step 2: Clear all caches**
+
+```bash
+# Clear Metro bundler cache
+npx expo start -c
+
+# Clear additional caches
+rm -rf node_modules/.cache
+rm -rf .expo
+rm -rf .metro
+
+# Nuclear option (if above doesn't work)
+rm -rf node_modules
+npm install
+npx expo start -c
+```
+
+✅ **Step 3: Restart TypeScript server**
+
+In VS Code:
+1. Press `Cmd+Shift+P` (Mac) or `Ctrl+Shift+P` (Windows)
+2. Type "TypeScript: Restart TS Server"
+3. Press Enter
+
+✅ **Step 4: Verify import path is correct**
+
+```typescript
+// ✅ Correct
+import { Button } from '@components/shared/Button';
+import { useAuth } from '@hooks/useAuth';
+
+// ❌ Wrong - missing directory
+import { Button } from '@components/Button';
+
+// ❌ Wrong - incorrect alias
+import { Button } from '@component/shared/Button';
 ```
 
 ---
 
-## Troubleshooting Guide
+### Error: "Cannot find module '@components/Button' or its corresponding type declarations"
 
-### Common Issues and Solutions
+**Symptom:**
+Red squiggly lines in IDE, but app runs fine.
 
-#### 1. MIME Type Errors on Web
+**Cause:** TypeScript configuration issue.
 
-**Error:**
-```
-Failed to load module script: Expected a JavaScript module script but the server 
-responded with a MIME type of "text/plain"
-```
+**Solution:**
 
-**Causes:**
-- Server not configured to serve JavaScript with correct MIME type
-- Metro bundler not setting headers correctly
+✅ **Check `tsconfig.json` has correct paths:**
 
-**Solutions:**
-
-✅ **Metro bundler** (already configured):
-- Check `metro.config.js` has MIME type middleware
-- Restart Metro: `npx expo start -c`
-
-✅ **Production server:**
-```nginx
-# Nginx
-location ~* \.js$ {
-  add_header Content-Type application/javascript;
+```json
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@components": ["src/components"],
+      "@components/*": ["src/components/*"]
+    }
+  },
+  "include": ["**/*.ts", "**/*.tsx", "app/**/*.ts", "app/**/*.tsx"]
 }
-
-# Apache (.htaccess)
-AddType application/javascript .js .mjs
-AddType application/json .json
 ```
 
-#### 2. Import Resolution Errors
+✅ **Restart TypeScript server** (see steps above)
 
-**Error:**
+✅ **Check file exists at expected path:**
+
+```bash
+ls -la src/components/shared/Button.tsx
 ```
-Unable to resolve module @components/Button
-```
 
-**Causes:**
-- Path aliases not configured correctly
-- Cache issues
-- TypeScript/Babel config mismatch
+---
 
-**Solutions:**
+### Error: "Invariant Violation: expo-secure-store is not available on web"
 
-1. **Verify configurations match:**
-
-   **`tsconfig.json`:**
-   ```json
-   {
-     "compilerOptions": {
-       "paths": {
-         "@components/*": ["src/components/*"]
-       }
-     }
-   }
-   ```
-
-   **`babel.config.js`:**
-   ```javascript
-   {
-     plugins: [
-       ['module-resolver', {
-         alias: {
-           '@components': './src/components'
-         }
-       }]
-     ]
-   }
-   ```
-
-   **`metro.config.js`:**
-   ```javascript
-   {
-     resolver: {
-       extraNodeModules: {
-         '@components': path.resolve(__dirname, 'src/components')
-       }
-     }
-   }
-   ```
-
-2. **Clear all caches:**
-   ```bash
-   npx expo start -c
-   rm -rf node_modules/.cache
-   rm -rf .expo
-   ```
-
-3. **Restart TypeScript server** in your IDE (VS Code: Cmd+Shift+P → "Restart TS Server")
-
-#### 3. SecureStore Web Errors
-
-**Error:**
+**Symptom:**
 ```
 Invariant Violation: "expo-secure-store" is not available on web
 ```
 
-**Cause:** Attempting to import SecureStore on web platform
+**Cause:** Trying to import SecureStore on web platform where it's not available.
 
-**Solution:** Already fixed in `src/utils/secureStorage.ts` with lazy loading:
+**Solution:**
+
+✅ **Use the abstraction layer:** `src/utils/secureStorage.ts`
 
 ```typescript
-// ✅ Correct - lazy load with platform check
+// ❌ WRONG - Direct import fails on web
+import * as SecureStore from 'expo-secure-store';
+
+// ✅ CORRECT - Use abstraction
+import { getAccessToken, setAccessToken } from '@utils/secureStorage';
+
+async function saveToken(token: string) {
+  await setAccessToken(token);  // Works on all platforms
+}
+```
+
+✅ **If you must use directly, lazy load:**
+
+```typescript
+import { Platform } from 'react-native';
+
 let SecureStore: any = null;
 if (Platform.OS !== 'web') {
   SecureStore = require('expo-secure-store');
 }
 
-// ❌ Wrong - imports on all platforms
-import * as SecureStore from 'expo-secure-store';
+async function saveSecurely(key: string, value: string) {
+  if (Platform.OS === 'web') {
+    // Use AsyncStorage on web
+    await AsyncStorage.setItem(key, value);
+  } else {
+    // Use SecureStore on native
+    await SecureStore.setItemAsync(key, value);
+  }
+}
 ```
 
-**If you see this error:**
-1. Check all files that use SecureStore
-2. Replace direct imports with platform-checked require()
-3. Use the `secureStorage` abstraction layer instead
+---
 
-#### 4. "No Route Matches URL" Error
+### Error: "No routes matched location"
 
-**Error:**
+**Symptom:**
 ```
-Error: No route matches URL: /assignments/123
+Error: No route matched for location: /assignments/123
 ```
 
 **Causes:**
-- File doesn't exist in `app/` directory
-- File named incorrectly
-- Missing `_layout.tsx` in parent directory
-- Metro cache not updated
+1. File doesn't exist at expected path
+2. File named incorrectly
+3. Missing parent `_layout.tsx`
+4. Metro cache not updated
 
 **Solutions:**
 
-1. **Check file exists and is named correctly:**
-   ```
-   app/assignments/[id].tsx  ✅
-   app/assignments/id.tsx    ❌ (not dynamic)
-   app/assignments/detail.tsx ❌ (doesn't match URL)
-   ```
+✅ **Step 1: Verify file exists and is named correctly**
 
-2. **Verify parent layout exists:**
-   ```
-   app/_layout.tsx           ✅ Required
-   app/assignments/[id].tsx  ✅ Will work
-   ```
+```bash
+# For /assignments/123 route, need:
+ls -la app/assignments/[id].tsx
 
-3. **Clear Metro cache:**
-   ```bash
-   npx expo start -c
-   ```
+# Dynamic routes use [param] syntax:
+# ✅ app/assignments/[id].tsx
+# ❌ app/assignments/id.tsx
+# ❌ app/assignments/detail.tsx
+```
 
-4. **Check route in dev tools:**
-   ```typescript
-   import { usePathname } from 'expo-router';
-   console.log(usePathname()); // Current route
-   ```
+✅ **Step 2: Check parent layout exists**
 
-#### 5. Infinite Redirect Loop
+```bash
+# Root layout is required
+ls -la app/_layout.tsx
+```
 
-**Symptoms:**
+✅ **Step 3: Clear Metro cache**
+
+```bash
+npx expo start -c
+```
+
+✅ **Step 4: Check route in dev tools**
+
+```typescript
+import { usePathname } from 'expo-router';
+
+console.log('Current route:', usePathname());
+// Should print: /assignments/123
+```
+
+---
+
+### Error: "Infinite redirect loop"
+
+**Symptom:**
 - App continuously redirects between routes
 - Console flooded with navigation logs
 - App becomes unresponsive
 
-**Cause:** Navigation guard logic without proper checks
+**Cause:** Navigation guard logic without proper loading checks.
 
 **Solution:**
 
 ```typescript
-// ❌ WRONG - causes infinite loop
+// ❌ WRONG - Missing isLoading check
 useEffect(() => {
   if (!isAuthenticated) {
     router.replace('/(auth)/login');
   }
-}, [isAuthenticated]); // Runs every time, including during auth check
+}, [isAuthenticated]);
+// Runs immediately, even while auth is loading!
 
-// ✅ CORRECT - waits for auth to load
+// ✅ CORRECT - Wait for loading to complete
 useEffect(() => {
-  if (isLoading) return; // Important!
+  if (isLoading) return; // Critical!
   
   const inAuthGroup = segments[0] === '(auth)';
   
@@ -1217,108 +1240,32 @@ useEffect(() => {
 **Key Points:**
 - Always check `isLoading` before redirecting
 - Use `segments` to detect current route group
-- Use `router.replace()` instead of `router.push()` for guards
-- Add all dependencies to useEffect array
+- Use `router.replace()` (not `push()`) for guards
+- Include all dependencies in useEffect array
 
-#### 6. Deep Links Not Working (iOS)
+---
 
-**Checklist:**
-- [ ] `associatedDomains` configured in `app.json`
-- [ ] AASA file accessible at `https://yourdomain.com/.well-known/apple-app-site-association`
-- [ ] AASA file has correct Team ID and Bundle ID
-- [ ] AASA file served with `Content-Type: application/json`
-- [ ] AASA file accessible via HTTPS (not HTTP)
-- [ ] App rebuilt after AASA changes
-- [ ] Testing on real device (not simulator)
+### Error: "Property 'navigation' does not exist on type 'Props'"
 
-**Debug Steps:**
-
-1. **Verify AASA file:**
-   ```bash
-   curl -v https://edutrack.app/.well-known/apple-app-site-association
-   ```
-
-2. **Check device logs:**
-   ```bash
-   # Install libimobiledevice
-   brew install libimobiledevice
-
-   # View logs
-   idevicesyslog | grep swcd
-   ```
-
-3. **Reset Associated Domains:**
-   - Delete app from device
-   - Reinstall app
-   - Wait 1 minute for iOS to fetch AASA
-
-4. **Test custom scheme first:**
-   ```bash
-   # Custom schemes work without AASA
-   xcrun simctl openurl booted edutrack://assignments/123
-   ```
-
-#### 7. Deep Links Not Working (Android)
-
-**Checklist:**
-- [ ] `intentFilters` configured in `app.json`
-- [ ] Digital Asset Links file at `https://yourdomain.com/.well-known/assetlinks.json`
-- [ ] Certificate fingerprint matches app signing key
-- [ ] `autoVerify: true` in intent filter
-- [ ] App rebuilt after configuration changes
-- [ ] Testing on real device with internet connection
-
-**Debug Steps:**
-
-1. **Verify Asset Links:**
-   ```bash
-   curl https://edutrack.app/.well-known/assetlinks.json
-   ```
-
-2. **Check intent filter registration:**
-   ```bash
-   adb shell dumpsys package com.edutrack.app | grep -A 10 "android.intent.action.VIEW"
-   ```
-
-3. **Check App Link verification status:**
-   ```bash
-   adb shell pm get-app-links com.edutrack.app
-   ```
-   Should show: `verified`
-
-4. **Re-verify App Links:**
-   ```bash
-   adb shell pm verify-app-links --re-verify com.edutrack.app
-   ```
-
-5. **Test custom scheme first:**
-   ```bash
-   # Custom schemes don't need verification
-   adb shell am start -W -a android.intent.action.VIEW \
-     -d "edutrack://assignments/123" com.edutrack.app
-   ```
-
-#### 8. Navigation Props Not Available
-
-**Error:**
+**Symptom:**
 ```typescript
 Property 'navigation' does not exist on type 'Props'
 ```
 
-**Cause:** Trying to use React Navigation patterns with Expo Router
+**Cause:** Using React Navigation patterns with Expo Router.
 
 **Solution:**
 
 ```typescript
 // ❌ WRONG - React Navigation pattern
-function Screen({ navigation, route }) {
+function MyScreen({ navigation, route }) {
   navigation.navigate('Details', { id: route.params.id });
 }
 
 // ✅ CORRECT - Expo Router pattern
 import { useRouter, useLocalSearchParams } from 'expo-router';
 
-function Screen() {
+function MyScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ id: string }>();
   
@@ -1326,803 +1273,419 @@ function Screen() {
 }
 ```
 
-#### 9. Tabs Not Showing
+---
 
-**Symptoms:**
-- Tab bar doesn't appear
-- Only one screen visible
-- Tab navigation not working
+### Error: "Module not found: Can't resolve 'babel-plugin-module-resolver'"
 
-**Causes:**
-- Missing `_layout.tsx` in tabs directory
-- Layout doesn't render `<Tabs>` component
-- Incorrect group name
-
-**Solution:**
-
-1. **Verify layout file exists:**
-   ```
-   app/(tabs)/student/_layout.tsx  ✅
-   ```
-
-2. **Check layout renders Tabs:**
-   ```typescript
-   import { Tabs } from 'expo-router';
-   
-   export default function Layout() {
-     return (
-       <Tabs>
-         <Tabs.Screen name="index" options={{ title: 'Home' }} />
-         <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
-       </Tabs>
-     );
-   }
-   ```
-
-3. **Verify navigation route:**
-   ```typescript
-   // ✅ Correct - matches (tabs) group
-   router.push('/(tabs)/student');
-   
-   // ❌ Wrong - no matching group
-   router.push('/student');
-   ```
-
-#### 10. TypeScript Errors with Typed Routes
-
-**Error:**
-```typescript
-Type '"/assignments/123"' is not assignable to type 'Href'
+**Symptom:**
+```
+Module not found: Error: Can't resolve 'babel-plugin-module-resolver'
 ```
 
-**Causes:**
-- Typed routes not enabled
-- TypeScript server not restarted
-- Cache issues
-
-**Solutions:**
-
-1. **Enable typed routes in `app.json`:**
-   ```json
-   {
-     "expo": {
-       "experiments": {
-         "typedRoutes": true
-       }
-     }
-   }
-   ```
-
-2. **Restart TypeScript server:**
-   - VS Code: Cmd+Shift+P → "TypeScript: Restart TS Server"
-   - Or restart your IDE
-
-3. **Clear caches:**
-   ```bash
-   npx expo start -c
-   rm -rf .expo
-   ```
-
-4. **Use proper typing:**
-   ```typescript
-   import { Href } from 'expo-router';
-   
-   const route: Href = '/(tabs)/student';
-   router.push(route);
-   ```
-
-#### 11. Params Not Available in Nested Routes
-
-**Problem:** Child routes can't access parent route parameters
-
-**Solution:** Use `useGlobalSearchParams()` instead of `useLocalSearchParams()`:
-
-```typescript
-// Parent: app/courses/[id]/lessons.tsx
-import { useGlobalSearchParams } from 'expo-router';
-
-function LessonsScreen() {
-  // Gets params from parent routes too
-  const { id, lessonId } = useGlobalSearchParams<{ 
-    id: string;
-    lessonId?: string;
-  }>();
-  
-  console.log('Course ID:', id);
-  console.log('Lesson ID:', lessonId);
-}
-```
-
-#### 12. Metro Bundler Cache Issues
-
-**Symptoms:**
-- Old files still being bundled
-- Routes not updating after file changes
-- TypeScript errors persisting after fixes
-- Component changes not reflecting
+**Cause:** Missing dependency.
 
 **Solution:**
 
 ```bash
-# Clear all caches
-npx expo start -c
+npm install --save-dev babel-plugin-module-resolver
+```
 
-# Or manually:
-rm -rf node_modules/.cache
-rm -rf .expo
-rm -rf .metro
-rm -rf dist
-
-# Nuclear option (if above doesn't work):
-rm -rf node_modules
-npm install
+Then restart:
+```bash
 npx expo start -c
 ```
 
-#### 13. Web Bundle Too Large
+---
 
-**Symptoms:**
-- Slow initial load on web
-- Bundle size warnings in console
-- Performance issues
+## Migration Examples: Old vs New
 
-**Solutions:**
+### Example 1: Basic Screen Navigation
 
-1. **Already implemented:**
-   - Code splitting in `webpack.config.js`
-   - Tree shaking enabled
-   - Native modules stubbed for web
+**React Navigation (Old):**
+```typescript
+// ❌ OLD: src/screens/student/AssignmentsScreen.tsx
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { MainTabParamList } from '../../types/navigation';
 
-2. **Analyze bundle:**
-   ```bash
-   npm run analyze-bundle
-   ```
+type NavigationProp = NativeStackNavigationProp<MainTabParamList>;
 
-3. **Verify web optimizations:**
-   ```bash
-   npm run verify-web-optimization
-   ```
+export const AssignmentsScreen: React.FC = () => {
+  const navigation = useNavigation<NavigationProp>();
 
-4. **Check what's included:**
-   - Review `webpack.config.js` aliases
-   - Ensure native-only modules are stubbed
-   - Verify lazy loading is working
+  const handleAssignmentPress = (assignmentId: string) => {
+    navigation.navigate('AssignmentDetail', { assignmentId });
+  };
+
+  return (
+    <TouchableOpacity onPress={() => handleAssignmentPress('123')}>
+      <Text>View Assignment</Text>
+    </TouchableOpacity>
+  );
+};
+```
+
+**Expo Router (New):**
+```typescript
+// ✅ NEW: app/(tabs)/student/assignments.tsx
+import { useRouter } from 'expo-router';
+
+export default function AssignmentsScreen() {
+  const router = useRouter();
+
+  const handleAssignmentPress = (assignmentId: string) => {
+    router.push(`/assignments/${assignmentId}`);
+  };
+
+  return (
+    <TouchableOpacity onPress={() => handleAssignmentPress('123')}>
+      <Text>View Assignment</Text>
+    </TouchableOpacity>
+  );
+}
+```
+
+---
+
+### Example 2: Screen with Parameters
+
+**React Navigation (Old):**
+```typescript
+// ❌ OLD: src/screens/student/AssignmentDetailScreen.tsx
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { MainStackParamList } from '../../types/navigation';
+
+type Props = NativeStackScreenProps<MainStackParamList, 'AssignmentDetail'>;
+
+export function AssignmentDetailScreen({ route, navigation }: Props) {
+  const { assignmentId } = route.params;
+
+  const handleSubmit = () => {
+    navigation.navigate('AssignmentSubmission', { 
+      assignmentId,
+      mode: 'new'
+    });
+  };
+
+  return (
+    <View>
+      <Text>Assignment: {assignmentId}</Text>
+      <Button onPress={handleSubmit}>Submit</Button>
+    </View>
+  );
+}
+```
+
+**Expo Router (New):**
+```typescript
+// ✅ NEW: app/assignments/[id].tsx
+import { useRouter, useLocalSearchParams } from 'expo-router';
+
+export default function AssignmentDetailScreen() {
+  const router = useRouter();
+  const { id } = useLocalSearchParams<{ id: string }>();
+
+  const handleSubmit = () => {
+    router.push({
+      pathname: '/assignments/[id]/submit',
+      params: { id, mode: 'new' }
+    });
+  };
+
+  return (
+    <View>
+      <Text>Assignment: {id}</Text>
+      <Button onPress={handleSubmit}>Submit</Button>
+    </View>
+  );
+}
+```
+
+---
+
+### Example 3: Nested Tab Navigation
+
+**React Navigation (Old):**
+```typescript
+// ❌ OLD: Navigate to nested tab
+navigation.navigate('Main', {
+  screen: 'StudentTabs',
+  params: {
+    screen: 'Assignments',
+    params: { filter: 'pending' }
+  }
+});
+```
+
+**Expo Router (New):**
+```typescript
+// ✅ NEW: Direct path navigation
+router.push('/student/assignments?filter=pending');
+
+// Or with object syntax
+router.push({
+  pathname: '/student/assignments',
+  params: { filter: 'pending' }
+});
+```
+
+---
+
+### Example 4: Modal Navigation
+
+**React Navigation (Old):**
+```typescript
+// ❌ OLD: Define modal in navigator
+<Stack.Group screenOptions={{ presentation: 'modal' }}>
+  <Stack.Screen name="FilterModal" component={FilterModal} />
+</Stack.Group>
+
+// Navigate to modal
+navigation.navigate('FilterModal', { filters });
+```
+
+**Expo Router (New):**
+```typescript
+// ✅ NEW: Define modal in layout
+// app/_layout.tsx
+<Stack>
+  <Stack.Screen name="index" />
+  <Stack.Screen 
+    name="filter-modal" 
+    options={{
+      presentation: 'modal',
+      animation: 'slide_from_bottom'
+    }} 
+  />
+</Stack>
+
+// Navigate to modal
+router.push('/filter-modal');
+```
+
+---
+
+### Example 5: Authentication Flow
+
+**React Navigation (Old):**
+```typescript
+// ❌ OLD: Conditional navigation structure
+function RootNavigator() {
+  const { isAuthenticated } = useAppSelector(state => state.auth);
+
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      {isAuthenticated ? (
+        <Stack.Screen name="Main" component={MainNavigator} />
+      ) : (
+        <Stack.Screen name="Auth" component={AuthNavigator} />
+      )}
+    </Stack.Navigator>
+  );
+}
+```
+
+**Expo Router (New):**
+```typescript
+// ✅ NEW: Route guards in layout
+// app/_layout.tsx
+function RootLayoutNav() {
+  const router = useRouter();
+  const segments = useSegments();
+  const { isAuthenticated, isLoading } = useAppSelector(state => state.auth);
+
+  useEffect(() => {
+    if (isLoading) return;
+
+    const inAuthGroup = segments[0] === '(auth)';
+
+    if (!isAuthenticated && !inAuthGroup) {
+      router.replace('/(auth)/login');
+    } else if (isAuthenticated && inAuthGroup) {
+      router.replace('/(tabs)/student');
+    }
+  }, [isAuthenticated, segments, isLoading]);
+
+  return <Slot />;
+}
+```
+
+---
+
+### Example 6: Deep Linking
+
+**React Navigation (Old):**
+```typescript
+// ❌ OLD: Manual linking configuration
+const linking = {
+  prefixes: ['edutrack://', 'https://edutrack.app'],
+  config: {
+    screens: {
+      Auth: {
+        screens: {
+          Login: 'login',
+          Register: 'register',
+        },
+      },
+      Main: {
+        screens: {
+          StudentTabs: {
+            screens: {
+              Assignments: 'assignments',
+              AssignmentDetail: 'assignments/:id',
+            },
+          },
+        },
+      },
+    },
+  },
+};
+
+<NavigationContainer linking={linking}>
+  {/* navigators */}
+</NavigationContainer>
+```
+
+**Expo Router (New):**
+```typescript
+// ✅ NEW: Automatic from file structure!
+// File: app/assignments/[id].tsx
+// Automatically creates: edutrack://assignments/:id
+
+// Configure scheme in app.config.js:
+export default {
+  expo: {
+    scheme: "edutrack",
+  }
+};
+
+// That's it! No manual configuration needed.
+```
+
+---
+
+### Example 7: Header Configuration
+
+**React Navigation (Old):**
+```typescript
+// ❌ OLD: Configure in navigator
+<Stack.Screen
+  name="AssignmentDetail"
+  component={AssignmentDetailScreen}
+  options={{
+    title: 'Assignment Details',
+    headerRight: () => <HeaderButton />,
+    headerStyle: {
+      backgroundColor: '#2089dc',
+    },
+    headerTintColor: '#fff',
+  }}
+/>
+```
+
+**Expo Router (New):**
+```typescript
+// ✅ NEW: Configure in layout or use Stack.Screen
+// app/_layout.tsx
+<Stack>
+  <Stack.Screen
+    name="assignments/[id]"
+    options={{
+      title: 'Assignment Details',
+      headerRight: () => <HeaderButton />,
+      headerStyle: {
+        backgroundColor: '#2089dc',
+      },
+      headerTintColor: '#fff',
+    }}
+  />
+</Stack>
+
+// Or configure in the screen file itself with export
+export const options = {
+  title: 'Assignment Details',
+  headerRight: () => <HeaderButton />,
+};
+```
+
+---
+
+### Example 8: Back Navigation
+
+**React Navigation (Old):**
+```typescript
+// ❌ OLD
+navigation.goBack();
+navigation.pop();
+navigation.popToTop();
+```
+
+**Expo Router (New):**
+```typescript
+// ✅ NEW
+router.back();          // Go back one screen
+router.dismiss();       // Close modal/dismiss
+router.dismissAll();    // Dismiss all modals
+router.canGoBack();     // Check if can go back
+```
 
 ---
 
 ## Testing Checklist
 
-Use this checklist when testing the migration on all platforms:
+Use this checklist to verify the migration is complete and working correctly:
 
-### Pre-Testing Setup
-
-- [ ] All dependencies installed (`npm install`)
-- [ ] TypeScript compiles without errors (`npm run type-check`)
-- [ ] Linter passes (`npm run lint`)
-- [ ] Dev server starts successfully (`npm start`)
-
-### Authentication Flow
-
-**All Platforms (iOS, Android, Web):**
-
-- [ ] Login screen loads correctly
-- [ ] Can log in with demo credentials
-- [ ] Can log in with OTP
-- [ ] Can register new account
-- [ ] Forgot password flow works
-- [ ] Token refresh works automatically
-- [ ] Logout clears all data
-- [ ] Biometric auth works (native only)
-- [ ] Remember me persists across sessions
-
-### Navigation Testing
-
-**Tab Navigation:**
-
-- [ ] All tabs visible and clickable
-- [ ] Tab icons display correctly
-- [ ] Tab labels match screen titles
-- [ ] Active tab highlighted correctly
-- [ ] Hidden tabs not in tab bar but accessible
-- [ ] Role switcher works in header
-
-**Stack Navigation:**
-
-- [ ] Can navigate to detail screens
+### Navigation
+- [ ] All screens are accessible via file-based routes
+- [ ] Tab navigation works for both student and parent roles
+- [ ] Stack navigation works for detail screens
 - [ ] Back button works correctly
-- [ ] Navigation history maintained
-- [ ] Can deep link to nested routes
+- [ ] Modal screens display properly
+- [ ] Hidden tabs (href: null) are not visible but accessible
 
-**Route Guards:**
-
+### Authentication
+- [ ] Login redirects to appropriate role dashboard
+- [ ] Logout redirects to login screen
 - [ ] Unauthenticated users redirected to login
 - [ ] Authenticated users can't access auth screens
-- [ ] Role-based routing works (student vs parent)
 - [ ] No infinite redirect loops
 
 ### Deep Linking
-
-**Custom Scheme (edutrack://):**
-
-- [ ] `edutrack://login` opens login screen
-- [ ] `edutrack://assignments/123` opens assignment detail
-- [ ] `edutrack://student/grades` opens grades tab
-- [ ] Parameters passed correctly
+- [ ] Custom scheme works (`edutrack://`)
+- [ ] Universal Links work (iOS)
+- [ ] App Links work (Android)
+- [ ] Web URLs work in browser
+- [ ] Dynamic routes work with parameters
 - [ ] Invalid routes show 404 page
 
-**Universal/App Links (https://edutrack.app/):**
+### Path Aliases
+- [ ] All `@components` imports work
+- [ ] All `@store` imports work
+- [ ] All `@utils` imports work
+- [ ] IDE IntelliSense works for aliases
+- [ ] No "module not found" errors
 
-**iOS:**
-- [ ] Universal links work on real device
-- [ ] AASA file accessible
-- [ ] Links open in app (not Safari)
-- [ ] Fallback to custom scheme if AASA fails
+### Platform Support
+- [ ] iOS app runs without errors
+- [ ] Android app runs without errors
+- [ ] Web app runs without errors
+- [ ] No SecureStore errors on web
+- [ ] Platform-specific features gracefully degrade
 
-**Android:**
-- [ ] App Links work with verification
-- [ ] Asset Links file accessible
-- [ ] Links open in app (not Chrome)
-- [ ] Custom scheme works as fallback
-
-**Web:**
-- [ ] Direct URL navigation works
-- [ ] Browser back/forward buttons work
-- [ ] Refresh doesn't break routing
-- [ ] Clean URLs (no hash routing)
-
-### Platform-Specific Features
-
-**iOS:**
-- [ ] Splash screen shows/hides correctly
-- [ ] Status bar styling correct
-- [ ] Safe area insets respected
-- [ ] Face ID/Touch ID works
-- [ ] Push notifications work
-- [ ] Background fetch works
-
-**Android:**
-- [ ] Splash screen shows/hides correctly
-- [ ] Status bar styling correct
-- [ ] System back button works
-- [ ] Fingerprint auth works
-- [ ] Push notifications work
-- [ ] Background sync works
-
-**Web:**
-- [ ] Page loads without errors
-- [ ] No SecureStore errors in console
-- [ ] localStorage used for storage
-- [ ] Native-only features gracefully disabled
-- [ ] Responsive layout works
-- [ ] Browser dev tools show no errors
-- [ ] Service worker caching works (if enabled)
-
-### Storage Testing
-
-**All Platforms:**
-
-- [ ] Tokens saved and retrieved correctly
-- [ ] User preferences persist
-- [ ] Data survives app restart
-- [ ] Logout clears all sensitive data
-
-**Native:**
-- [ ] SecureStore encrypts data
-- [ ] Data survives app reinstall (iOS Keychain)
-
-**Web:**
-- [ ] AsyncStorage (localStorage) works
-- [ ] Data cleared when cache cleared
-- [ ] No encryption warnings (expected)
-
-### Error Handling
-
-- [ ] 404 page shows for invalid routes
-- [ ] Network errors handled gracefully
-- [ ] Invalid deep links handled
-- [ ] Console shows no unexpected errors
-- [ ] Error boundaries catch crashes
-- [ ] User-friendly error messages
+### TypeScript
+- [ ] No type errors
+- [ ] Auto-generated route types work
+- [ ] Parameter types are correct
+- [ ] IDE shows proper type hints
 
 ### Performance
-
-**All Platforms:**
-
-- [ ] Initial load time acceptable (<3s)
-- [ ] Navigation transitions smooth (60fps)
+- [ ] App loads quickly
+- [ ] Navigation is smooth
 - [ ] No memory leaks
-- [ ] No excessive re-renders
-
-**Web:**
-- [ ] Bundle size under limits (<2MB)
-- [ ] Code splitting working
-- [ ] Lazy loading working
-- [ ] No MIME type errors
-
-### Regression Testing
-
-- [ ] Existing features still work
-- [ ] API calls successful
-- [ ] Redux state management works
-- [ ] Offline mode works (native)
-- [ ] Push notifications still work
-- [ ] Camera/image picker still works
-- [ ] File downloads still work
-
-### Cross-Platform Consistency
-
-- [ ] UI looks consistent across platforms
-- [ ] Functionality works the same way
-- [ ] User experience is similar
-- [ ] Feature parity maintained (except platform-specific)
+- [ ] Bundle size is reasonable
 
 ---
 
-## Developer Setup Instructions
+**Migration Complete!** 🎉
 
-### Prerequisites
-
-- **Node.js**: 18.x or later
-- **npm**: 9.x or later
-- **Expo CLI**: Latest version
-- **iOS**: Xcode 14+ (Mac only)
-- **Android**: Android Studio with SDK 33+
-- **Git**: For version control
-
-### Initial Setup
-
-1. **Clone the repository:**
-   ```bash
-   git clone <repository-url>
-   cd mobile
-   ```
-
-2. **Install dependencies:**
-   ```bash
-   npm install
-   ```
-
-3. **Configure environment:**
-   ```bash
-   # Copy example env file
-   cp .env.example .env.development
-   
-   # Edit with your values
-   # API_URL=https://your-api.com
-   # ... other env vars
-   ```
-
-4. **Verify setup:**
-   ```bash
-   # Type check
-   npm run type-check
-   
-   # Lint
-   npm run lint
-   ```
-
-### Running the App
-
-#### Web Development
-
-```bash
-# Start Metro bundler for web
-npm run web
-
-# Opens browser to http://localhost:8081
-```
-
-**Web Development Tips:**
-- Use browser dev tools for debugging
-- React DevTools extension helpful
-- Check console for errors
-- Network tab for API calls
-- Application tab for localStorage
-
-#### iOS Development
-
-**Prerequisites:**
-- macOS required
-- Xcode installed
-- iOS Simulator or physical device
-
-```bash
-# Validate iOS setup
-npm run validate-ios
-
-# Start Metro bundler
-npm start
-
-# Press 'i' for iOS simulator
-# Or scan QR code with Expo Go app on physical device
-
-# Or directly:
-npm run ios
-```
-
-**iOS Development Tips:**
-- Use Safari Web Inspector for debugging
-- Cmd+D in simulator for dev menu
-- Shake physical device for dev menu
-- Check Xcode console for native errors
-
-#### Android Development
-
-**Prerequisites:**
-- Android Studio installed
-- Android SDK configured
-- Android Emulator or physical device
-
-```bash
-# Validate Android setup
-npm run validate-android
-
-# Start Metro bundler
-npm start
-
-# Press 'a' for Android emulator
-# Or scan QR code with Expo Go app on physical device
-
-# Or directly:
-npm run android
-```
-
-**Android Development Tips:**
-- Use Chrome DevTools for debugging
-- Cmd+M (Mac) / Ctrl+M (Windows) for dev menu in emulator
-- Shake physical device for dev menu
-- Check Android Studio Logcat for native errors
-
-### Development Workflow
-
-#### 1. File-Based Routing
-
-Create new screens by adding files to `app/` directory:
-
-```bash
-# New screen
-touch app/my-new-screen.tsx
-
-# New dynamic route
-touch app/items/[id].tsx
-
-# New nested layout
-mkdir app/my-section
-touch app/my-section/_layout.tsx
-touch app/my-section/index.tsx
-```
-
-#### 2. Hot Reloading
-
-Changes automatically reload:
-- **Fast Refresh**: Preserves component state
-- **Full Reload**: If Fast Refresh fails
-
-**Trigger manual reload:**
-- Press `r` in Metro terminal
-- Shake device and tap "Reload"
-- Cmd+R in iOS simulator
-
-#### 3. Debugging
-
-**Enable Debug Mode:**
-1. Shake device or press Cmd+D (iOS) / Cmd+M (Android)
-2. Tap "Debug Remote JS"
-3. Opens Chrome DevTools
-
-**React DevTools:**
-```bash
-# Install standalone
-npm install -g react-devtools
-
-# Run
-react-devtools
-```
-
-**Redux DevTools:**
-- Already configured in store
-- Use Redux DevTools Extension in browser (web)
-- Use Reactotron for native debugging
-
-#### 4. Path Aliases
-
-Use configured aliases for clean imports:
-
-```typescript
-// ✅ Use aliases
-import { Button } from '@components/shared/Button';
-import { useAuth } from '@hooks/useAuth';
-import { api } from '@api/client';
-
-// ❌ Avoid relative paths
-import { Button } from '../../../src/components/shared/Button';
-```
-
-**Configured aliases:**
-- `@components` → `src/components`
-- `@screens` → `src/screens`
-- `@store` → `src/store`
-- `@utils` → `src/utils`
-- `@config` → `src/config`
-- `@types` → `src/types`
-- `@api` → `src/api`
-- `@hooks` → `src/hooks`
-- `@services` → `src/services`
-- `@constants` → `src/constants`
-- `@theme` → `src/theme`
-
-#### 5. TypeScript
-
-**Type checking:**
-```bash
-# Check types without building
-npm run type-check
-
-# Watch mode
-npx tsc --noEmit --watch
-```
-
-**Auto-generated route types:**
-- Enabled via `experiments.typedRoutes` in `app.json`
-- Generated in `.expo/types/router.d.ts`
-- Import `Href` type from `expo-router`
-
-#### 6. Linting
-
-```bash
-# Run linter
-npm run lint
-
-# Auto-fix issues
-npm run lint -- --fix
-```
-
-### Building for Production
-
-#### Web Build
-
-```bash
-# Build for web
-npm run build:web
-
-# Output in dist/ directory
-# Deploy dist/ to your web server
-```
-
-#### iOS Build (EAS Build)
-
-```bash
-# Preview build (for testing)
-eas build --profile preview --platform ios
-
-# Production build (for App Store)
-eas build --profile production --platform ios
-```
-
-#### Android Build (EAS Build)
-
-```bash
-# Preview build (for testing)
-eas build --profile preview --platform android
-
-# Production build (for Play Store)
-eas build --profile production --platform android
-```
-
-### Common Development Tasks
-
-#### Adding a New Screen
-
-1. **Create file in `app/` directory:**
-   ```bash
-   touch app/my-screen.tsx
-   ```
-
-2. **Implement screen component:**
-   ```typescript
-   // app/my-screen.tsx
-   import React from 'react';
-   import { View, Text } from 'react-native';
-   
-   export default function MyScreen() {
-     return (
-       <View>
-         <Text>My New Screen</Text>
-       </View>
-     );
-   }
-   ```
-
-3. **Add navigation link:**
-   ```typescript
-   import { Link } from 'expo-router';
-   
-   <Link href="/my-screen">Go to My Screen</Link>
-   ```
-
-4. **Test in development:**
-   - Navigate to `/my-screen` in browser (web)
-   - Or use Link/router.push in app
-
-#### Adding a Dynamic Route
-
-1. **Create dynamic route file:**
-   ```bash
-   mkdir app/products
-   touch app/products/[id].tsx
-   ```
-
-2. **Access parameters:**
-   ```typescript
-   // app/products/[id].tsx
-   import { useLocalSearchParams } from 'expo-router';
-   
-   export default function ProductDetail() {
-     const { id } = useLocalSearchParams<{ id: string }>();
-     return <Text>Product {id}</Text>;
-   }
-   ```
-
-3. **Navigate with parameters:**
-   ```typescript
-   router.push(`/products/${productId}`);
-   // or
-   <Link href={`/products/${productId}`}>View Product</Link>
-   ```
-
-#### Adding a Tab
-
-1. **Add screen file to tabs directory:**
-   ```bash
-   touch app/(tabs)/student/new-tab.tsx
-   ```
-
-2. **Register in layout:**
-   ```typescript
-   // app/(tabs)/student/_layout.tsx
-   <Tabs.Screen
-     name="new-tab"
-     options={{
-       title: 'New Tab',
-       tabBarIcon: ({ color, size }) => (
-         <Icon name="star" color={color} size={size} />
-       ),
-     }}
-   />
-   ```
-
-#### Debugging Deep Links
-
-1. **Test custom scheme:**
-   ```bash
-   # iOS
-   xcrun simctl openurl booted edutrack://my-screen
-   
-   # Android
-   adb shell am start -W -a android.intent.action.VIEW \
-     -d "edutrack://my-screen" com.edutrack.app
-   ```
-
-2. **Add logging:**
-   ```typescript
-   // app/_layout.tsx
-   useEffect(() => {
-     const subscription = addDeepLinkListener((url) => {
-       console.log('🔗 Deep link received:', url);
-       // ... handle link
-     });
-     return () => subscription.remove();
-   }, []);
-   ```
-
-3. **Check route parsing:**
-   ```typescript
-   import { usePathname, useSegments } from 'expo-router';
-   
-   const pathname = usePathname();
-   const segments = useSegments();
-   console.log('Current pathname:', pathname);
-   console.log('Route segments:', segments);
-   ```
-
-### Troubleshooting Development Issues
-
-#### Metro Won't Start
-
-```bash
-# Clear all caches
-npx expo start -c
-
-# If that doesn't work:
-rm -rf node_modules
-npm install
-npx expo start -c
-```
-
-#### TypeScript Errors in IDE
-
-```bash
-# Restart TypeScript server
-# VS Code: Cmd+Shift+P → "TypeScript: Restart TS Server"
-
-# Or clear and rebuild
-rm -rf .expo
-npx expo start -c
-```
-
-#### Changes Not Reflecting
-
-```bash
-# Force full reload
-# In Metro terminal, press 'r'
-
-# Or clear cache and restart
-npx expo start -c
-
-# Nuclear option
-rm -rf node_modules/.cache .expo .metro
-npx expo start -c
-```
-
-#### iOS/Android Won't Build
-
-```bash
-# iOS - clean build
-cd ios && pod install && cd ..
-npm run ios
-
-# Android - clean build
-cd android && ./gradlew clean && cd ..
-npm run android
-
-# Validate setup
-npm run validate-ios    # or validate-android
-```
-
-### Additional Resources
-
-**Official Documentation:**
-- [Expo Router Docs](https://docs.expo.dev/router/introduction/)
-- [Expo Router API Reference](https://docs.expo.dev/router/reference/api/)
-- [File-based Routing](https://docs.expo.dev/router/create-pages/)
-
-**Internal Documentation:**
-- `mobile/docs/QUICK_REFERENCE.md` - Quick commands reference
-- `mobile/docs/API_INTEGRATION.md` - API integration guide
-- `mobile/docs/TROUBLESHOOTING.md` - General troubleshooting
-- `mobile/docs/DEEP_LINK_INTEGRATION_EXAMPLES.md` - Deep linking examples
-
-**Community:**
-- [Expo Discord](https://chat.expo.dev/)
-- [Expo GitHub Discussions](https://github.com/expo/expo/discussions)
-- [Stack Overflow - expo-router tag](https://stackoverflow.com/questions/tagged/expo-router)
-
----
-
-## Summary
-
-This migration to Expo Router brings significant improvements:
-
-✅ **Simplified Routing**: File-based routing eliminates boilerplate  
-✅ **Type Safety**: Auto-generated types prevent routing errors  
-✅ **Universal**: Single codebase for web, iOS, and Android  
-✅ **Deep Linking**: Works out of the box with minimal config  
-✅ **Better DX**: Hot reloading, better errors, easier debugging  
-✅ **Platform-Aware**: Automatic handling of platform differences  
-
-**Key Takeaways:**
-
-1. **File structure is routing**: Your `app/` folder structure defines your routes
-2. **Use hooks, not props**: Replace `navigation` and `route` props with `useRouter()` and `useLocalSearchParams()`
-3. **Platform-aware storage**: `secureStorage` abstraction handles web vs native automatically
-4. **Deep links just work**: Configure once in `app.json`, works everywhere
-5. **Type-safe navigation**: TypeScript knows your routes and params
-
-**Migration Complete** ✨
-
----
-
-**Last Updated:** December 2024  
-**Expo Router Version:** 3.4.10  
-**Expo SDK Version:** 50.0.0  
-**Maintained By:** EduTrack Development Team
+This guide should help you understand all the changes made during the migration from React Navigation to Expo Router. If you encounter any issues not covered here, refer to the [official Expo Router documentation](https://docs.expo.dev/router/introduction/).
