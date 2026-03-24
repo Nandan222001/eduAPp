@@ -89,17 +89,8 @@ def upgrade() -> None:
                 ['status']
             )
             
-            # Enable RLS
-            op.execute(f"ALTER TABLE {table_name} ENABLE ROW LEVEL SECURITY")
-            
-            # Create RLS policy
-            op.execute(f"""
-                CREATE POLICY {table_name}_isolation_policy ON {table_name}
-                USING (
-                    institution_id = current_setting('app.current_institution_id', true)::integer
-                    OR current_setting('app.bypass_rls', true)::boolean = true
-                )
-            """)
+            # Note: MySQL does not support Row Level Security (RLS)
+            # In PostgreSQL, RLS would be enabled here for multi-tenant isolation
             
             print(f"✓ Created table: {table_name}")
         else:
@@ -154,21 +145,24 @@ def upgrade() -> None:
         # ===================================================================
         
         enum_name = 'example_status_enum'
+        # Check if enum type exists by looking for columns that use it
         enum_exists = conn.execute(sa.text("""
             SELECT EXISTS (
-                SELECT 1 FROM pg_type WHERE typname = :enum_name
+                SELECT 1 FROM information_schema.columns 
+                WHERE data_type = 'enum' 
+                AND column_type LIKE :enum_pattern
             )
-        """), {'enum_name': enum_name}).scalar()
+        """), {'enum_pattern': f"%enum('%"}).scalar()
         
         if not enum_exists:
-            op.execute(f"""
-                CREATE TYPE {enum_name} AS ENUM (
-                    'pending', 'active', 'inactive', 'archived'
-                )
-            """)
-            print(f"✓ Created enum type: {enum_name}")
+            # Note: MySQL handles enums differently than PostgreSQL
+            # In MySQL, enums are defined inline on columns
+            # Example: column_name ENUM('pending', 'active', 'inactive', 'archived')
+            # PostgreSQL creates reusable enum types
+            print(f"✓ Enum type check completed: {enum_name}")
+            print(f"  Note: MySQL enums are defined inline on columns, not as separate types")
         else:
-            print(f"✓ Enum type already exists: {enum_name}")
+            print(f"✓ Enum columns exist in schema")
         
         # ===================================================================
         # Example 4: Add unique constraint with duplicate check
@@ -223,8 +217,8 @@ def upgrade() -> None:
         index_name = 'ix_example_safe_table_composite'
         index_exists = conn.execute(sa.text("""
             SELECT EXISTS (
-                SELECT 1 FROM pg_indexes 
-                WHERE indexname = :index_name
+                SELECT 1 FROM information_schema.statistics 
+                WHERE index_name = :index_name
             )
         """), {'index_name': index_name}).scalar()
         
@@ -260,8 +254,8 @@ def downgrade() -> None:
         index_name = 'ix_example_safe_table_composite'
         index_exists = conn.execute(sa.text("""
             SELECT EXISTS (
-                SELECT 1 FROM pg_indexes 
-                WHERE indexname = :index_name
+                SELECT 1 FROM information_schema.statistics 
+                WHERE index_name = :index_name
             )
         """), {'index_name': index_name}).scalar()
         
@@ -282,22 +276,8 @@ def downgrade() -> None:
             op.drop_constraint(constraint_name, table_name, type_='unique')
             print(f"✓ Dropped unique constraint: {constraint_name}")
         
-        # Drop RLS policy
-        policy_name = f"{table_name}_isolation_policy"
-        policy_exists = conn.execute(sa.text("""
-            SELECT EXISTS (
-                SELECT 1 FROM pg_policies 
-                WHERE tablename = :table_name 
-                AND policyname = :policy_name
-            )
-        """), {
-            'table_name': table_name,
-            'policy_name': policy_name
-        }).scalar()
-        
-        if policy_exists:
-            op.execute(f"DROP POLICY IF EXISTS {policy_name} ON {table_name}")
-            print(f"✓ Dropped RLS policy: {policy_name}")
+        # Note: MySQL does not support Row Level Security (RLS) policies
+        # In PostgreSQL, RLS policies would be dropped here
         
         # Drop table
         table_exists = conn.execute(sa.text("""
@@ -342,23 +322,17 @@ def downgrade() -> None:
         # Drop enum type (only if not used)
         enum_name = 'example_status_enum'
         
-        # Check if any columns use this enum
+        # Check if any columns use enum types
         usage_count = conn.execute(sa.text("""
             SELECT COUNT(*) FROM information_schema.columns 
-            WHERE udt_name = :enum_name
-        """), {'enum_name': enum_name}).scalar()
+            WHERE data_type = 'enum'
+        """)).scalar()
         
         if usage_count == 0:
-            enum_exists = conn.execute(sa.text("""
-                SELECT EXISTS (
-                    SELECT 1 FROM pg_type WHERE typname = :enum_name
-                )
-            """), {'enum_name': enum_name}).scalar()
-            
-            if enum_exists:
-                op.execute(f"DROP TYPE IF EXISTS {enum_name}")
-                print(f"✓ Dropped enum type: {enum_name}")
+            # Note: In MySQL, enums are part of column definitions, not separate types
+            # They are automatically dropped when the column is dropped
+            print(f"✓ No enum columns in use")
         else:
-            print(f"⚠ Cannot drop enum {enum_name}: still in use by {usage_count} columns")
+            print(f"⚠ Enum columns still in use: {usage_count} columns")
         
         print("\n✅ Migration 042 downgrade completed successfully")
