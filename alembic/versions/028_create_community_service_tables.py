@@ -28,10 +28,10 @@ def upgrade():
     # If it already exists, we'll use the existing one
     conn = op.get_bind()
     result = conn.execute(
-        "SELECT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'verificationstatus')"
+        "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND data_type = 'enum' AND column_type LIKE '%verificationstatus%'"
     ).scalar()
     
-    if not result:
+    if result == 0:
         verification_status_enum = sa.Enum(
             'pending', 'verified', 'rejected',
             name='verificationstatus'
