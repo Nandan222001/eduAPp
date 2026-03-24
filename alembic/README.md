@@ -12,6 +12,9 @@ This directory contains database migration scripts managed by [Alembic](https://
 - [Migration Best Practices](#migration-best-practices)
 - [Troubleshooting](#troubleshooting)
 - [CI/CD Integration](#cicd-integration)
+- [MySQL 8.0 Specific Considerations](#mysql-80-specific-considerations)
+
+> **MySQL Users**: See [MySQL Documentation Index](MYSQL_DOCUMENTATION_INDEX.md) for complete MySQL migration documentation.
 
 ## Overview
 
@@ -519,20 +522,432 @@ docker-compose -f docker-compose.test.yml run --rm app \
   python scripts/migration_test/validate_migrations.py
 ```
 
-## Additional Resources
+## MySQL 8.0 Specific Considerations
+
+This project uses MySQL 8.0 as the database backend. Below are important MySQL-specific behaviors, limitations, and best practices discovered during comprehensive testing.
+
+> **Quick Start**: See [MYSQL_MIGRATION_QUICK_START.md](MYSQL_MIGRATION_QUICK_START.md) for quick commands and testing workflows.
+
+### Testing MySQL Migrations
+
+#### Comprehensive Migration Test
+
+Run the comprehensive MySQL migration test to validate all migrations:
+
+```bash
+# Set test database URL (optional, uses default if not set)
+export MYSQL_TEST_DATABASE_URL="mysql+pymysql://root:password@localhost:3306/test_db?charset=utf8mb4"
+
+# Run comprehensive test
+python scripts/test_mysql_migrations_comprehensive.py
+```
+
+This test performs:
+1. Clean database setup
+2. `alembic upgrade head` - Creates all tables, indexes, and constraints
+3. `alembic downgrade base` - Tests all downgrade paths
+4. `alembic upgrade head` - Verifies full migration cycle
+5. MySQL-specific analysis and documentation
+
+Results are saved to `backups/migration_test/mysql_migration_test_results.json`
+
+#### Quick MySQL Migration Test
+
+```bash
+# Clean start
+mysql -u root -p test_db -e "DROP DATABASE IF EXISTS test_db; CREATE DATABASE test_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+
+# Run migrations
+export DATABASE_URL="mysql+pymysql://root:password@localhost:3306/test_db?charset=utf8mb4"
+alembic upgrade head
+
+# Verify tables
+mysql -u root -p test_db -e "SHOW TABLES;"
+
+# Test downgrade
+alembic downgrade base
+
+# Test upgrade again
+alembic upgrade head
+```
+
+### MySQL-Specific Behaviors
+
+#### 1. Character Set and Collation
+
+**Behavior**: MySQL 8.0 uses `utf8mb4` character set to support full Unicode including emojis.
+
+```sql
+-- Recommended database creation
+CREATE DATABASE your_db 
+CHARACTER SET utf8mb4 
+COLLATE utf8mb4_unicode_ci;
+```
+
+**Impact**:
+- Older `utf8` charset only supports 3-byte UTF-8 (BMP characters)
+- `utf8mb4` supports 4-byte UTF-8 (including emojis, some Asian characters)
+- Index key length limits differ between charsets
+
+**Migration Consideration**:
+- Always specify `charset=utf8mb4` in connection string
+- Ensure all TEXT/VARCHAR columns use utf8mb4
+
+#### 2. TEXT/BLOB Column Defaults
+
+**Behavior**: MySQL does not allow default values for TEXT, BLOB, MEDIUMTEXT, LONGTEXT, or JSON columns.
+
+```python
+# ✗ This will fail in MySQL
+sa.Column('description', sa.Text(), nullable=False, server_default='')
+
+# ✓ Correct approach for MySQL
+sa.Column('description', sa.Text(), nullable=True)
+# Then handle defaults in application code or use triggers
+```
+
+**Impact**:
+- Cannot use `server_default` with TEXT/BLOB columns
+- Must use application-level defaults or make columns nullable
+
+**Migration Consideration**:
+- When adding TEXT columns, make them nullable or populate existing rows first
+- Use CHECK constraints or application validation for required text fields
+
+#### 3. ENUM Type Handling
+
+**Behavior**: MySQL has native ENUM type, stored as integers with string labels.
+
+```python
+# MySQL ENUM in Alembic
+status_enum = sa.Enum('PENDING', 'APPROVED', 'REJECTED', name='status_enum')
+op.add_column('table_name', sa.Column('status', status_enum, nullable=False))
+```
+
+**Impact**:
+- Adding ENUM values requires ALTER TABLE operation
+- Removing ENUM values is complex (requires column recreation)
+- ENUM ordering matters (affects sorting)
+
+**Migration Best Practices**:
+```python
+# Adding a new value to existing ENUM
+def upgrade():
+    # MySQL 8.0 doesn't support IF NOT EXISTS for ENUM values
+    op.execute("ALTER TABLE table_name MODIFY COLUMN status ENUM('PENDING', 'APPROVED', 'REJECTED', 'NEW_VALUE')")
+
+def downgrade():
+    # Removing ENUM value requires data migration first
+    op.execute("UPDATE table_name SET status = 'PENDING' WHERE status = 'NEW_VALUE'")
+    op.execute("ALTER TABLE table_name MODIFY COLUMN status ENUM('PENDING', 'APPROVED', 'REJECTED')")
+```
+
+#### 4. Index Length Limitations
+
+**Behavior**: MySQL has maximum key length limits:
+- InnoDB without `innodb_large_prefix`: 767 bytes
+- InnoDB with `innodb_large_prefix`: 3072 bytes
+- For utf8mb4: 191 characters (767/4) or 768 characters (3072/4)
+
+```python
+# ✗ May exceed key length limit
+op.create_index('idx_long_text', 'users', ['long_description'])
+
+# ✓ Use prefix length for long columns
+op.execute("CREATE INDEX idx_long_text ON users(long_description(191))")
+```
+
+**Impact**:
+- Cannot index full length of long VARCHAR or TEXT columns
+- Composite indexes count toward total key length
+
+**Migration Consideration**:
+- Use prefix indexes for long string columns
+- Keep indexed VARCHAR columns under 191 characters when possible
+- Consider using generated columns for computed indexes
+
+#### 5. Foreign Key Constraints
+
+**Behavior**: InnoDB enforces foreign key constraints and requires indexes on FK columns.
+
+```python
+# MySQL automatically creates index on FK columns if not exists
+op.create_foreign_key(
+    'fk_student_section',
+    'students', 'sections',
+    ['section_id'], ['id'],
+    ondelete='CASCADE'
+)
+```
+
+**Impact**:
+- Parent table must exist before creating FK
+- Referenced column must be indexed (PRIMARY KEY or UNIQUE)
+- FK actions (CASCADE, SET NULL) affect performance
+
+**Migration Best Practices**:
+- Always create parent tables before child tables
+- Explicitly create indexes on FK columns for better control
+- Use `ondelete='CASCADE'` for dependent data
+- Use `ondelete='SET NULL'` for optional relationships
+
+#### 6. JSON Column Support
+
+**Behavior**: MySQL 8.0 has native JSON column type with validation and querying.
+
+```python
+# Native JSON column
+sa.Column('metadata', sa.JSON(), nullable=True)
+
+# Querying JSON in MySQL
+op.execute("""
+    SELECT * FROM table_name 
+    WHERE JSON_EXTRACT(metadata, '$.key') = 'value'
+""")
+```
+
+**Impact**:
+- JSON data is validated on insert/update
+- JSON functions available for queries
+- Performance may be slower than normalized data
+- No default values allowed (TEXT/BLOB limitation)
+
+**Migration Consideration**:
+- Use generated columns to index JSON paths
+```python
+# Create generated column for JSON path indexing
+op.execute("""
+    ALTER TABLE table_name 
+    ADD COLUMN metadata_key VARCHAR(255) 
+    AS (JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.key'))) STORED
+""")
+op.create_index('idx_metadata_key', 'table_name', ['metadata_key'])
+```
+
+#### 7. Transaction Support
+
+**Behavior**: InnoDB is transactional; DDL statements cause implicit commits.
+
+**Impact**:
+- Most DDL operations commit current transaction
+- Cannot rollback DDL statements in MySQL
+- `CREATE INDEX CONCURRENTLY` not available (PostgreSQL only)
+
+**Migration Best Practices**:
+```python
+def upgrade():
+    # Each DDL statement commits implicitly in MySQL
+    # Structure migrations carefully
+    
+    # For large tables, consider:
+    # 1. Create new table
+    # 2. Copy data in batches
+    # 3. Swap tables
+    # 4. Drop old table
+    pass
+```
+
+#### 8. Case Sensitivity
+
+**Behavior**: MySQL table and column name case sensitivity depends on OS:
+- Linux: Case-sensitive filesystem = case-sensitive table names
+- Windows/Mac: Case-insensitive
+- Column names are always case-insensitive in comparisons
+
+**Impact**:
+- Table name `Users` ≠ `users` on Linux
+- Column name `UserName` = `username` in queries
+
+**Migration Consideration**:
+- Use lowercase table names for cross-platform compatibility
+- Be consistent with naming conventions
+
+#### 9. Storage Engine
+
+**Behavior**: InnoDB is the default storage engine in MySQL 8.0.
+
+**Features**:
+- ACID compliance
+- Foreign key support
+- Row-level locking
+- Crash recovery
+- Clustered indexes (PRIMARY KEY)
+
+**Migration Consideration**:
+- Ensure all tables use InnoDB
+- PRIMARY KEY affects physical row order
+- Choose PRIMARY KEY carefully for performance
+
+### MySQL Limitations and Workarounds
+
+#### 1. No Row-Level Security (RLS)
+
+**Limitation**: MySQL does not have PostgreSQL-style Row-Level Security.
+
+**Workaround**: Application-level filtering
+```python
+# Apply tenant filter in application code
+query = session.query(Student).filter(
+    Student.institution_id == current_institution_id
+)
+```
+
+#### 2. Limited ALTER TABLE Operations
+
+**Limitation**: Some ALTER TABLE operations rebuild the entire table.
+
+**Workaround**: 
+- Use online DDL where possible (MySQL 8.0)
+- Schedule migrations during maintenance windows
+- Consider pt-online-schema-change for large tables
+
+#### 3. No Partial Indexes
+
+**Limitation**: MySQL does not support PostgreSQL-style partial indexes (WHERE clause).
+
+**Workaround**: 
+```python
+# PostgreSQL: CREATE INDEX idx ON table (col) WHERE active = true
+# MySQL: Include condition in queries or use filtered index
+# For MySQL 8.0+, use functional indexes
+op.execute("""
+    CREATE INDEX idx_active_users ON users((CASE WHEN active = 1 THEN id END))
+""")
+```
+
+#### 4. No EXCLUDE Constraints
+
+**Limitation**: MySQL does not have EXCLUDE constraints for range overlaps.
+
+**Workaround**: 
+- Implement in application logic
+- Use triggers for complex constraints
+- Consider using CHECK constraints (MySQL 8.0.16+)
+
+### Performance Considerations
+
+#### Bulk Insert Performance
+
+```python
+# Use bulk insert for better performance
+students = [Student(...) for _ in range(1000)]
+session.bulk_insert_mappings(Student, [s.__dict__ for s in students])
+session.commit()
+```
+
+#### Index Usage
+
+```sql
+-- Check index usage
+EXPLAIN SELECT * FROM students WHERE institution_id = 1;
+
+-- Verify indexes exist
+SHOW INDEX FROM students;
+
+-- Check index statistics
+SELECT * FROM information_schema.STATISTICS 
+WHERE TABLE_SCHEMA = 'your_db' AND TABLE_NAME = 'students';
+```
+
+#### Query Optimization
+
+```python
+# Use joins instead of N+1 queries
+students = session.query(Student)\
+    .join(Section)\
+    .join(Grade)\
+    .filter(Student.institution_id == inst_id)\
+    .all()
+
+# Use select_in loading for relationships
+students = session.query(Student)\
+    .options(selectinload(Student.attendance_records))\
+    .all()
+```
+
+### Migration Testing Checklist
+
+- [ ] Run `python scripts/test_mysql_migrations_comprehensive.py`
+- [ ] Verify all tables created successfully
+- [ ] Check all indexes are in place
+- [ ] Verify foreign key constraints
+- [ ] Test downgrade path (`alembic downgrade base`)
+- [ ] Test upgrade path again (`alembic upgrade head`)
+- [ ] Check character set is utf8mb4
+- [ ] Review JSON column usage
+- [ ] Verify ENUM types are correct
+- [ ] Test with sample data (multi-tenant)
+- [ ] Check query performance with indexes
+- [ ] Verify data isolation works correctly
+- [ ] Review test results in `backups/migration_test/`
+
+### Common MySQL Migration Errors
+
+#### Error: "Specified key was too long"
+
+```
+Error: Specified key was too long; max key length is 3072 bytes
+```
+
+**Solution**:
+```python
+# Use prefix length for long columns
+op.execute("CREATE INDEX idx_name ON table(long_column(191))")
+
+# Or reduce VARCHAR length
+op.alter_column('table', 'long_column', type_=sa.String(191))
+```
+
+#### Error: "Cannot add foreign key constraint"
+
+```
+Error: Cannot add foreign key constraint
+```
+
+**Solutions**:
+1. Ensure parent table exists
+2. Ensure referenced column is indexed
+3. Check data types match exactly
+4. Verify no orphaned records exist
+
+```python
+# Check for orphaned records before adding FK
+op.execute("""
+    SELECT COUNT(*) FROM child 
+    WHERE parent_id NOT IN (SELECT id FROM parent)
+""")
+```
+
+#### Error: "Invalid default value for TEXT"
+
+```
+Error: BLOB/TEXT column 'description' can't have a default value
+```
+
+**Solution**:
+```python
+# Remove server_default for TEXT columns
+sa.Column('description', sa.Text(), nullable=True)  # No server_default
+```
+
+### Additional Resources
 
 - [Alembic Documentation](https://alembic.sqlalchemy.org/)
 - [SQLAlchemy Documentation](https://docs.sqlalchemy.org/)
-- [PostgreSQL Documentation](https://www.postgresql.org/docs/)
+- [MySQL 8.0 Documentation](https://dev.mysql.com/doc/refman/8.0/en/)
+- [MySQL 8.0 InnoDB](https://dev.mysql.com/doc/refman/8.0/en/innodb-storage-engine.html)
+- [MySQL 8.0 JSON Functions](https://dev.mysql.com/doc/refman/8.0/en/json-functions.html)
 
 ## Support
 
 For issues or questions:
 
 1. Check the troubleshooting section above
-2. Review validation reports in `backups/migration_test/`
-3. Check migration history: `alembic history`
-4. Contact the development team
+2. Review MySQL-specific considerations above
+3. Review validation reports in `backups/migration_test/`
+4. Check migration history: `alembic history`
+5. Run comprehensive MySQL test: `python scripts/test_mysql_migrations_comprehensive.py`
+6. Contact the development team
 
 ---
 

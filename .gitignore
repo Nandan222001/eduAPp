@@ -247,7 +247,10 @@ backup_*.dump
 
 # Migration test artifacts
 .env.test.migration
+.env.mysql.test
 backups/migration_test/*.json
+backups/migration_test/*.md
+!backups/migration_test/README.md
 backups/migration_test/*.txt
 backups/migration_test/*.log
 
