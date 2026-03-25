@@ -13,6 +13,11 @@ web-build/
 *.map
 .expo-env.d.ts
 
+# Web build artifacts
+web-build/
+.expo-web/
+public/
+
 # Native
 *.orig.*
 *.jks

@@ -78,14 +78,7 @@
     "web": {
       "favicon": "./assets/favicon.png",
       "bundler": "metro",
-      "output": "single",
-      "build": {
-        "babel": {
-          "use": {
-            "babel-preset-expo": true
-          }
-        }
-      }
+      "output": "single"
     },
     "scheme": "edutrack",
     "experiments": {
