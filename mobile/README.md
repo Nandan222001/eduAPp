@@ -47,7 +47,7 @@ Or jump directly to:
 
 - **Framework**: React Native with Expo
 - **State Management**: Redux Toolkit
-- **Navigation**: React Navigation v6
+- **Navigation**: Expo Router (file-based routing)
 - **Secure Storage**: Expo Secure Store
 - **Biometric Auth**: Expo Local Authentication
 - **API Client**: Axios
@@ -91,6 +91,11 @@ npm run web
 
 ```
 mobile/
+├── app/                  # Expo Router file-based routing
+│   ├── _layout.tsx       # Root layout
+│   ├── index.tsx         # Entry screen
+│   ├── (auth)/          # Auth group routes
+│   └── (tabs)/          # Tab-based routes
 ├── src/
 │   ├── api/              # API client and endpoints
 │   │   ├── client.ts     # Axios instance with interceptors
@@ -98,12 +103,6 @@ mobile/
 │   ├── components/       # Reusable components
 │   │   ├── Button.tsx
 │   │   └── Input.tsx
-│   ├── navigation/       # Navigation setup
-│   │   ├── RootNavigator.tsx
-│   │   ├── AuthNavigator.tsx
-│   │   ├── StudentNavigator.tsx
-│   │   ├── ParentNavigator.tsx
-│   │   └── linking.ts    # Deep linking config
 │   ├── screens/          # Screen components
 │   │   ├── auth/         # Authentication screens
 │   │   ├── student/      # Student screens
@@ -119,7 +118,7 @@ mobile/
 │   └── utils/            # Utility functions
 │       ├── secureStorage.ts
 │       └── biometric.ts
-├── App.tsx               # Root component
+├── index.js              # Entry point (expo-router/entry)
 ├── app.json              # Expo configuration
 ├── package.json
 └── tsconfig.json

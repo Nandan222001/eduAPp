@@ -5,11 +5,8 @@
 ### Core Navigation Dependencies
 
 ```bash
-# Install Expo navigation dependencies
-npx expo install react-native-safe-area-context react-native-screens expo-linking
-
-# Install React Navigation
-npm install @react-navigation/native @react-navigation/native-stack @react-navigation/bottom-tabs @react-navigation/drawer
+# Install Expo Router and dependencies
+npx expo install expo-router react-native-safe-area-context react-native-screens expo-linking
 ```
 
 ### State Management
@@ -40,8 +37,7 @@ npx expo install @rneui/themed @rneui/base react-native-vector-icons react-nativ
 cd mobile
 
 # Install all dependencies at once
-npx expo install react-native-safe-area-context react-native-screens expo-linking react-native-reanimated
-npm install @react-navigation/native @react-navigation/native-stack @react-navigation/bottom-tabs @react-navigation/drawer
+npx expo install expo-router react-native-safe-area-context react-native-screens expo-linking react-native-reanimated
 npm install @reduxjs/toolkit react-redux redux-persist @react-native-async-storage/async-storage
 npm install axios @tanstack/react-query
 npm install @rneui/themed @rneui/base react-native-vector-icons
@@ -56,13 +52,11 @@ After installation, the following structure has been created:
 
 ### Navigation Structure
 
-- `/src/navigation/` - Navigation configuration
-  - `RootNavigator.tsx` - Root navigation container with deep linking
-  - `AuthNavigator.tsx` - Authentication stack navigator
-  - `MainNavigator.tsx` - Main app stack navigator
-  - `StudentTabNavigator.tsx` - Student bottom tab navigator
-  - `ParentTabNavigator.tsx` - Parent bottom tab navigator
-  - `linking.ts` - Deep linking configuration
+- `/app/` - Expo Router file-based routing
+  - `_layout.tsx` - Root layout with navigation configuration
+  - `index.tsx` - Entry screen
+  - `(auth)/` - Authentication routes group
+  - `(tabs)/` - Tab-based routes for main app
 
 ### State Management
 
