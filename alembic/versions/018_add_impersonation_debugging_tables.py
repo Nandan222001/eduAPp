@@ -27,7 +27,7 @@ def upgrade():
         sa.Column('ip_address', sa.String(length=45), nullable=True),
         sa.Column('user_agent', sa.Text(), nullable=True),
         sa.Column('actions_performed', sa.JSON(), nullable=True),
-        sa.Column('is_active', sa.Boolean(), nullable=False, server_default='true'),
+        sa.Column('is_active', sa.Boolean(), nullable=False, server_default=sa.text('1')),
         sa.ForeignKeyConstraint(['super_admin_id'], ['users.id'], ondelete='SET NULL'),
         sa.ForeignKeyConstraint(['impersonated_user_id'], ['users.id'], ondelete='SET NULL'),
         sa.ForeignKeyConstraint(['institution_id'], ['institutions.id'], ondelete='SET NULL'),
