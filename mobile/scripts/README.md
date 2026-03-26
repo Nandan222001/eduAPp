@@ -4,6 +4,82 @@ Automation scripts for building, deploying, and managing mobile app releases.
 
 ## Available Scripts
 
+### Development Server Scripts
+
+#### `start-dev-clear-cache.ps1` / `start-dev-clear-cache.sh` / `start-dev-clear-cache.bat`
+Start Expo development server with complete cache clearing.
+
+**Usage:**
+```bash
+# PowerShell (Windows)
+.\scripts\start-dev-clear-cache.ps1
+
+# Bash (macOS/Linux)
+./scripts/start-dev-clear-cache.sh
+
+# Batch (Windows)
+.\scripts\start-dev-clear-cache.bat
+
+# Or use npm script
+npm run start:clear
+```
+
+**Features:**
+- Clears Metro bundler cache
+- Resets all Expo caches
+- Forces fresh bundle generation
+- Shows QR code for iOS/Android testing
+
+#### `start-web-clear-cache.ps1` / `start-web-clear-cache.sh` / `start-web-clear-cache.bat`
+Start Expo web development server with cache clearing.
+
+**Usage:**
+```bash
+# PowerShell (Windows)
+.\scripts\start-web-clear-cache.ps1
+
+# Bash (macOS/Linux)
+./scripts/start-web-clear-cache.sh
+
+# Batch (Windows)
+.\scripts\start-web-clear-cache.bat
+
+# Or use npm script
+npm run start:web:clear
+```
+
+**Features:**
+- Clears Metro bundler cache
+- Starts web platform on port 8081
+- Navigate to http://localhost:8081 to verify
+- Forces fresh index.bundle generation
+
+#### `verify-dev-server.js`
+Verify that the development server is running and accessible.
+
+**Usage:**
+```bash
+node scripts/verify-dev-server.js
+
+# Or use npm script
+npm run verify-dev-server
+```
+
+**Checks:**
+- Server is running on port 8081
+- Web bundle is accessible
+- Returns detailed status information
+
+#### `make-cache-scripts-executable.sh`
+Make cache clearing scripts executable (Unix/Mac).
+
+**Usage:**
+```bash
+bash scripts/make-cache-scripts-executable.sh
+```
+
+Makes cache clearing shell scripts executable.
+
 ### Release Scripts
 
 #### `release-ios.js`
