@@ -14,6 +14,10 @@ This guide helps developers and users resolve common issues with the EDU Mobile 
 - [Build and Deployment](#build-and-deployment)
 - [Platform-Specific Issues](#platform-specific-issues)
 - [Development Environment](#development-environment)
+  - [Metro Bundler Issues](#metro-bundler-issues)
+  - [index.bundle 404 Errors](#indexbundle-404-errors)
+  - [TypeScript Errors](#typescript-errors)
+  - [Dependency Conflicts](#dependency-conflicts)
 
 ## Installation Issues
 
@@ -818,6 +822,326 @@ minSdkVersion = 26  # Android 8.0
    ```bash
    npx react-native-clean-project
    ```
+
+### index.bundle 404 Errors
+
+**Problem**: "Unable to resolve module" or "HTTP 404: index.bundle not found" errors during development
+
+**Common Causes**:
+
+This error typically occurs when:
+1. Metro bundler cache is corrupted
+2. Entry point configuration is incorrect
+3. Conflicting App.tsx files exist
+4. Metro configuration has issues
+
+**Solutions**:
+
+#### 1. Clear All Caches
+
+This is the most common fix for index.bundle errors:
+
+```bash
+# Stop the development server (Ctrl+C)
+
+# Clear Metro bundler cache
+npx expo start -c
+
+# Or for React Native CLI:
+npx react-native start --reset-cache
+
+# Clear npm/yarn cache
+npm cache clean --force
+# or
+yarn cache clean
+
+# Clear watchman cache (if installed)
+watchman watch-del-all
+
+# Clear temporary files
+rm -rf $TMPDIR/react-*
+rm -rf $TMPDIR/metro-*
+rm -rf $TMPDIR/haste-*
+
+# On Windows PowerShell:
+Remove-Item -Path "$env:TEMP\react-*" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item -Path "$env:TEMP\metro-*" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item -Path "$env:TEMP\haste-*" -Recurse -Force -ErrorAction SilentlyContinue
+
+# Restart development server
+npx expo start -c
+```
+
+#### 2. Verify Entry Point Configuration
+
+Check that your entry point is correctly configured:
+
+```javascript
+// package.json
+{
+  "main": "index.js"  // or "expo-router/entry" for Expo Router
+}
+
+// app.json or app.config.js
+{
+  "expo": {
+    "entryPoint": "./index.js"  // Verify this matches package.json
+  }
+}
+```
+
+For Expo Router projects:
+```json
+// package.json
+{
+  "main": "expo-router/entry"
+}
+```
+
+#### 3. Check for Conflicting App Files
+
+Ensure you don't have conflicting entry files:
+
+```bash
+# List all App files
+find . -name "App.tsx" -o -name "App.js" -o -name "app.tsx" -o -name "app.js"
+
+# Windows PowerShell:
+Get-ChildItem -Recurse -Include App.tsx,App.js,app.tsx,app.js | Select-Object FullName
+```
+
+**Common conflict scenarios**:
+- Having both `App.tsx` in root AND using Expo Router (should only use Expo Router)
+- Having both `App.tsx` and `App.js` (pick one)
+- Old `App.tsx` in root when using `app/` directory for Expo Router
+
+**Resolution**:
+```bash
+# For Expo Router projects, remove root App.tsx if it exists
+rm App.tsx
+
+# Ensure app/_layout.tsx exists for Expo Router
+ls app/_layout.tsx
+```
+
+#### 4. Verify Metro Configuration
+
+Check your `metro.config.js`:
+
+```javascript
+// metro.config.js
+const { getDefaultConfig } = require('expo/metro-config');
+
+const config = getDefaultConfig(__dirname);
+
+module.exports = config;
+```
+
+For Expo Router, ensure it's properly configured:
+```javascript
+const { getDefaultConfig } = require('expo/metro-config');
+
+const config = getDefaultConfig(__dirname);
+
+config.resolver.assetExts.push('db', 'mp3', 'ttf', 'obj', 'png', 'jpg');
+
+module.exports = config;
+```
+
+#### 5. Reinstall Dependencies
+
+If caches don't help, try a clean install:
+
+```bash
+# Remove node_modules and lock files
+rm -rf node_modules
+rm package-lock.json  # or yarn.lock
+
+# Windows PowerShell:
+Remove-Item -Path "node_modules" -Recurse -Force
+Remove-Item -Path "package-lock.json" -Force
+
+# Clear Expo cache
+npx expo install --fix
+
+# Reinstall dependencies
+npm install
+# or
+yarn install
+
+# Start with clean cache
+npx expo start -c
+```
+
+#### 6. Check iOS/Android Build Folders
+
+Sometimes platform-specific build artifacts cause issues:
+
+```bash
+# iOS
+cd ios
+rm -rf build
+pod deintegrate
+pod install
+cd ..
+
+# Android
+cd android
+./gradlew clean
+cd ..
+
+# Windows PowerShell (Android):
+cd android
+.\gradlew.bat clean
+cd ..
+```
+
+#### 7. Verify File Permissions
+
+Ensure Metro can access all necessary files:
+
+```bash
+# Check node_modules permissions
+ls -la node_modules
+
+# Fix if needed (Unix/Mac)
+chmod -R 755 node_modules
+
+# Windows: Ensure you have read/write access to project directory
+```
+
+#### 8. Check for Syntax Errors
+
+A syntax error in your entry file can cause bundle errors:
+
+```bash
+# Check index.js or app/_layout.tsx for errors
+npx tsc --noEmit
+
+# Or run linter
+npm run lint
+```
+
+#### 9. Complete Reset Script
+
+Use this comprehensive reset when other solutions fail:
+
+```bash
+#!/bin/bash
+# reset-dev-environment.sh
+
+echo "Stopping any running processes..."
+pkill -f "expo" || true
+pkill -f "metro" || true
+
+echo "Cleaning caches..."
+rm -rf node_modules
+rm -rf .expo
+rm -rf $TMPDIR/react-*
+rm -rf $TMPDIR/metro-*
+rm -rf $TMPDIR/haste-*
+rm package-lock.json
+
+echo "Cleaning platform builds..."
+cd ios 2>/dev/null && rm -rf build && pod deintegrate && pod install && cd ..
+cd android 2>/dev/null && ./gradlew clean && cd ..
+
+echo "Clearing watchman..."
+watchman watch-del-all 2>/dev/null || true
+
+echo "Reinstalling dependencies..."
+npm install
+
+echo "Starting fresh server..."
+npx expo start -c
+```
+
+**Windows PowerShell version:**
+```powershell
+# reset-dev-environment.ps1
+
+Write-Host "Cleaning caches..."
+Remove-Item -Path "node_modules" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item -Path ".expo" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item -Path "$env:TEMP\react-*" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item -Path "$env:TEMP\metro-*" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item -Path "$env:TEMP\haste-*" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item -Path "package-lock.json" -Force -ErrorAction SilentlyContinue
+
+Write-Host "Cleaning Android build..."
+if (Test-Path "android") {
+    cd android
+    .\gradlew.bat clean
+    cd ..
+}
+
+Write-Host "Reinstalling dependencies..."
+npm install
+
+Write-Host "Starting fresh server..."
+npx expo start -c
+```
+
+#### 10. Environment-Specific Issues
+
+**Development vs Production**:
+```bash
+# Ensure you're using the correct environment
+npx expo start --dev-client  # Development
+npx expo start --no-dev      # Production mode
+
+# Check environment variables
+cat .env.development
+cat .env.production
+```
+
+**Network Issues**:
+```bash
+# If using LAN connection and having issues
+npx expo start --tunnel  # Use Expo tunnel
+
+# Or specify host
+npx expo start --host tunnel
+npx expo start --host lan
+npx expo start --host localhost
+```
+
+#### Quick Reference Commands
+
+```bash
+# Quick cache clear and restart
+npx expo start -c
+
+# Full reset
+rm -rf node_modules package-lock.json && npm install && npx expo start -c
+
+# Check what's running on Metro port (8081)
+lsof -i :8081  # Mac/Linux
+netstat -ano | findstr :8081  # Windows
+
+# Kill process on port 8081
+kill -9 $(lsof -t -i:8081)  # Mac/Linux
+# Windows: Find PID from netstat, then:
+taskkill /PID <PID> /F
+```
+
+**Prevention Tips**:
+1. Regularly clear cache when switching branches
+2. Don't manually edit files in `node_modules`
+3. Keep Metro bundler version in sync with Expo SDK
+4. Commit `metro.config.js` and entry point configs
+5. Use `.gitignore` to exclude build artifacts
+
+**Still Not Working?**
+
+If none of the above solutions work:
+
+1. **Check Terminal Output**: Look for specific error messages that might indicate the root cause
+2. **Verify Node Version**: Ensure you're using a compatible Node.js version (check `package.json` engines field)
+3. **Check Firewall**: Some firewalls block Metro bundler port (8081)
+4. **Try Different Network**: Switch between WiFi, Ethernet, or mobile hotspot
+5. **Create Minimal Reproduction**: Test with a fresh Expo project to isolate the issue
+6. **Check Expo Status**: Visit https://status.expo.dev/ for any service outages
 
 ### TypeScript Errors
 
