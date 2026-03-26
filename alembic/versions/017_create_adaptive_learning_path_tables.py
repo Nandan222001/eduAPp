@@ -15,14 +15,6 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.execute("""
-        CREATE TYPE difficultylevel AS ENUM ('beginner', 'elementary', 'intermediate', 'advanced', 'expert');
-        CREATE TYPE masterylevel AS ENUM ('not_started', 'learning', 'practicing', 'mastered', 'needs_review');
-        CREATE TYPE learningpathstatus AS ENUM ('active', 'completed', 'paused', 'abandoned');
-        CREATE TYPE milestonestatus AS ENUM ('locked', 'unlocked', 'in_progress', 'completed');
-        CREATE TYPE reviewpriority AS ENUM ('low', 'medium', 'high', 'critical');
-    """)
-    
     op.create_table(
         'learning_paths',
         sa.Column('id', sa.Integer(), nullable=False),
@@ -341,11 +333,3 @@ def downgrade() -> None:
     op.drop_index('idx_learning_path_student', table_name='learning_paths')
     op.drop_index('idx_learning_path_institution', table_name='learning_paths')
     op.drop_table('learning_paths')
-    
-    op.execute("""
-        DROP TYPE IF EXISTS reviewpriority;
-        DROP TYPE IF EXISTS milestonestatus;
-        DROP TYPE IF EXISTS learningpathstatus;
-        DROP TYPE IF EXISTS masterylevel;
-        DROP TYPE IF EXISTS difficultylevel;
-    """)
