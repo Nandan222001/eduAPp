@@ -16,6 +16,7 @@ help:
 	@echo "  make lint                 - Run linter (Ruff)"
 	@echo "  make format               - Format code with Black"
 	@echo "  make type-check           - Run type checker (MyPy)"
+	@echo "  make validate-migrations  - Validate migrations for MySQL compatibility"
 	@echo "  make quality              - Run all quality checks"
 	@echo "  make pre-commit           - Install pre-commit hooks"
 	@echo "  make coverage             - Generate coverage report"
@@ -119,7 +120,15 @@ type-check:
 	@echo "Running type checker..."
 	$(MYPY) src/ || true
 
-quality: format-check lint type-check
+validate-migrations:
+	@echo "Validating migration files for MySQL compatibility..."
+	$(PYTHON) scripts/validate_migrations.py
+
+validate-migrations-verbose:
+	@echo "Validating migration files (verbose mode)..."
+	$(PYTHON) scripts/validate_migrations.py --verbose
+
+quality: format-check lint type-check validate-migrations
 	@echo "All quality checks passed!"
 
 pre-commit:

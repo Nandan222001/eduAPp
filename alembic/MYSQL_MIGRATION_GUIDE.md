@@ -1136,7 +1136,54 @@ conn.execute(sa.text("UPDATE users SET bio = '' WHERE bio IS NULL"))
 op.alter_column('users', 'bio', nullable=False)
 ```
 
-### 4. Index Long Columns with Prefix Length
+### 4. Use Numeric Defaults for Boolean Columns
+
+MySQL represents Boolean as TINYINT(1) and requires numeric defaults:
+
+```python
+# ✗ WRONG - String boolean defaults will fail
+op.add_column('users', 
+    sa.Column('is_active', sa.Boolean(), server_default='true')
+)
+op.add_column('users', 
+    sa.Column('is_verified', sa.Boolean(), server_default=sa.text('false'))
+)
+
+# ✓ CORRECT - Use numeric defaults with sa.text()
+op.add_column('users', 
+    sa.Column('is_active', sa.Boolean(), nullable=False, server_default=sa.text('1'))
+)
+op.add_column('users', 
+    sa.Column('is_verified', sa.Boolean(), nullable=False, server_default=sa.text('0'))
+)
+
+# ✓ ALSO CORRECT - Python bool for application-level default
+op.add_column('users', 
+    sa.Column('is_active', sa.Boolean(), nullable=False, default=True)
+)
+
+# ✓ BEST PRACTICE - Both server and application defaults
+op.add_column('users', 
+    sa.Column('is_active', sa.Boolean(), nullable=False, 
+              default=True, server_default=sa.text('1'))
+)
+```
+
+**Validation Tool**: Use `make validate-migrations` to automatically check for Boolean column issues:
+```bash
+# Validate all migrations
+make validate-migrations
+
+# Validate with verbose output
+make validate-migrations-verbose
+
+# Or directly
+poetry run python scripts/validate_migrations.py
+```
+
+See [scripts/MIGRATION_VALIDATION_README.md](../scripts/MIGRATION_VALIDATION_README.md) for details.
+
+### 5. Index Long Columns with Prefix Length
 
 MySQL has index key length limits:
 

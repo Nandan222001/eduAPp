@@ -49,6 +49,16 @@ ruff:
     - poetry run ruff check src/ tests/
   allow_failure: false
 
+validate-migrations:
+  extends: .python-base
+  stage: quality
+  script:
+    - poetry run python scripts/validate_migrations.py
+  allow_failure: false
+  only:
+    changes:
+      - alembic/versions/*.py
+
 mypy:
   extends: .python-base
   stage: quality

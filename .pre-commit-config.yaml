@@ -62,6 +62,14 @@ repos:
         always_run: false
         stages: [commit]
 
+      - id: validate-migrations
+        name: Validate migration MySQL compatibility
+        entry: poetry run python scripts/validate_migrations.py
+        language: system
+        pass_filenames: false
+        files: ^alembic/versions/.*\.py$
+        stages: [commit]
+
 ci:
   autofix_commit_msg: |
     [pre-commit.ci] auto fixes from pre-commit.com hooks
@@ -71,5 +79,5 @@ ci:
   autoupdate_branch: ''
   autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
   autoupdate_schedule: weekly
-  skip: [pytest-check, security-check]
+  skip: [pytest-check, security-check, validate-migrations]
   submodules: false

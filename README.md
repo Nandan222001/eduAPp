@@ -98,6 +98,25 @@ alembic upgrade head
 alembic downgrade -1
 ```
 
+### Validate migrations for MySQL compatibility
+```bash
+# Validate all migrations
+make validate-migrations
+
+# Validate with detailed output
+make validate-migrations-verbose
+
+# Direct execution
+poetry run python scripts/validate_migrations.py
+```
+
+This validation script checks for:
+- Boolean columns using string defaults instead of numeric (0/1)
+- PostgreSQL-specific syntax that won't work with MySQL
+- Other MySQL compatibility issues
+
+See [Migration Validation Quick Start](scripts/MIGRATION_VALIDATION_QUICKSTART.md) for details.
+
 ### Migration Troubleshooting
 
 If you encounter migration issues, conflicts, or errors, see the comprehensive troubleshooting guide:
