@@ -56,7 +56,7 @@ const envConfig = getConfig();
 export default ({ config }) => ({
   ...config,
   name: IS_PROD ? 'EduPlatform' : IS_STAGING ? 'EduPlatform Staging' : 'EduPlatform Dev',
-  slug: 'eduplatform',
+  slug: 'edutrack-mobile',
   version: process.env.APP_VERSION || '1.0.0',
   orientation: 'portrait',
   icon: './assets/icon.png',

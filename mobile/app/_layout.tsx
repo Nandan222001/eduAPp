@@ -1,4 +1,5 @@
 import 'react-native-gesture-handler';
+console.log('LAYOUT_LOADED_DEBUG');
 import React, { useEffect, useRef } from 'react';
 import { Slot, useRouter, useSegments } from 'expo-router';
 import { Provider } from 'react-redux';
@@ -68,18 +69,18 @@ function RootLayoutNav() {
       router.replace({
         pathname: '/(auth)/login',
         params: { returnPath: route.path, ...route.params }
-      } as never);
+      } as any);
       return;
     }
 
     try {
       if (route.params && Object.keys(route.params).length > 0) {
         router.push({
-          pathname: route.path as never,
+          pathname: route.path,
           params: route.params
-        });
+        } as any);
       } else {
-        router.push(route.path as never);
+        router.push(route.path as any);
       }
     } catch (error) {
       console.error('Failed to navigate to deep link:', error);
