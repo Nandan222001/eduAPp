@@ -74,7 +74,12 @@ export default ({ config }) => ({
     url: `https://u.expo.dev/${process.env.EXPO_PROJECT_ID}`,
     checkAutomatically: 'ON_LOAD',
   },
-  assetBundlePatterns: ['**/*'],
+  // Include all assets in the bundle for Android and iOS
+  assetBundlePatterns: [
+    '**/*',
+    'assets/**/*',
+    'src/**/*.{png,jpg,jpeg,gif,webp,svg}',
+  ],
   ios: {
     supportsTablet: true,
     bundleIdentifier: IS_PROD
@@ -163,7 +168,7 @@ export default ({ config }) => ({
     [
       'expo-notifications',
       {
-        icon: './assets/notification-icon.png',
+        icon: existsSync('./assets/notification-icon.png') ? './assets/notification-icon.png' : './assets/icon.png',
         color: '#ffffff',
         mode: IS_PROD ? 'production' : 'default',
       },

@@ -43,7 +43,8 @@
         "NOTIFICATIONS",
         "VIBRATE",
         "USE_BIOMETRIC",
-        "USE_FINGERPRINT"
+        "USE_FINGERPRINT",
+        "DETECT_SCREEN_CAPTURE"
       ],
       "googleServicesFile": "./google-services.json",
       "intentFilters": [

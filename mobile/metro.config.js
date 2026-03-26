@@ -48,7 +48,11 @@ config.resolver = {
   // Prioritize platform-specific extensions for tree-shaking
   resolverMainFields: ['react-native', 'browser', 'main'],
   // Block problematic paths but ensure index.js and entry points are always resolved
-  blockList: [],
+  blockList: [
+    // Block native-only modules on web
+    /node_modules\/.*\.android\.js$/,
+    /node_modules\/.*\.ios\.js$/,
+  ],
   unstable_enablePackageExports: true,
   unstable_conditionNames: ['require', 'import', 'react-native'],
 };

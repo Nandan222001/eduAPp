@@ -1,15 +1,15 @@
 """create career pathway tables
 
-Revision ID: 019_create_career_pathway_tables
-Revises: 018_create_plagiarism_detection_tables
+Revision ID: 019
+Revises: 018
 Create Date: 2024-01-15 10:00:00.000000
 
 """
 from alembic import op
 import sqlalchemy as sa
 
-revision = '019_create_career_pathway_tables'
-down_revision = '018_impersonation_debug'
+revision = '019'
+down_revision = '018'
 branch_labels = None
 depends_on = None
 

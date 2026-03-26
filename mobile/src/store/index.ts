@@ -1,6 +1,6 @@
 import { configureStore, combineReducers } from '@reduxjs/toolkit';
 import { persistStore, persistReducer, FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER, createMigrate } from 'redux-persist';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 import authReducer from './slices/authSlice';
 import profileReducer from './slices/profileSlice';
 import dashboardReducer from './slices/dashboardSlice';
@@ -9,6 +9,21 @@ import gradesReducer from './slices/gradesSlice';
 import parentReducer from './slices/parentSlice';
 import offlineReducer from './slices/offlineSlice';
 import studentDataReducer from './slices/studentDataSlice';
+
+// Use appropriate storage based on platform
+let storage: any;
+if (Platform.OS === 'web') {
+  // Use localStorage for web
+  storage = {
+    getItem: (key: string) => Promise.resolve(localStorage.getItem(key)),
+    setItem: (key: string, item: string) => Promise.resolve(localStorage.setItem(key, item)),
+    removeItem: (key: string) => Promise.resolve(localStorage.removeItem(key)),
+  };
+} else {
+  // Use AsyncStorage for native platforms
+  const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+  storage = AsyncStorage;
+}
 
 const migrations = {
   1: (state: any) => {
@@ -52,7 +67,7 @@ const migrations = {
 const persistConfig = {
   key: 'root',
   version: 2,
-  storage: AsyncStorage,
+  storage,
   whitelist: ['auth', 'profile', 'dashboard', 'assignments', 'grades', 'parent', 'offline', 'studentData'],
   migrate: createMigrate(migrations, { debug: false }),
 };

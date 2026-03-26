@@ -12,7 +12,7 @@ import { Platform } from 'react-native';
 import { store, persistor } from '@store';
 import { useAppDispatch, useAppSelector } from '@store/hooks';
 import { loadStoredAuth } from '@store/slices/authSlice';
-import { Loading, OfflineDataRefresher, NavigationDebugger } from '@components';
+import { Loading, OfflineDataRefresher, NavigationDebugger, ErrorBoundary } from '@components';
 import { theme } from '@config/theme';
 import { authService } from '@utils/authService';
 import { 
@@ -92,34 +92,55 @@ function RootLayoutNav() {
       try {
         // Initialize platform-specific features first
         if (Platform.OS === 'ios') {
-          // Dynamic import for iOS-specific initialization
-          const { checkIOSCompatibility, initializeIOSPlatform } = await import('@utils/iosInit');
-          await checkIOSCompatibility();
-          await initializeIOSPlatform();
+          try {
+            // Dynamic import for iOS-specific initialization
+            const { checkIOSCompatibility, initializeIOSPlatform } = await import('@utils/iosInit');
+            await checkIOSCompatibility();
+            await initializeIOSPlatform();
+          } catch (e) {
+            console.warn('iOS initialization warning:', e);
+          }
         } else if (Platform.OS === 'android') {
-          // Dynamic import for Android-specific initialization
-          const { checkAndroidCompatibility, initializeAndroidPlatform } = await import('@utils/androidInit');
-          await checkAndroidCompatibility();
-          await initializeAndroidPlatform();
+          try {
+            // Dynamic import for Android-specific initialization
+            const { checkAndroidCompatibility, initializeAndroidPlatform } = await import('@utils/androidInit');
+            await checkAndroidCompatibility();
+            await initializeAndroidPlatform();
+          } catch (e) {
+            console.warn('Android initialization warning:', e);
+          }
         }
 
         // Load stored authentication - this will fetch fresh user data from API if tokens exist
         console.log('[App Init] Dispatching loadStoredAuth');
-        const result = await dispatch(loadStoredAuth()).unwrap();
-        console.log('[App Init] loadStoredAuth result:', result ? 'User restored' : 'No stored session');
+        try {
+          const result = await dispatch(loadStoredAuth()).unwrap();
+          console.log('[App Init] loadStoredAuth result:', result ? 'User restored' : 'No stored session');
+        } catch (authError) {
+          console.warn('[App Init] Failed to restore auth session (continuing):', authError);
+          // Continue initialization even if auth restoration fails
+        }
         
         // Initialize offline support on native platforms only
         if (Platform.OS !== 'web') {
-          const { initializeOfflineSupport } = await import('@utils/offlineInit');
-          await initializeOfflineSupport();
+          try {
+            const { initializeOfflineSupport } = await import('@utils/offlineInit');
+            await initializeOfflineSupport();
+          } catch (e) {
+            console.warn('Offline support initialization warning:', e);
+          }
         }
       } catch (error) {
-        console.error('Failed to initialize app:', error);
+        console.error('Fatal error during app initialization:', error);
       } finally {
         // Hide splash screen after initialization
         if (Platform.OS !== 'web') {
-          const SplashScreen = require('expo-splash-screen');
-          await SplashScreen.hideAsync();
+          try {
+            const SplashScreen = require('expo-splash-screen');
+            await SplashScreen.hideAsync();
+          } catch (e) {
+            console.warn('Failed to hide splash screen:', e);
+          }
         }
       }
     };
@@ -224,17 +245,25 @@ function RootLayoutNav() {
 
 export default function RootLayout() {
   return (
-    <Provider store={store}>
-      <PersistGate loading={<Loading />} persistor={persistor}>
-        <QueryClientProvider client={queryClient}>
-          <ThemeProvider theme={theme}>
-            <SafeAreaProvider>
-              <RootLayoutNav />
-              <StatusBar style="auto" />
-            </SafeAreaProvider>
-          </ThemeProvider>
-        </QueryClientProvider>
-      </PersistGate>
-    </Provider>
+    <ErrorBoundary>
+      <Provider store={store}>
+        <PersistGate 
+          loading={<Loading />} 
+          persistor={persistor}
+          onBeforeLift={() => {
+            console.log('[PersistGate] Hydration complete, lifting gate');
+          }}
+        >
+          <QueryClientProvider client={queryClient}>
+            <ThemeProvider theme={theme}>
+              <SafeAreaProvider>
+                <RootLayoutNav />
+                <StatusBar style="auto" />
+              </SafeAreaProvider>
+            </ThemeProvider>
+          </QueryClientProvider>
+        </PersistGate>
+      </Provider>
+    </ErrorBoundary>
   );
 }

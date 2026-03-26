@@ -9,5 +9,6 @@ export { LazyScreen } from './LazyScreen';
 export { DeepLinkingExample } from './DeepLinkingExample';
 export { DeepLinkTester } from './DeepLinkTester';
 export { NavigationDebugger } from './NavigationDebugger';
+export { ErrorBoundary } from './ErrorBoundary';
 
 export * from './shared';
