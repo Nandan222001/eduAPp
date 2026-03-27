@@ -209,37 +209,79 @@ def upgrade():
 
 
 def downgrade():
-    op.drop_index('idx_insight_resolved', 'personalized_insights')
-    op.drop_index('idx_insight_priority', 'personalized_insights')
-    op.drop_index('idx_insight_severity', 'personalized_insights')
-    op.drop_index('idx_insight_category', 'personalized_insights')
-    op.drop_index('idx_insight_type', 'personalized_insights')
-    op.drop_index('idx_insight_student', 'personalized_insights')
-    op.drop_index('idx_insight_institution', 'personalized_insights')
-    op.drop_table('personalized_insights')
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
     
-    op.drop_index('idx_focus_area_status', 'focus_areas')
-    op.drop_index('idx_focus_area_priority', 'focus_areas')
-    op.drop_index('idx_focus_area_type', 'focus_areas')
-    op.drop_index('idx_focus_area_chapter', 'focus_areas')
-    op.drop_index('idx_focus_area_subject', 'focus_areas')
-    op.drop_index('idx_focus_area_student', 'focus_areas')
-    op.drop_index('idx_focus_area_institution', 'focus_areas')
-    op.drop_table('focus_areas')
+    # Drop personalized_insights table and indexes
+    if 'personalized_insights' in inspector.get_table_names():
+        existing_indexes = {idx['name'] for idx in inspector.get_indexes('personalized_insights')}
+        if 'idx_insight_resolved' in existing_indexes:
+            op.drop_index('idx_insight_resolved', 'personalized_insights')
+        if 'idx_insight_priority' in existing_indexes:
+            op.drop_index('idx_insight_priority', 'personalized_insights')
+        if 'idx_insight_severity' in existing_indexes:
+            op.drop_index('idx_insight_severity', 'personalized_insights')
+        if 'idx_insight_category' in existing_indexes:
+            op.drop_index('idx_insight_category', 'personalized_insights')
+        if 'idx_insight_type' in existing_indexes:
+            op.drop_index('idx_insight_type', 'personalized_insights')
+        if 'idx_insight_student' in existing_indexes:
+            op.drop_index('idx_insight_student', 'personalized_insights')
+        if 'idx_insight_institution' in existing_indexes:
+            op.drop_index('idx_insight_institution', 'personalized_insights')
+        op.drop_table('personalized_insights')
     
-    op.drop_index('idx_question_rec_completed', 'question_recommendations')
-    op.drop_index('idx_question_rec_review_date', 'question_recommendations')
-    op.drop_index('idx_question_rec_rank', 'question_recommendations')
-    op.drop_index('idx_question_rec_score', 'question_recommendations')
-    op.drop_index('idx_question_rec_question', 'question_recommendations')
-    op.drop_index('idx_question_rec_student', 'question_recommendations')
-    op.drop_index('idx_question_rec_institution', 'question_recommendations')
-    op.drop_table('question_recommendations')
+    # Drop focus_areas table and indexes
+    if 'focus_areas' in inspector.get_table_names():
+        existing_indexes = {idx['name'] for idx in inspector.get_indexes('focus_areas')}
+        if 'idx_focus_area_status' in existing_indexes:
+            op.drop_index('idx_focus_area_status', 'focus_areas')
+        if 'idx_focus_area_priority' in existing_indexes:
+            op.drop_index('idx_focus_area_priority', 'focus_areas')
+        if 'idx_focus_area_type' in existing_indexes:
+            op.drop_index('idx_focus_area_type', 'focus_areas')
+        if 'idx_focus_area_chapter' in existing_indexes:
+            op.drop_index('idx_focus_area_chapter', 'focus_areas')
+        if 'idx_focus_area_subject' in existing_indexes:
+            op.drop_index('idx_focus_area_subject', 'focus_areas')
+        if 'idx_focus_area_student' in existing_indexes:
+            op.drop_index('idx_focus_area_student', 'focus_areas')
+        if 'idx_focus_area_institution' in existing_indexes:
+            op.drop_index('idx_focus_area_institution', 'focus_areas')
+        op.drop_table('focus_areas')
     
-    op.drop_index('idx_chapter_perf_proficiency', 'chapter_performance')
-    op.drop_index('idx_chapter_perf_mastery', 'chapter_performance')
-    op.drop_index('idx_chapter_perf_chapter', 'chapter_performance')
-    op.drop_index('idx_chapter_perf_subject', 'chapter_performance')
-    op.drop_index('idx_chapter_perf_student', 'chapter_performance')
-    op.drop_index('idx_chapter_perf_institution', 'chapter_performance')
-    op.drop_table('chapter_performance')
+    # Drop question_recommendations table and indexes
+    if 'question_recommendations' in inspector.get_table_names():
+        existing_indexes = {idx['name'] for idx in inspector.get_indexes('question_recommendations')}
+        if 'idx_question_rec_completed' in existing_indexes:
+            op.drop_index('idx_question_rec_completed', 'question_recommendations')
+        if 'idx_question_rec_review_date' in existing_indexes:
+            op.drop_index('idx_question_rec_review_date', 'question_recommendations')
+        if 'idx_question_rec_rank' in existing_indexes:
+            op.drop_index('idx_question_rec_rank', 'question_recommendations')
+        if 'idx_question_rec_score' in existing_indexes:
+            op.drop_index('idx_question_rec_score', 'question_recommendations')
+        if 'idx_question_rec_question' in existing_indexes:
+            op.drop_index('idx_question_rec_question', 'question_recommendations')
+        if 'idx_question_rec_student' in existing_indexes:
+            op.drop_index('idx_question_rec_student', 'question_recommendations')
+        if 'idx_question_rec_institution' in existing_indexes:
+            op.drop_index('idx_question_rec_institution', 'question_recommendations')
+        op.drop_table('question_recommendations')
+    
+    # Drop chapter_performance table and indexes
+    if 'chapter_performance' in inspector.get_table_names():
+        existing_indexes = {idx['name'] for idx in inspector.get_indexes('chapter_performance')}
+        if 'idx_chapter_perf_proficiency' in existing_indexes:
+            op.drop_index('idx_chapter_perf_proficiency', 'chapter_performance')
+        if 'idx_chapter_perf_mastery' in existing_indexes:
+            op.drop_index('idx_chapter_perf_mastery', 'chapter_performance')
+        if 'idx_chapter_perf_chapter' in existing_indexes:
+            op.drop_index('idx_chapter_perf_chapter', 'chapter_performance')
+        if 'idx_chapter_perf_subject' in existing_indexes:
+            op.drop_index('idx_chapter_perf_subject', 'chapter_performance')
+        if 'idx_chapter_perf_student' in existing_indexes:
+            op.drop_index('idx_chapter_perf_student', 'chapter_performance')
+        if 'idx_chapter_perf_institution' in existing_indexes:
+            op.drop_index('idx_chapter_perf_institution', 'chapter_performance')
+        op.drop_table('chapter_performance')
