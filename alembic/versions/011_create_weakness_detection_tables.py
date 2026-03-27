@@ -47,12 +47,19 @@ def upgrade():
             sa.PrimaryKeyConstraint('id'),
             sa.UniqueConstraint('student_id', 'chapter_id', name='uq_student_chapter_performance')
         )
-        
+    
+    existing_indexes = {idx['name'] for idx in inspector.get_indexes('chapter_performance')}
+    if 'idx_chapter_perf_institution' not in existing_indexes:
         op.create_index('idx_chapter_perf_institution', 'chapter_performance', ['institution_id'])
+    if 'idx_chapter_perf_student' not in existing_indexes:
         op.create_index('idx_chapter_perf_student', 'chapter_performance', ['student_id'])
+    if 'idx_chapter_perf_subject' not in existing_indexes:
         op.create_index('idx_chapter_perf_subject', 'chapter_performance', ['subject_id'])
+    if 'idx_chapter_perf_chapter' not in existing_indexes:
         op.create_index('idx_chapter_perf_chapter', 'chapter_performance', ['chapter_id'])
+    if 'idx_chapter_perf_mastery' not in existing_indexes:
         op.create_index('idx_chapter_perf_mastery', 'chapter_performance', ['mastery_score'])
+    if 'idx_chapter_perf_proficiency' not in existing_indexes:
         op.create_index('idx_chapter_perf_proficiency', 'chapter_performance', ['proficiency_level'])
 
     if 'question_recommendations' not in inspector.get_table_names():
@@ -84,13 +91,21 @@ def upgrade():
             sa.ForeignKeyConstraint(['question_id'], ['questions_bank.id'], ondelete='CASCADE'),
             sa.PrimaryKeyConstraint('id')
         )
-        
+    
+    existing_indexes = {idx['name'] for idx in inspector.get_indexes('question_recommendations')}
+    if 'idx_question_rec_institution' not in existing_indexes:
         op.create_index('idx_question_rec_institution', 'question_recommendations', ['institution_id'])
+    if 'idx_question_rec_student' not in existing_indexes:
         op.create_index('idx_question_rec_student', 'question_recommendations', ['student_id'])
+    if 'idx_question_rec_question' not in existing_indexes:
         op.create_index('idx_question_rec_question', 'question_recommendations', ['question_id'])
+    if 'idx_question_rec_score' not in existing_indexes:
         op.create_index('idx_question_rec_score', 'question_recommendations', ['recommendation_score'])
+    if 'idx_question_rec_rank' not in existing_indexes:
         op.create_index('idx_question_rec_rank', 'question_recommendations', ['priority_rank'])
+    if 'idx_question_rec_review_date' not in existing_indexes:
         op.create_index('idx_question_rec_review_date', 'question_recommendations', ['next_review_date'])
+    if 'idx_question_rec_completed' not in existing_indexes:
         op.create_index('idx_question_rec_completed', 'question_recommendations', ['is_completed'])
 
     if 'focus_areas' not in inspector.get_table_names():
@@ -127,13 +142,21 @@ def upgrade():
             sa.ForeignKeyConstraint(['topic_id'], ['topics.id'], ondelete='SET NULL'),
             sa.PrimaryKeyConstraint('id')
         )
-        
+    
+    existing_indexes = {idx['name'] for idx in inspector.get_indexes('focus_areas')}
+    if 'idx_focus_area_institution' not in existing_indexes:
         op.create_index('idx_focus_area_institution', 'focus_areas', ['institution_id'])
+    if 'idx_focus_area_student' not in existing_indexes:
         op.create_index('idx_focus_area_student', 'focus_areas', ['student_id'])
+    if 'idx_focus_area_subject' not in existing_indexes:
         op.create_index('idx_focus_area_subject', 'focus_areas', ['subject_id'])
+    if 'idx_focus_area_chapter' not in existing_indexes:
         op.create_index('idx_focus_area_chapter', 'focus_areas', ['chapter_id'])
+    if 'idx_focus_area_type' not in existing_indexes:
         op.create_index('idx_focus_area_type', 'focus_areas', ['focus_type'])
+    if 'idx_focus_area_priority' not in existing_indexes:
         op.create_index('idx_focus_area_priority', 'focus_areas', ['combined_priority'])
+    if 'idx_focus_area_status' not in existing_indexes:
         op.create_index('idx_focus_area_status', 'focus_areas', ['status'])
 
     if 'personalized_insights' not in inspector.get_table_names():
@@ -167,13 +190,21 @@ def upgrade():
             sa.ForeignKeyConstraint(['student_id'], ['students.id'], ondelete='CASCADE'),
             sa.PrimaryKeyConstraint('id')
         )
-        
+    
+    existing_indexes = {idx['name'] for idx in inspector.get_indexes('personalized_insights')}
+    if 'idx_insight_institution' not in existing_indexes:
         op.create_index('idx_insight_institution', 'personalized_insights', ['institution_id'])
+    if 'idx_insight_student' not in existing_indexes:
         op.create_index('idx_insight_student', 'personalized_insights', ['student_id'])
+    if 'idx_insight_type' not in existing_indexes:
         op.create_index('idx_insight_type', 'personalized_insights', ['insight_type'])
+    if 'idx_insight_category' not in existing_indexes:
         op.create_index('idx_insight_category', 'personalized_insights', ['category'])
+    if 'idx_insight_severity' not in existing_indexes:
         op.create_index('idx_insight_severity', 'personalized_insights', ['severity'])
+    if 'idx_insight_priority' not in existing_indexes:
         op.create_index('idx_insight_priority', 'personalized_insights', ['priority'])
+    if 'idx_insight_resolved' not in existing_indexes:
         op.create_index('idx_insight_resolved', 'personalized_insights', ['is_resolved'])
 
 
