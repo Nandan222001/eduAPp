@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
+import { AnimatePresence, motion } from 'motion/react';
 import { Box, useTheme, useMediaQuery } from '@mui/material';
 import ParentSidebar from './ParentSidebar';
 import ParentAppBar from './ParentAppBar';
@@ -25,6 +26,7 @@ export default function ParentLayout() {
   };
 
   const drawerWidth = isMobile ? DRAWER_WIDTH : desktopOpen ? DRAWER_WIDTH : COLLAPSED_DRAWER_WIDTH;
+  const location = useLocation();
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
@@ -88,9 +90,20 @@ export default function ParentLayout() {
             p: { xs: 2, sm: 2, md: 3 },
             maxWidth: '100%',
             mx: 'auto',
+            position: 'relative',
           }}
         >
-          <Outlet />
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={location.pathname}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+            >
+              <Outlet />
+            </motion.div>
+          </AnimatePresence>
         </Box>
       </Box>
 

@@ -29,6 +29,7 @@ import {
   Paper,
   Stack,
 } from '@mui/material';
+import GlassDashboardCard from '@/components/common/GlassDashboardCard';
 import {
   People as PeopleIcon,
   Assignment as AssignmentIcon,
@@ -71,16 +72,12 @@ function StatCard({ title, value, icon, color, subtitle }: StatCardProps) {
   const theme = useTheme();
 
   return (
-    <Card
+    <GlassDashboardCard
       elevation={0}
       sx={{
         height: '100%',
-        border: `1px solid ${theme.palette.divider}`,
-        transition: 'all 0.3s ease',
-        '&:hover': {
-          transform: 'translateY(-4px)',
-          boxShadow: theme.shadows[4],
-        },
+        p: 0,
+        m: 0,
       }}
     >
       <CardContent>
@@ -108,7 +105,7 @@ function StatCard({ title, value, icon, color, subtitle }: StatCardProps) {
           </Typography>
         )}
       </CardContent>
-    </Card>
+    </GlassDashboardCard>
   );
 }
 
@@ -510,7 +507,7 @@ export default function TeacherDashboard() {
 
       <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid item xs={12} md={8}>
-          <Card elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, height: '100%' }}>
+          <GlassDashboardCard delay={0.2}>
             <CardHeader
               title="My Classes Overview"
               subheader="Student count and performance by class"
@@ -528,18 +525,19 @@ export default function TeacherDashboard() {
                       elevation={0}
                       sx={{
                         p: 2,
-                        border: `1px solid ${theme.palette.divider}`,
-                        borderRadius: 2,
+                        bgcolor: 'background.paper',
+                        borderRadius: 3,
                         transition: 'all 0.3s ease',
                         cursor: 'pointer',
+                        boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
                         '&:hover': {
                           transform: 'translateY(-2px)',
-                          boxShadow: theme.shadows[3],
+                          boxShadow: '0 8px 30px rgba(108, 92, 231, 0.15)',
                         },
                       }}
                       onClick={() => navigate(`/teacher/classes/${classData.class_id}`)}
                     >
-                      <Typography variant="h6" fontWeight={700} gutterBottom>
+                      <Typography variant="h6" fontWeight={800} gutterBottom>
                         {classData.class_name} - {classData.section}
                       </Typography>
                       <Typography variant="body2" color="text.secondary" gutterBottom>
@@ -582,11 +580,11 @@ export default function TeacherDashboard() {
                 ))}
               </Grid>
             </CardContent>
-          </Card>
+          </GlassDashboardCard>
         </Grid>
 
         <Grid item xs={12} md={4}>
-          <Card elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, height: '100%' }}>
+          <GlassDashboardCard delay={0.3}>
             <CardHeader
               title="Today's Schedule"
               subheader={new Date().toLocaleDateString('en-US', {
@@ -646,13 +644,13 @@ export default function TeacherDashboard() {
                 ))}
               </List>
             </CardContent>
-          </Card>
+          </GlassDashboardCard>
         </Grid>
       </Grid>
 
       <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid item xs={12} md={6}>
-          <Card elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, height: '100%' }}>
+          <GlassDashboardCard delay={0.4}>
             <CardHeader
               title={`Pending Grading (${dashboardData.pending_grading.total_count})`}
               subheader="Assignments awaiting review"
@@ -729,11 +727,11 @@ export default function TeacherDashboard() {
                 </Table>
               </TableContainer>
             </CardContent>
-          </Card>
+          </GlassDashboardCard>
         </Grid>
 
         <Grid item xs={12} md={6}>
-          <Card elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, height: '100%' }}>
+          <GlassDashboardCard delay={0.5}>
             <CardHeader
               title="Recent Student Submissions"
               subheader="Latest assignment submissions"
@@ -798,7 +796,7 @@ export default function TeacherDashboard() {
                 ))}
               </List>
             </CardContent>
-          </Card>
+          </GlassDashboardCard>
         </Grid>
       </Grid>
 

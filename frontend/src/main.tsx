@@ -14,6 +14,7 @@ import { analytics } from './lib/analytics';
 import { initWebVitals } from './lib/webVitals';
 import { setupOfflineSync } from './utils/offlineQueue';
 import { setupInstallPrompt } from './utils/pwa';
+import { inject3DChartStyles } from './utils/chartJSGlobals';
 import './index.css';
 
 initSentry();
@@ -21,6 +22,7 @@ analytics.init();
 initWebVitals();
 setupOfflineSync();
 setupInstallPrompt();
+inject3DChartStyles();
 
 const queryClient = new QueryClient({
   defaultOptions: {

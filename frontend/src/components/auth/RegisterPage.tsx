@@ -17,6 +17,7 @@ import {
 import { Visibility, VisibilityOff, Email, Lock, Person } from '@mui/icons-material';
 import { authApi } from '@/api/auth';
 import { useAuthStore } from '@/store/useAuthStore';
+import { motion } from 'motion/react';
 
 export default function RegisterPage() {
   const navigate = useNavigate();
@@ -95,13 +96,19 @@ export default function RegisterPage() {
           py: 4,
         }}
       >
-        <Paper elevation={3} sx={{ width: '100%', p: 4 }}>
-          <Typography variant="h4" component="h1" gutterBottom align="center">
-            Create Account
-          </Typography>
-          <Typography variant="body2" color="text.secondary" align="center" sx={{ mb: 3 }}>
-            Sign up to get started
-          </Typography>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, type: 'spring', stiffness: 100 }}
+          style={{ width: '100%' }}
+        >
+          <Paper elevation={3} sx={{ width: '100%', p: 4, borderRadius: 4, border: 'none' }}>
+            <Typography variant="h4" component="h1" gutterBottom align="center" sx={{ fontFamily: 'Manrope', fontWeight: 800 }}>
+              Create Account
+            </Typography>
+            <Typography variant="body2" color="text.secondary" align="center" sx={{ mb: 3 }}>
+              Sign up to get started
+            </Typography>
 
           {error && (
             <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
@@ -210,16 +217,17 @@ export default function RegisterPage() {
               }}
             />
 
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              size="large"
-              disabled={isLoading}
-              sx={{ mt: 3, mb: 2 }}
-            >
-              {isLoading ? <CircularProgress size={24} /> : 'Sign Up'}
-            </Button>
+            <motion.div style={{ width: '100%', marginTop: '24px', marginBottom: '16px' }} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+              <Button
+                type="submit"
+                fullWidth
+                variant="contained"
+                size="large"
+                disabled={isLoading}
+              >
+                {isLoading ? <CircularProgress size={24} /> : 'Sign Up'}
+              </Button>
+            </motion.div>
           </Box>
 
           <Typography variant="body2" align="center">
@@ -228,7 +236,8 @@ export default function RegisterPage() {
               Sign in
             </Link>
           </Typography>
-        </Paper>
+          </Paper>
+        </motion.div>
       </Box>
     </Container>
   );

@@ -59,6 +59,7 @@ ChartJS.register(
   Legend,
   Filler
 );
+import GlassDashboardCard from '@/components/common/GlassDashboardCard';
 
 interface StatCardProps {
   title: string;
@@ -72,16 +73,12 @@ function StatCard({ title, value, icon, color, subtitle }: StatCardProps) {
   const theme = useTheme();
 
   return (
-    <Card
+    <GlassDashboardCard
       elevation={0}
       sx={{
         height: '100%',
-        border: `1px solid ${theme.palette.divider}`,
-        transition: 'all 0.3s ease',
-        '&:hover': {
-          transform: 'translateY(-4px)',
-          boxShadow: theme.shadows[4],
-        },
+        p: 0,
+        m: 0,
       }}
     >
       <CardContent>
@@ -109,7 +106,7 @@ function StatCard({ title, value, icon, color, subtitle }: StatCardProps) {
           </Typography>
         )}
       </CardContent>
-    </Card>
+    </GlassDashboardCard>
   );
 }
 
@@ -275,7 +272,7 @@ export default function InstitutionAdminDashboard() {
 
       <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid item xs={12} md={8}>
-          <Card elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, height: '100%' }}>
+          <GlassDashboardCard delay={0.2}>
             <CardHeader
               title="Today's Attendance Summary"
               subheader={new Date(dashboardData.attendance_summary.date).toLocaleDateString()}
@@ -336,11 +333,11 @@ export default function InstitutionAdminDashboard() {
                 </Typography>
               </Box>
             </CardContent>
-          </Card>
+          </GlassDashboardCard>
         </Grid>
 
         <Grid item xs={12} md={4}>
-          <Card elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, height: '100%' }}>
+          <GlassDashboardCard delay={0.3}>
             <CardHeader title="Quick Statistics" />
             <CardContent>
               <Grid container spacing={2}>
@@ -365,13 +362,13 @@ export default function InstitutionAdminDashboard() {
                 ))}
               </Grid>
             </CardContent>
-          </Card>
+          </GlassDashboardCard>
         </Grid>
       </Grid>
 
       <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid item xs={12} lg={6}>
-          <Card elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, height: '100%' }}>
+          <GlassDashboardCard delay={0.4}>
             <CardHeader title="Recent Exam Results" />
             <CardContent>
               <TableContainer>
@@ -428,11 +425,11 @@ export default function InstitutionAdminDashboard() {
                 </Table>
               </TableContainer>
             </CardContent>
-          </Card>
+          </GlassDashboardCard>
         </Grid>
 
         <Grid item xs={12} lg={6}>
-          <Card elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, height: '100%' }}>
+          <GlassDashboardCard delay={0.5}>
             <CardHeader title="Upcoming Events" />
             <CardContent>
               <List>
@@ -474,24 +471,24 @@ export default function InstitutionAdminDashboard() {
                 )}
               </List>
             </CardContent>
-          </Card>
+          </GlassDashboardCard>
         </Grid>
       </Grid>
 
       <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid item xs={12} lg={8}>
-          <Card elevation={0} sx={{ border: `1px solid ${theme.palette.divider}` }}>
+          <GlassDashboardCard delay={0.6}>
             <CardHeader title="Performance Trends" subheader="Monthly performance over time" />
             <CardContent>
               <Box sx={{ height: 300 }}>
                 <Line data={performanceChartData} options={chartOptions} />
               </Box>
             </CardContent>
-          </Card>
+          </GlassDashboardCard>
         </Grid>
 
         <Grid item xs={12} lg={4}>
-          <Card elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, height: '100%' }}>
+          <GlassDashboardCard delay={0.7}>
             <CardHeader title="Pending Tasks" />
             <CardContent>
               <List>
@@ -543,7 +540,7 @@ export default function InstitutionAdminDashboard() {
                 )}
               </List>
             </CardContent>
-          </Card>
+          </GlassDashboardCard>
         </Grid>
       </Grid>
     </Box>

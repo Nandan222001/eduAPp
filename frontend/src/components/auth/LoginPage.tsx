@@ -20,6 +20,7 @@ import { Visibility, VisibilityOff, Email, Lock, VpnKey } from '@mui/icons-mater
 import { authApi } from '@/api/auth';
 import { useAuthStore } from '@/store/useAuthStore';
 import { getDashboardRoute } from '@/utils/roleHelpers';
+import { motion } from 'motion/react';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -129,13 +130,19 @@ export default function LoginPage() {
           py: 4,
         }}
       >
-        <Paper elevation={3} sx={{ width: '100%', p: 4 }}>
-          <Typography variant="h4" component="h1" gutterBottom align="center">
-            Welcome Back
-          </Typography>
-          <Typography variant="body2" color="text.secondary" align="center" sx={{ mb: 3 }}>
-            Sign in to continue to your account
-          </Typography>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: 15 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.5, type: 'spring', stiffness: 100 }}
+          style={{ width: '100%' }}
+        >
+          <Paper elevation={3} sx={{ width: '100%', p: 4, borderRadius: 4, border: 'none' }}>
+            <Typography variant="h4" component="h1" gutterBottom align="center" sx={{ fontFamily: 'Manrope', fontWeight: 800 }}>
+              Welcome Back
+            </Typography>
+            <Typography variant="body2" color="text.secondary" align="center" sx={{ mb: 3 }}>
+              Sign in to continue to your account
+            </Typography>
 
           <Tabs value={tabValue} onChange={handleTabChange} centered sx={{ mb: 2 }}>
             <Tab label="Email & Password" />
@@ -213,16 +220,17 @@ export default function LoginPage() {
                 </Link>
               </Box>
 
-              <Button
-                type="submit"
-                fullWidth
-                variant="contained"
-                size="large"
-                disabled={isLoading}
-                sx={{ mt: 3, mb: 2 }}
-              >
-                {isLoading ? <CircularProgress size={24} /> : 'Sign In'}
-              </Button>
+              <motion.div style={{ width: '100%', marginTop: '24px', marginBottom: '16px' }} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <Button
+                  type="submit"
+                  fullWidth
+                  variant="contained"
+                  size="large"
+                  disabled={isLoading}
+                >
+                  {isLoading ? <CircularProgress size={24} /> : 'Sign In'}
+                </Button>
+              </motion.div>
             </Box>
           </TabPanel>
 
@@ -248,16 +256,17 @@ export default function LoginPage() {
               />
 
               {!otpRequested ? (
-                <Button
-                  fullWidth
-                  variant="outlined"
-                  size="large"
-                  onClick={handleRequestOTP}
-                  disabled={isLoading}
-                  sx={{ mt: 2 }}
-                >
-                  {isLoading ? <CircularProgress size={24} /> : 'Request OTP'}
-                </Button>
+                <motion.div style={{ width: '100%', marginTop: '16px' }} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    size="large"
+                    onClick={handleRequestOTP}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? <CircularProgress size={24} /> : 'Request OTP'}
+                  </Button>
+                </motion.div>
               ) : (
                 <>
                   <TextField
@@ -280,16 +289,17 @@ export default function LoginPage() {
                     }}
                   />
 
-                  <Button
-                    type="submit"
-                    fullWidth
-                    variant="contained"
-                    size="large"
-                    disabled={isLoading}
-                    sx={{ mt: 3, mb: 2 }}
-                  >
-                    {isLoading ? <CircularProgress size={24} /> : 'Verify & Sign In'}
-                  </Button>
+                  <motion.div style={{ width: '100%', marginTop: '24px', marginBottom: '16px' }} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                    <Button
+                      type="submit"
+                      fullWidth
+                      variant="contained"
+                      size="large"
+                      disabled={isLoading}
+                    >
+                      {isLoading ? <CircularProgress size={24} /> : 'Verify & Sign In'}
+                    </Button>
+                  </motion.div>
 
                   <Button fullWidth variant="text" onClick={handleRequestOTP} disabled={isLoading}>
                     Resend OTP
@@ -307,7 +317,8 @@ export default function LoginPage() {
               Sign up
             </Link>
           </Typography>
-        </Paper>
+          </Paper>
+        </motion.div>
       </Box>
     </Container>
   );

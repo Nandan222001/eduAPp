@@ -7,137 +7,113 @@ export const getTheme = (mode: PaletteMode) =>
     palette: {
       mode,
       primary: {
-        main: mode === 'light' ? '#0d47a1' : '#90caf9',
-        light: mode === 'light' ? '#1976d2' : '#bbdefb',
-        dark: mode === 'light' ? '#0a3a82' : '#42a5f5',
-        lighter: mode === 'light' ? '#e3f2fd' : '#1a237e',
-        contrastText: '#ffffff',
+        main: '#FF7A45', // Primary
+        light: '#FE7944', // Primary Container
+        dark: '#A33702', // Surface Tint / Primary Dim
+        contrastText: '#FFF', // Make it white instead of dark for contrast
       },
       secondary: {
-        main: mode === 'light' ? '#6a1b9a' : '#ce93d8',
-        light: mode === 'light' ? '#9c27b0' : '#f3e5f5',
-        dark: mode === 'light' ? '#4a148c' : '#ab47bc',
-        lighter: mode === 'light' ? '#f3e5f5' : '#4a148c',
-        contrastText: '#ffffff',
+        main: '#6C5CE7', // Deep Purple (Intelligence Tone)
+        light: '#D2CCFF', // Secondary Container
+        dark: '#4935C3', // Secondary Dim
+        contrastText: '#FFFFFF',
       },
       error: {
-        main: mode === 'light' ? '#d32f2f' : '#f44336',
-        light: mode === 'light' ? '#e57373' : '#ef5350',
-        dark: mode === 'light' ? '#c62828' : '#e53935',
-        lighter: mode === 'light' ? '#ffebee' : '#b71c1c',
-        contrastText: '#ffffff',
-      },
-      warning: {
-        main: mode === 'light' ? '#ed6c02' : '#ff9800',
-        light: mode === 'light' ? '#ff9800' : '#ffb74d',
-        dark: mode === 'light' ? '#e65100' : '#f57c00',
-        lighter: mode === 'light' ? '#fff3e0' : '#e65100',
-        contrastText: mode === 'light' ? '#ffffff' : 'rgba(0, 0, 0, 0.87)',
+        main: '#B31B25',
+        light: '#FB5151',
+        dark: '#9F0519',
+        contrastText: '#FFEFEE',
       },
       info: {
-        main: mode === 'light' ? '#0288d1' : '#29b6f6',
-        light: mode === 'light' ? '#03a9f4' : '#4fc3f7',
-        dark: mode === 'light' ? '#01579b' : '#0277bd',
-        lighter: mode === 'light' ? '#e1f5fe' : '#01579b',
-        contrastText: '#ffffff',
+        main: '#00CEC9',
+        light: '#61FFF9',
+        dark: '#006764',
+        contrastText: '#004B49',
       },
       success: {
-        main: mode === 'light' ? '#2e7d32' : '#66bb6a',
-        light: mode === 'light' ? '#4caf50' : '#81c784',
-        dark: mode === 'light' ? '#1b5e20' : '#388e3c',
-        lighter: mode === 'light' ? '#e8f5e9' : '#1b5e20',
-        contrastText: '#ffffff',
+        main: '#006764',
+        light: '#61FFF9',
+        dark: '#005957',
+        contrastText: '#FFFFFF',
       },
       background: {
-        default: mode === 'light' ? '#f5f5f5' : '#121212',
-        paper: mode === 'light' ? '#ffffff' : '#1e1e1e',
+        default: mode === 'light' ? '#FFF4F0' : '#121212', // Surface
+        paper: mode === 'light' ? '#FFFFFF' : '#1E1E1E', // Surface Container Lowest
       },
       text: {
-        primary: mode === 'light' ? 'rgba(0, 0, 0, 0.87)' : 'rgba(255, 255, 255, 0.87)',
-        secondary: mode === 'light' ? 'rgba(0, 0, 0, 0.6)' : 'rgba(255, 255, 255, 0.6)',
+        primary: mode === 'light' ? '#4B240A' : '#FFFFFF', // On Surface
+        secondary: mode === 'light' ? '#815032' : 'rgba(255, 255, 255, 0.7)', // On Surface Variant
       },
-      divider: mode === 'light' ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 0.12)',
+      divider: mode === 'light' ? '#DD9F7C' : 'rgba(255, 255, 255, 0.12)', // Outline Variant
     },
     typography: {
-      fontFamily: [
-        '-apple-system',
-        'BlinkMacSystemFont',
-        '"Segoe UI"',
-        'Roboto',
-        '"Helvetica Neue"',
-        'Arial',
-        'sans-serif',
-      ].join(','),
+      fontFamily: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'].join(','),
       fontSize: 16,
       h1: {
-        fontSize: 'clamp(2rem, 5vw, 2.5rem)',
-        fontWeight: 600,
-        lineHeight: 1.2,
+        fontFamily: 'Manrope',
+        fontSize: 'clamp(2.5rem, 5vw, 3.5rem)',
+        fontWeight: 800,
+        letterSpacing: '-0.02em',
+        lineHeight: 1.1,
       },
       h2: {
-        fontSize: 'clamp(1.75rem, 4vw, 2rem)',
-        fontWeight: 600,
-        lineHeight: 1.3,
+        fontFamily: 'Manrope',
+        fontSize: 'clamp(2rem, 4vw, 2.75rem)',
+        fontWeight: 700,
+        letterSpacing: '-0.01em',
+        lineHeight: 1.2,
       },
       h3: {
-        fontSize: 'clamp(1.5rem, 3.5vw, 1.75rem)',
+        fontFamily: 'Manrope',
+        fontSize: 'clamp(1.5rem, 3.5vw, 2.25rem)',
+        fontWeight: 600,
+        lineHeight: 1.25,
+      },
+      h4: {
+        fontFamily: 'Manrope',
+        fontSize: 'clamp(1.25rem, 3vw, 1.75rem)',
         fontWeight: 600,
         lineHeight: 1.3,
       },
-      h4: {
-        fontSize: 'clamp(1.25rem, 3vw, 1.5rem)',
-        fontWeight: 600,
-        lineHeight: 1.4,
-      },
       h5: {
-        fontSize: 'clamp(1.125rem, 2.5vw, 1.25rem)',
+        fontFamily: 'Manrope',
+        fontSize: 'clamp(1.125rem, 2.5vw, 1.5rem)',
         fontWeight: 600,
         lineHeight: 1.4,
       },
       h6: {
-        fontSize: 'clamp(1rem, 2vw, 1.125rem)',
+        fontFamily: 'Manrope',
+        fontSize: 'clamp(1rem, 2vw, 1.25rem)',
         fontWeight: 600,
-        lineHeight: 1.5,
+        lineHeight: 1.4,
       },
       body1: {
         fontSize: '1rem',
-        lineHeight: 1.5,
+        lineHeight: 1.6,
       },
       body2: {
         fontSize: '0.875rem',
-        lineHeight: 1.5,
+        lineHeight: 1.6,
+      },
+      button: {
+        fontFamily: 'Inter',
+        fontWeight: 600,
+        textTransform: 'none',
+        letterSpacing: '0.02em',
       },
     },
     shape: {
-      borderRadius: 12,
+      borderRadius: 24, // xl (1.5rem)
     },
     shadows: [
       'none',
-      mode === 'light' ? '0px 2px 4px rgba(0,0,0,0.05)' : '0px 2px 4px rgba(0,0,0,0.3)',
-      mode === 'light' ? '0px 4px 8px rgba(0,0,0,0.08)' : '0px 4px 8px rgba(0,0,0,0.4)',
-      mode === 'light' ? '0px 8px 16px rgba(0,0,0,0.1)' : '0px 8px 16px rgba(0,0,0,0.5)',
-      mode === 'light' ? '0px 12px 24px rgba(0,0,0,0.12)' : '0px 12px 24px rgba(0,0,0,0.6)',
-      mode === 'light' ? '0px 16px 32px rgba(0,0,0,0.14)' : '0px 16px 32px rgba(0,0,0,0.7)',
-      mode === 'light' ? '0px 20px 40px rgba(0,0,0,0.16)' : '0px 20px 40px rgba(0,0,0,0.8)',
-      'none',
-      'none',
-      'none',
-      'none',
-      'none',
-      'none',
-      'none',
-      'none',
-      'none',
-      'none',
-      'none',
-      'none',
-      'none',
-      'none',
-      'none',
-      'none',
-      'none',
-      'none',
-    ],
+      mode === 'light' ? '0px 4px 20px rgba(75, 36, 10, 0.05)' : '0px 2px 4px rgba(0,0,0,0.3)', // Ambient Shadows
+      mode === 'light' ? '0px 8px 30px rgba(75, 36, 10, 0.05)' : '0px 4px 8px rgba(0,0,0,0.4)',
+      mode === 'light' ? '0px 12px 40px rgba(75, 36, 10, 0.05)' : '0px 8px 16px rgba(0,0,0,0.5)',
+      mode === 'light' ? '0px 16px 50px rgba(75, 36, 10, 0.05)' : '0px 12px 24px rgba(0,0,0,0.6)',
+      mode === 'light' ? '0px 24px 60px rgba(75, 36, 10, 0.05)' : '0px 16px 32px rgba(0,0,0,0.7)',
+      ...Array(19).fill('none'),
+    ] as any,
     components: {
       MuiCssBaseline: {
         styleOverrides: {
@@ -146,64 +122,34 @@ export const getTheme = (mode: PaletteMode) =>
           },
           body: {
             fontSize: '1rem',
+            backgroundColor: mode === 'light' ? '#FFF4F0' : '#121212',
           },
           '*:focus-visible': {
-            outline: `3px solid ${mode === 'light' ? '#0d47a1' : '#90caf9'}`,
+            outline: `3px solid ${mode === 'light' ? '#FF7A45' : '#FE7944'}`,
             outlineOffset: '2px',
-          },
-          '.sr-only': {
-            position: 'absolute',
-            width: '1px',
-            height: '1px',
-            padding: 0,
-            margin: '-1px',
-            overflow: 'hidden',
-            clip: 'rect(0, 0, 0, 0)',
-            whiteSpace: 'nowrap',
-            border: 0,
           },
         },
       },
       MuiButton: {
         defaultProps: {
-          disableElevation: false,
+          disableElevation: true, // Flat by default for modern look
         },
         styleOverrides: {
           root: {
             textTransform: 'none',
-            fontWeight: 500,
-            fontSize: '1rem',
-            borderRadius: 8,
-            minHeight: 44,
-            padding: '10px 20px',
-            touchAction: 'manipulation',
-            transition: 'all 0.2s ease-in-out',
-            '&:focus-visible': {
-              outline: `3px solid ${mode === 'light' ? '#0d47a1' : '#90caf9'}`,
-              outlineOffset: '2px',
-            },
+            borderRadius: 24,
+            minHeight: 48,
+            padding: '10px 24px',
+            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
             '&:hover': {
-              transform: 'translateY(-1px)',
-            },
-            '&:disabled': {
-              opacity: 0.6,
+              transform: 'translateY(-2px)',
             },
           },
-        },
-      },
-      MuiIconButton: {
-        styleOverrides: {
-          root: {
-            minWidth: 44,
-            minHeight: 44,
-            touchAction: 'manipulation',
-            transition: 'all 0.2s ease-in-out',
-            '&:focus-visible': {
-              outline: `3px solid ${mode === 'light' ? '#0d47a1' : '#90caf9'}`,
-              outlineOffset: '2px',
-            },
+          containedPrimary: {
+            backgroundColor: '#FF7A45',
+            color: '#FFFFFF',
             '&:hover': {
-              transform: 'scale(1.05)',
+              backgroundColor: '#A33702',
             },
           },
         },
@@ -211,94 +157,49 @@ export const getTheme = (mode: PaletteMode) =>
       MuiCard: {
         styleOverrides: {
           root: {
-            boxShadow: mode === 'light' ? '0 2px 8px rgba(0,0,0,0.1)' : '0 2px 8px rgba(0,0,0,0.5)',
-            borderRadius: 12,
-            transition: 'all 0.2s ease-in-out',
-            '&:focus-within': {
-              outline: `2px solid ${mode === 'light' ? '#0d47a1' : '#90caf9'}`,
-              outlineOffset: '2px',
+            boxShadow: mode === 'light' ? '0px 8px 30px rgba(75, 36, 10, 0.05)' : '0px 4px 8px rgba(0,0,0,0.4)',
+            borderRadius: 24, // xl
+            border: 'none', // Strict no-line rule
+            backgroundColor: mode === 'light' ? '#FFFFFF' : '#1E1E1E',
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            '&:hover': {
+              transform: 'translateY(-4px)',
+              boxShadow: mode === 'light' ? '0px 12px 40px rgba(75, 36, 10, 0.08)' : '0px 8px 16px rgba(0,0,0,0.6)',
             },
-          },
-        },
-      },
-      MuiDrawer: {
-        styleOverrides: {
-          paper: {
-            borderRight: 'none',
           },
         },
       },
       MuiAppBar: {
         styleOverrides: {
           root: {
-            boxShadow:
-              mode === 'light' ? '0 1px 3px rgba(0,0,0,0.12)' : '0 1px 3px rgba(0,0,0,0.7)',
+            boxShadow: 'none', // We'll handle glassmorphism in the component or override
+            background: 'transparent',
+            backgroundImage: 'none',
+          },
+        },
+      },
+      MuiPaper: {
+        styleOverrides: {
+          root: {
+            backgroundImage: 'none',
           },
         },
       },
       MuiTextField: {
         styleOverrides: {
           root: {
-            '& .MuiInputBase-input': {
-              fontSize: '1rem',
-              padding: '12px',
-              touchAction: 'manipulation',
-            },
-            '& .MuiOutlinedInput-root': {
-              '&:focus-within': {
-                outline: `2px solid ${mode === 'light' ? '#0d47a1' : '#90caf9'}`,
-                outlineOffset: '2px',
+            '& .MuiInputBase-root': {
+              borderRadius: 16,
+              backgroundColor: mode === 'light' ? '#FFDBC9' : '#333',
+              '& fieldset': {
+                border: 'none',
               },
-            },
-          },
-        },
-      },
-      MuiListItemButton: {
-        styleOverrides: {
-          root: {
-            minHeight: 48,
-            padding: '12px 16px',
-            touchAction: 'manipulation',
-            transition: 'all 0.2s ease-in-out',
-            '&:focus-visible': {
-              outline: `3px solid ${mode === 'light' ? '#0d47a1' : '#90caf9'}`,
-              outlineOffset: '2px',
-            },
-          },
-        },
-      },
-      MuiLink: {
-        styleOverrides: {
-          root: {
-            textDecoration: 'underline',
-            '&:focus-visible': {
-              outline: `3px solid ${mode === 'light' ? '#0d47a1' : '#90caf9'}`,
-              outlineOffset: '2px',
-              borderRadius: '4px',
-            },
-          },
-        },
-      },
-      MuiTab: {
-        styleOverrides: {
-          root: {
-            minHeight: 48,
-            fontSize: '1rem',
-            textTransform: 'none',
-            '&:focus-visible': {
-              outline: `3px solid ${mode === 'light' ? '#0d47a1' : '#90caf9'}`,
-              outlineOffset: '2px',
-            },
-          },
-        },
-      },
-      MuiChip: {
-        styleOverrides: {
-          root: {
-            fontSize: '0.875rem',
-            '&:focus-visible': {
-              outline: `3px solid ${mode === 'light' ? '#0d47a1' : '#90caf9'}`,
-              outlineOffset: '2px',
+              '&:hover fieldset': {
+                border: 'none',
+              },
+              '&.Mui-focused fieldset': {
+                border: `2px solid ${mode === 'light' ? '#FF7A45' : '#FE7944'}`, // Ghost border fallback
+              },
             },
           },
         },
