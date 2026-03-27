@@ -49,6 +49,7 @@ def upgrade():
         sa.PrimaryKeyConstraint('id'),
         sa.UniqueConstraint('institution_id', 'academic_year_id', 'name', name='uq_institution_year_grade_name')
     )
+    op.create_index('idx_grade_id', 'grades', ['id'])
     op.create_index('idx_grade_institution', 'grades', ['institution_id'])
     op.create_index('idx_grade_academic_year', 'grades', ['academic_year_id'])
     op.create_index('idx_grade_active', 'grades', ['is_active'])
@@ -86,6 +87,7 @@ def upgrade():
         sa.UniqueConstraint('institution_id', 'name', name='uq_institution_subject_name'),
         sa.UniqueConstraint('institution_id', 'code', name='uq_institution_subject_code')
     )
+    op.create_index('idx_subject_id', 'subjects', ['id'])
     op.create_index('idx_subject_institution', 'subjects', ['institution_id'])
     op.create_index('idx_subject_active', 'subjects', ['is_active'])
     
@@ -181,6 +183,7 @@ def upgrade():
         sa.UniqueConstraint('institution_id', 'email', name='uq_institution_student_email'),
         sa.UniqueConstraint('institution_id', 'admission_number', name='uq_institution_student_admission_number')
     )
+    op.create_index('idx_student_id', 'students', ['id'])
     op.create_index('idx_student_institution', 'students', ['institution_id'])
     op.create_index('idx_student_user', 'students', ['user_id'])
     op.create_index('idx_student_section', 'students', ['section_id'])
@@ -194,6 +197,7 @@ def downgrade():
     op.drop_index('idx_student_section', table_name='students')
     op.drop_index('idx_student_user', table_name='students')
     op.drop_index('idx_student_institution', table_name='students')
+    op.drop_index('idx_student_id', table_name='students')
     op.drop_table('students')
     
     op.drop_index('idx_teacher_subject_subject', table_name='teacher_subjects')
@@ -214,6 +218,7 @@ def downgrade():
     
     op.drop_index('idx_subject_active', table_name='subjects')
     op.drop_index('idx_subject_institution', table_name='subjects')
+    op.drop_index('idx_subject_id', table_name='subjects')
     op.drop_table('subjects')
     
     op.drop_index('idx_section_active', table_name='sections')
@@ -224,6 +229,7 @@ def downgrade():
     op.drop_index('idx_grade_active', table_name='grades')
     op.drop_index('idx_grade_academic_year', table_name='grades')
     op.drop_index('idx_grade_institution', table_name='grades')
+    op.drop_index('idx_grade_id', table_name='grades')
     op.drop_table('grades')
     
     op.drop_index('idx_academic_year_active', table_name='academic_years')

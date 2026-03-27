@@ -34,6 +34,7 @@ def upgrade():
         sa.UniqueConstraint('subject_id', 'grade_id', 'name', name='uq_subject_grade_chapter_name'),
         sa.UniqueConstraint('subject_id', 'grade_id', 'code', name='uq_subject_grade_chapter_code')
     )
+    op.create_index('idx_chapter_id', 'chapters', ['id'])
     op.create_index('idx_chapter_institution', 'chapters', ['institution_id'])
     op.create_index('idx_chapter_subject', 'chapters', ['subject_id'])
     op.create_index('idx_chapter_grade', 'chapters', ['grade_id'])
@@ -56,6 +57,7 @@ def upgrade():
         sa.UniqueConstraint('chapter_id', 'name', name='uq_chapter_topic_name'),
         sa.UniqueConstraint('chapter_id', 'code', name='uq_chapter_topic_code')
     )
+    op.create_index('idx_topic_id', 'topics', ['id'])
     op.create_index('idx_topic_institution', 'topics', ['institution_id'])
     op.create_index('idx_topic_chapter', 'topics', ['chapter_id'])
     op.create_index('idx_topic_active', 'topics', ['is_active'])
@@ -65,10 +67,12 @@ def downgrade():
     op.drop_index('idx_topic_active', table_name='topics')
     op.drop_index('idx_topic_chapter', table_name='topics')
     op.drop_index('idx_topic_institution', table_name='topics')
+    op.drop_index('idx_topic_id', table_name='topics')
     op.drop_table('topics')
     
     op.drop_index('idx_chapter_active', table_name='chapters')
     op.drop_index('idx_chapter_grade', table_name='chapters')
     op.drop_index('idx_chapter_subject', table_name='chapters')
     op.drop_index('idx_chapter_institution', table_name='chapters')
+    op.drop_index('idx_chapter_id', table_name='chapters')
     op.drop_table('chapters')

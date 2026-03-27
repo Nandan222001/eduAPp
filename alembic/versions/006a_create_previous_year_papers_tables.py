@@ -47,6 +47,7 @@ def upgrade():
         sa.ForeignKeyConstraint(['uploaded_by'], ['users.id'], ondelete='SET NULL'),
         sa.PrimaryKeyConstraint('id')
     )
+    op.create_index('idx_pyp_id', 'previous_year_papers', ['id'])
     op.create_index('idx_pyp_institution', 'previous_year_papers', ['institution_id'])
     op.create_index('idx_pyp_board', 'previous_year_papers', ['board'])
     op.create_index('idx_pyp_year', 'previous_year_papers', ['year'])
@@ -89,6 +90,7 @@ def upgrade():
         sa.ForeignKeyConstraint(['topic_id'], ['topics.id'], ondelete='SET NULL'),
         sa.PrimaryKeyConstraint('id')
     )
+    op.create_index('idx_qb_id', 'questions_bank', ['id'])
     op.create_index('idx_qb_institution', 'questions_bank', ['institution_id'])
     op.create_index('idx_qb_paper', 'questions_bank', ['paper_id'])
     op.create_index('idx_qb_grade', 'questions_bank', ['grade_id'])
@@ -164,6 +166,7 @@ def downgrade():
     op.drop_index('idx_qb_grade', table_name='questions_bank')
     op.drop_index('idx_qb_paper', table_name='questions_bank')
     op.drop_index('idx_qb_institution', table_name='questions_bank')
+    op.drop_index('idx_qb_id', table_name='questions_bank')
     op.drop_table('questions_bank')
     
     op.drop_index('idx_pyp_created', table_name='previous_year_papers')
@@ -176,4 +179,5 @@ def downgrade():
     op.drop_index('idx_pyp_year', table_name='previous_year_papers')
     op.drop_index('idx_pyp_board', table_name='previous_year_papers')
     op.drop_index('idx_pyp_institution', table_name='previous_year_papers')
+    op.drop_index('idx_pyp_id', table_name='previous_year_papers')
     op.drop_table('previous_year_papers')
