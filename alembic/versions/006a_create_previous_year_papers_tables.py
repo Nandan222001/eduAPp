@@ -104,8 +104,52 @@ def upgrade():
     op.create_index('idx_qb_verified', 'questions_bank', ['is_verified'])
     op.create_index('idx_qb_created', 'questions_bank', ['created_at'])
 
+    op.create_table('topic_predictions',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('institution_id', sa.Integer(), nullable=False),
+        sa.Column('board', sa.Enum('cbse', 'icse', 'state_board', 'ib', 'cambridge', 'other', name='board'), nullable=False),
+        sa.Column('grade_id', sa.Integer(), nullable=False),
+        sa.Column('subject_id', sa.Integer(), nullable=False),
+        sa.Column('chapter_id', sa.Integer(), nullable=True),
+        sa.Column('topic_id', sa.Integer(), nullable=True),
+        sa.Column('topic_name', sa.String(length=200), nullable=False),
+        sa.Column('frequency_count', sa.Integer(), nullable=False, server_default='0'),
+        sa.Column('appearance_years', sa.Text(), nullable=True),
+        sa.Column('total_marks', sa.Float(), nullable=False, server_default='0.0'),
+        sa.Column('cyclical_pattern_score', sa.Float(), nullable=False, server_default='0.0'),
+        sa.Column('probability_score', sa.Float(), nullable=False, server_default='0.0'),
+        sa.Column('prediction_year', sa.Integer(), nullable=True),
+        sa.Column('confidence_level', sa.String(length=50), nullable=True),
+        sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
+        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
+        sa.ForeignKeyConstraint(['institution_id'], ['institutions.id'], ondelete='CASCADE'),
+        sa.ForeignKeyConstraint(['grade_id'], ['grades.id'], ondelete='CASCADE'),
+        sa.ForeignKeyConstraint(['subject_id'], ['subjects.id'], ondelete='CASCADE'),
+        sa.ForeignKeyConstraint(['chapter_id'], ['chapters.id'], ondelete='SET NULL'),
+        sa.ForeignKeyConstraint(['topic_id'], ['topics.id'], ondelete='SET NULL'),
+        sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index('idx_tp_institution', 'topic_predictions', ['institution_id'])
+    op.create_index('idx_tp_board', 'topic_predictions', ['board'])
+    op.create_index('idx_tp_grade', 'topic_predictions', ['grade_id'])
+    op.create_index('idx_tp_subject', 'topic_predictions', ['subject_id'])
+    op.create_index('idx_tp_chapter', 'topic_predictions', ['chapter_id'])
+    op.create_index('idx_tp_topic', 'topic_predictions', ['topic_id'])
+    op.create_index('idx_tp_board_grade_subject', 'topic_predictions', ['board', 'grade_id', 'subject_id'])
+    op.create_index('idx_tp_probability_score', 'topic_predictions', ['probability_score'])
+
 
 def downgrade():
+    op.drop_index('idx_tp_probability_score', table_name='topic_predictions')
+    op.drop_index('idx_tp_board_grade_subject', table_name='topic_predictions')
+    op.drop_index('idx_tp_topic', table_name='topic_predictions')
+    op.drop_index('idx_tp_chapter', table_name='topic_predictions')
+    op.drop_index('idx_tp_subject', table_name='topic_predictions')
+    op.drop_index('idx_tp_grade', table_name='topic_predictions')
+    op.drop_index('idx_tp_board', table_name='topic_predictions')
+    op.drop_index('idx_tp_institution', table_name='topic_predictions')
+    op.drop_table('topic_predictions')
+    
     op.drop_index('idx_qb_created', table_name='questions_bank')
     op.drop_index('idx_qb_verified', table_name='questions_bank')
     op.drop_index('idx_qb_active', table_name='questions_bank')
