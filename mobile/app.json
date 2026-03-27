@@ -6,6 +6,11 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
+    "extra": {
+      "eas": {
+        "projectId": "928a7217-526c-4a11-8dd3-1146ea20a840"
+      }
+    },
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
@@ -23,7 +28,10 @@
         "NSCameraUsageDescription": "Allow EduTrack to use your camera to scan homework and QR codes",
         "NSPhotoLibraryUsageDescription": "Allow EduTrack to access your photo library to upload assignments and documents",
         "NSMicrophoneUsageDescription": "Allow EduTrack to use your microphone for voice features",
-        "UIBackgroundModes": ["fetch", "remote-notification"]
+        "UIBackgroundModes": [
+          "fetch",
+          "remote-notification"
+        ]
       },
       "associatedDomains": [
         "applinks:edutrack.app",
@@ -63,7 +71,10 @@
               "pathPrefix": "/"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         },
         {
           "action": "VIEW",
@@ -72,7 +83,10 @@
               "scheme": "edutrack"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
@@ -90,11 +104,26 @@
       "expo-secure-store",
       "expo-local-authentication",
       [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 34,
+            "buildToolsVersion": "35.0.0",
+            "kotlinVersion": "1.8.10",
+            "extraMavenRepos": [
+              "https://www.jitpack.io"
+            ]
+          }
+        }
+      ],
+      [
         "expo-notifications",
         {
           "color": "#ffffff"
         }
       ]
-    ]
+    ],
+    "owner": "nandan2814"
   }
 }

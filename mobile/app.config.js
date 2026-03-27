@@ -57,7 +57,7 @@ const envConfig = getConfig();
 export default ({ config }) => ({
   ...config,
   name: IS_PROD ? 'EduPlatform' : IS_STAGING ? 'EduPlatform Staging' : 'EduPlatform Dev',
-  slug: 'edutrack-mobile',
+  slug: 'edu',
   version: process.env.APP_VERSION || '1.0.0',
   orientation: 'portrait',
   icon: './assets/icon.png',
@@ -220,7 +220,7 @@ export default ({ config }) => ({
       origin: false,
     },
     eas: {
-      projectId: process.env.EXPO_PROJECT_ID || '[your-project-id]',
+      projectId: process.env.EXPO_PROJECT_ID || '928a7217-526c-4a11-8dd3-1146ea20a840',
     },
     appEnv,
     ...envConfig,
