@@ -284,6 +284,16 @@ function App() {
                   />
                   <Route path="employment/employer-portal" element={<EmployerPortal />} />
                   <Route path="employment/counselor" element={<CareerCounselorWorkflow />} />
+                  <Route path="school-admin">
+                    <Route path="certificates" element={<CertificateManagement />} />
+                    <Route path="id-cards" element={<IDCardTemplateManager />} />
+                    <Route path="staff" element={<StaffManagement />} />
+                    <Route path="payroll" element={<PayrollManagement />} />
+                    <Route path="enquiries" element={<EnquiryManagement />} />
+                    <Route path="sms-templates" element={<SMSTemplateManagement />} />
+                  </Route>
+
+                  {/* Keep legacy top-level admin paths for backward compatibility */}
                   <Route path="certificates" element={<CertificateManagement />} />
                   <Route path="id-cards" element={<IDCardTemplateManager />} />
                   <Route path="staff" element={<StaffManagement />} />
