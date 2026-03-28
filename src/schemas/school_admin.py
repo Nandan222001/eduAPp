@@ -414,10 +414,30 @@ class SendSMSRequest(BaseModel):
     variables: dict[str, str] | None = None
 
 
+class SendBulkSMSRequest(BaseModel):
+    template_id: int
+    grade_id: int | None = None
+    section_id: int | None = None
+    variables: dict[str, str] | None = None
+
+
 class PayrollGenerateRequest(BaseModel):
     month: int = Field(..., ge=1, le=12)
     year: int
     staff_ids: list[int] | None = None
+
+
+class BulkProcessPayrollRequest(BaseModel):
+    payroll_ids: list[int]
+    payment_date: date
+    transaction_reference: str | None = None
+
+
+class IssueCertificateRequest(BaseModel):
+    certificate_type: str
+    template_id: int | None = None
+    remarks: str | None = None
+    data: dict[str, Any]
 
 
 class CertificateStatistics(BaseModel):
