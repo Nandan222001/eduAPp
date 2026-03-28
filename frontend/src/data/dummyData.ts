@@ -6250,6 +6250,160 @@ export const idCardTemplates: IdCardTemplate[] = [
 ];
 
 /**
+ * ID Card status
+ */
+export type IdCardStatus = 'active' | 'expired' | 'suspended' | 'revoked';
+
+/**
+ * ID Card Data interface - Complete ID card information for a student
+ */
+export interface IdCardData {
+  id: number;
+  student_id: number;
+  student_name: string;
+  admission_number: string;
+  class_section: string;
+  photo_url: string;
+  institution_name: string;
+  institution_logo: string;
+  valid_until: string;
+  date_of_birth: string;
+  blood_group: string;
+  emergency_contact_name: string;
+  emergency_contact_phone: string;
+  address: string;
+  generated_barcode: string;
+  generated_qr_code: string;
+  card_status: IdCardStatus;
+  issue_date: string;
+  template_id: number;
+  template_name: string;
+}
+
+/**
+ * Demo ID card data for students with different templates applied
+ * Contains 3 variants of ID cards for Alex Johnson with different templates for comparison
+ * @type {IdCardData[]}
+ */
+export const idCardData: IdCardData[] = [
+  {
+    id: 1,
+    student_id: 1001,
+    student_name: 'Alex Johnson',
+    admission_number: 'STD2023001',
+    class_section: '10th Grade - Section A',
+    photo_url: 'https://i.pravatar.cc/150?img=12',
+    institution_name: 'Springfield High School',
+    institution_logo: 'https://ui-avatars.com/api/?name=SHS&background=2563eb&color=fff&size=128',
+    valid_until: '2025-06-30',
+    date_of_birth: '2008-05-15',
+    blood_group: 'O+',
+    emergency_contact_name: 'Sarah Johnson',
+    emergency_contact_phone: '+1-555-0102',
+    address: '123 Maple Street, Springfield, IL 62701',
+    generated_barcode: '||| |||| | || ||| | || |||| ||| | || ||| |||| | || |',
+    generated_qr_code:
+      'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+    card_status: 'active',
+    issue_date: '2023-09-01',
+    template_id: 1,
+    template_name: 'Modern Portrait',
+  },
+  {
+    id: 2,
+    student_id: 1001,
+    student_name: 'Alex Johnson',
+    admission_number: 'STD2023001',
+    class_section: '10th Grade - Section A',
+    photo_url: 'https://i.pravatar.cc/150?img=12',
+    institution_name: 'Springfield High School',
+    institution_logo: 'https://ui-avatars.com/api/?name=SHS&background=059669&color=fff&size=128',
+    valid_until: '2025-06-30',
+    date_of_birth: '2008-05-15',
+    blood_group: 'O+',
+    emergency_contact_name: 'Sarah Johnson',
+    emergency_contact_phone: '+1-555-0102',
+    address: '123 Maple Street, Springfield, IL 62701',
+    generated_barcode: '||| |||| | || ||| | || |||| ||| | || ||| |||| | || |',
+    generated_qr_code:
+      'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+    card_status: 'active',
+    issue_date: '2023-09-01',
+    template_id: 2,
+    template_name: 'Classic Landscape',
+  },
+  {
+    id: 3,
+    student_id: 1001,
+    student_name: 'Alex Johnson',
+    admission_number: 'STD2023001',
+    class_section: '10th Grade - Section A',
+    photo_url: 'https://i.pravatar.cc/150?img=12',
+    institution_name: 'Springfield High School',
+    institution_logo: 'https://ui-avatars.com/api/?name=SHS&background=7c3aed&color=fff&size=128',
+    valid_until: '2025-06-30',
+    date_of_birth: '2008-05-15',
+    blood_group: 'O+',
+    emergency_contact_name: 'Sarah Johnson',
+    emergency_contact_phone: '+1-555-0102',
+    address: '123 Maple Street, Springfield, IL 62701',
+    generated_barcode: '||| |||| | || ||| | || |||| ||| | || ||| |||| | || |',
+    generated_qr_code:
+      'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+    card_status: 'active',
+    issue_date: '2023-09-01',
+    template_id: 4,
+    template_name: 'Professional Vertical',
+  },
+  {
+    id: 4,
+    student_id: 1005,
+    student_name: 'Emma Wilson',
+    admission_number: 'STD2023005',
+    class_section: '10th Grade - Section A',
+    photo_url: 'https://i.pravatar.cc/150?img=5',
+    institution_name: 'Springfield High School',
+    institution_logo: 'https://ui-avatars.com/api/?name=SHS&background=2563eb&color=fff&size=128',
+    valid_until: '2025-06-30',
+    date_of_birth: '2008-03-22',
+    blood_group: 'A+',
+    emergency_contact_name: 'Sarah Wilson',
+    emergency_contact_phone: '+1-555-0203',
+    address: '456 Oak Avenue, Springfield, IL 62702',
+    generated_barcode: '|| ||| |||| | ||| || |||| | || ||| | |||| || ||| |',
+    generated_qr_code:
+      'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+    card_status: 'active',
+    issue_date: '2023-09-01',
+    template_id: 1,
+    template_name: 'Modern Portrait',
+  },
+  {
+    id: 5,
+    student_id: 1003,
+    student_name: 'Michael Chen',
+    admission_number: 'STD2023003',
+    class_section: '10th Grade - Section A',
+    photo_url: 'https://i.pravatar.cc/150?img=13',
+    institution_name: 'Springfield High School',
+    institution_logo: 'https://ui-avatars.com/api/?name=SHS&background=dc2626&color=fff&size=128',
+    valid_until: '2025-06-30',
+    date_of_birth: '2008-07-18',
+    blood_group: 'B+',
+    emergency_contact_name: 'David Chen',
+    emergency_contact_phone: '+1-555-0305',
+    address: '789 Pine Road, Springfield, IL 62703',
+    generated_barcode: '|| |||| | ||| || | |||| ||| | || |||| | ||| || ||',
+    generated_qr_code:
+      'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+    card_status: 'active',
+    issue_date: '2023-09-01',
+    template_id: 3,
+    template_name: 'Colorful Horizontal',
+  },
+];
+
+/**
  * Issued certificate status
  */
 export type IssuedCertificateStatus = 'issued' | 'pending' | 'revoked' | 'draft';
