@@ -110,6 +110,12 @@ import SubjectBattles from './pages/SubjectBattles';
 import SubjectPassport from './pages/SubjectPassport';
 import StressOMeter from './pages/StressOMeter';
 import ParentROIDashboard from './pages/ParentROIDashboard';
+import CertificateManagement from './pages/CertificateManagement';
+import IDCardTemplateManager from './pages/IDCardTemplateManager';
+import StaffManagement from './pages/StaffManagement';
+import PayrollManagement from './pages/PayrollManagement';
+import EnquiryManagement from './pages/EnquiryManagement';
+import SMSTemplateManagement from './pages/SMSTemplateManagement';
 
 import {
   LoginPage,
@@ -278,6 +284,12 @@ function App() {
                   />
                   <Route path="employment/employer-portal" element={<EmployerPortal />} />
                   <Route path="employment/counselor" element={<CareerCounselorWorkflow />} />
+                  <Route path="certificates" element={<CertificateManagement />} />
+                  <Route path="id-cards" element={<IDCardTemplateManager />} />
+                  <Route path="staff" element={<StaffManagement />} />
+                  <Route path="payroll" element={<PayrollManagement />} />
+                  <Route path="enquiries" element={<EnquiryManagement />} />
+                  <Route path="sms-templates" element={<SMSTemplateManagement />} />
                   <Route path="settings" element={<SettingsPage />} />
                   <Route path="profile" element={<SettingsPage />} />
                 </Route>
