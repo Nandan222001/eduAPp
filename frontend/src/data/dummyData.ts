@@ -4670,4 +4670,1690 @@ export const superadminDashboardData: SuperAdminDashboardResponse = {
  * @property {Object} search - Search data for students, teachers, assignments
  * @property {Object} studyMaterials - Previous papers and library books
  */
+/**
+ * Certificate template types supported by the system
+ */
+export type CertificateType =
+  | 'transfer_certificate'
+  | 'leaving_certificate'
+  | 'bonafide'
+  | 'character_certificate'
+  | 'study_certificate'
+  | 'conduct_certificate'
+  | 'migration_certificate'
+  | 'fee_certificate'
+  | 'no_dues_certificate'
+  | 'sports_certificate'
+  | 'merit_certificate'
+  | 'participation_certificate'
+  | 'custom';
+
+export interface CertificateTemplate {
+  id: number;
+  institution_id: number;
+  template_name: string;
+  certificate_type: CertificateType;
+  template_config: {
+    layout: {
+      header_logo_position: 'left' | 'center' | 'right';
+      institution_name_style: {
+        font_size: number;
+        font_weight: string;
+        color: string;
+        text_align: 'left' | 'center' | 'right';
+        margin_bottom: number;
+      };
+      certificate_title_style: {
+        font_size: number;
+        font_weight: string;
+        color: string;
+        text_align: 'left' | 'center' | 'right';
+        margin_top: number;
+        margin_bottom: number;
+        text_transform: 'uppercase' | 'capitalize' | 'none';
+      };
+      body_text_template: string;
+      signature_positions: Array<{
+        title: string;
+        name_placeholder: string;
+        position_x: number;
+        position_y: number;
+        alignment: 'left' | 'center' | 'right';
+      }>;
+      border_style: {
+        enabled: boolean;
+        type: 'solid' | 'double' | 'ornamental' | 'none';
+        width: number;
+        color: string;
+        padding: number;
+      };
+      watermark_config: {
+        enabled: boolean;
+        text?: string;
+        opacity: number;
+        rotation: number;
+        font_size: number;
+      };
+    };
+    branding: {
+      logo_url: string;
+      primary_color: string;
+      secondary_color: string;
+      accent_color: string;
+      fonts: {
+        heading: string;
+        body: string;
+        signature: string;
+      };
+    };
+  };
+  is_default: boolean;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Demo certificate templates covering all certificate types
+ * Comprehensive collection with various layouts, styles, and branding options
+ * @type {CertificateTemplate[]}
+ */
+export const certificateTemplates: CertificateTemplate[] = [
+  {
+    id: 1,
+    institution_id: 1,
+    template_name: 'Standard Transfer Certificate',
+    certificate_type: 'transfer_certificate',
+    template_config: {
+      layout: {
+        header_logo_position: 'center',
+        institution_name_style: {
+          font_size: 28,
+          font_weight: 'bold',
+          color: '#1a1a1a',
+          text_align: 'center',
+          margin_bottom: 20,
+        },
+        certificate_title_style: {
+          font_size: 24,
+          font_weight: 'bold',
+          color: '#2563eb',
+          text_align: 'center',
+          margin_top: 30,
+          margin_bottom: 30,
+          text_transform: 'uppercase',
+        },
+        body_text_template: `This is to certify that {{student_name}}, son/daughter of {{parent_name}}, was a bonafide student of this institution from {{admission_date}} to {{leaving_date}}. He/She studied in Grade {{grade}} during the academic year {{academic_year}}.
+
+The student's date of birth as per school records is {{date_of_birth}}. His/Her conduct and character were {{conduct_rating}}.
+
+The student is leaving the school on {{leaving_date}} and is hereby granted a Transfer Certificate.`,
+        signature_positions: [
+          {
+            title: 'Principal',
+            name_placeholder: '{{principal_name}}',
+            position_x: 70,
+            position_y: 85,
+            alignment: 'center',
+          },
+          {
+            title: 'Class Teacher',
+            name_placeholder: '{{class_teacher_name}}',
+            position_x: 30,
+            position_y: 85,
+            alignment: 'center',
+          },
+        ],
+        border_style: {
+          enabled: true,
+          type: 'double',
+          width: 3,
+          color: '#2563eb',
+          padding: 40,
+        },
+        watermark_config: {
+          enabled: true,
+          text: 'TRANSFER CERTIFICATE',
+          opacity: 0.05,
+          rotation: -45,
+          font_size: 80,
+        },
+      },
+      branding: {
+        logo_url: 'https://example.com/logos/school-logo.png',
+        primary_color: '#2563eb',
+        secondary_color: '#1e40af',
+        accent_color: '#dbeafe',
+        fonts: {
+          heading: 'Georgia, serif',
+          body: 'Arial, sans-serif',
+          signature: 'Brush Script MT, cursive',
+        },
+      },
+    },
+    is_default: true,
+    is_active: true,
+    created_at: '2024-01-01T09:00:00Z',
+    updated_at: '2024-02-15T10:00:00Z',
+  },
+  {
+    id: 2,
+    institution_id: 1,
+    template_name: 'Official Leaving Certificate',
+    certificate_type: 'leaving_certificate',
+    template_config: {
+      layout: {
+        header_logo_position: 'left',
+        institution_name_style: {
+          font_size: 26,
+          font_weight: 'bold',
+          color: '#1f2937',
+          text_align: 'center',
+          margin_bottom: 15,
+        },
+        certificate_title_style: {
+          font_size: 22,
+          font_weight: 'bold',
+          color: '#dc2626',
+          text_align: 'center',
+          margin_top: 25,
+          margin_bottom: 25,
+          text_transform: 'uppercase',
+        },
+        body_text_template: `Certificate No: {{certificate_number}}
+
+This is to certify that {{student_name}} (Admission No: {{admission_number}}) was a student of {{institution_name}} from {{admission_date}} to {{leaving_date}}.
+
+Student Details:
+- Date of Birth: {{date_of_birth}}
+- Grade: {{grade}}
+- Section: {{section}}
+- Parent/Guardian: {{parent_name}}
+
+The student has cleared all dues and is leaving on his/her own request. Character and conduct: {{conduct_rating}}.
+
+This certificate is issued for official purposes.`,
+        signature_positions: [
+          {
+            title: 'Principal',
+            name_placeholder: '{{principal_name}}',
+            position_x: 75,
+            position_y: 88,
+            alignment: 'right',
+          },
+        ],
+        border_style: {
+          enabled: true,
+          type: 'solid',
+          width: 2,
+          color: '#dc2626',
+          padding: 35,
+        },
+        watermark_config: {
+          enabled: true,
+          text: 'OFFICIAL',
+          opacity: 0.08,
+          rotation: 0,
+          font_size: 100,
+        },
+      },
+      branding: {
+        logo_url: 'https://example.com/logos/school-crest.png',
+        primary_color: '#dc2626',
+        secondary_color: '#991b1b',
+        accent_color: '#fee2e2',
+        fonts: {
+          heading: 'Times New Roman, serif',
+          body: 'Calibri, sans-serif',
+          signature: 'Lucida Handwriting, cursive',
+        },
+      },
+    },
+    is_default: false,
+    is_active: true,
+    created_at: '2024-01-05T09:00:00Z',
+    updated_at: '2024-02-15T10:00:00Z',
+  },
+  {
+    id: 3,
+    institution_id: 1,
+    template_name: 'Student Bonafide Certificate',
+    certificate_type: 'bonafide',
+    template_config: {
+      layout: {
+        header_logo_position: 'center',
+        institution_name_style: {
+          font_size: 30,
+          font_weight: 'bold',
+          color: '#059669',
+          text_align: 'center',
+          margin_bottom: 18,
+        },
+        certificate_title_style: {
+          font_size: 20,
+          font_weight: 'bold',
+          color: '#047857',
+          text_align: 'center',
+          margin_top: 20,
+          margin_bottom: 25,
+          text_transform: 'uppercase',
+        },
+        body_text_template: `TO WHOM IT MAY CONCERN
+
+This is to certify that {{student_name}}, son/daughter of {{parent_name}}, is a bonafide student of {{institution_name}}.
+
+Student Details:
+Admission Number: {{admission_number}}
+Roll Number: {{roll_number}}
+Grade: {{grade}}, Section: {{section}}
+Academic Year: {{academic_year}}
+
+This certificate is issued for {{purpose}} upon the request of the student/parent.
+
+Date of Issue: {{issue_date}}`,
+        signature_positions: [
+          {
+            title: 'Principal',
+            name_placeholder: '{{principal_name}}',
+            position_x: 70,
+            position_y: 90,
+            alignment: 'center',
+          },
+          {
+            title: 'Administrative Officer',
+            name_placeholder: '{{admin_officer_name}}',
+            position_x: 30,
+            position_y: 90,
+            alignment: 'center',
+          },
+        ],
+        border_style: {
+          enabled: true,
+          type: 'ornamental',
+          width: 4,
+          color: '#059669',
+          padding: 30,
+        },
+        watermark_config: {
+          enabled: false,
+          opacity: 0,
+          rotation: 0,
+          font_size: 0,
+        },
+      },
+      branding: {
+        logo_url: 'https://example.com/logos/institution-seal.png',
+        primary_color: '#059669',
+        secondary_color: '#047857',
+        accent_color: '#d1fae5',
+        fonts: {
+          heading: 'Palatino Linotype, serif',
+          body: 'Verdana, sans-serif',
+          signature: 'Edwardian Script ITC, cursive',
+        },
+      },
+    },
+    is_default: true,
+    is_active: true,
+    created_at: '2024-01-08T09:00:00Z',
+    updated_at: '2024-02-15T10:00:00Z',
+  },
+  {
+    id: 4,
+    institution_id: 1,
+    template_name: 'Character Certificate - Formal',
+    certificate_type: 'character_certificate',
+    template_config: {
+      layout: {
+        header_logo_position: 'right',
+        institution_name_style: {
+          font_size: 26,
+          font_weight: 'bold',
+          color: '#7c3aed',
+          text_align: 'center',
+          margin_bottom: 20,
+        },
+        certificate_title_style: {
+          font_size: 22,
+          font_weight: 'bold',
+          color: '#6d28d9',
+          text_align: 'center',
+          margin_top: 28,
+          margin_bottom: 28,
+          text_transform: 'uppercase',
+        },
+        body_text_template: `This is to certify that {{student_name}} (Admission No: {{admission_number}}) was a student of {{institution_name}} from {{admission_date}} to {{leaving_date}}.
+
+During his/her tenure at this institution:
+- Academic Performance: {{academic_performance}}
+- Conduct: {{conduct_rating}}
+- Discipline: {{discipline_rating}}
+- Extra-curricular Activities: {{extracurricular_participation}}
+
+As far as we know, {{student_name}} has always been of good moral character. He/She is honest, hardworking, and well-behaved. We wish him/her all success in future endeavors.
+
+This certificate is issued as per the request for {{purpose}}.`,
+        signature_positions: [
+          {
+            title: 'Principal',
+            name_placeholder: '{{principal_name}}',
+            position_x: 65,
+            position_y: 87,
+            alignment: 'center',
+          },
+        ],
+        border_style: {
+          enabled: true,
+          type: 'double',
+          width: 2,
+          color: '#7c3aed',
+          padding: 38,
+        },
+        watermark_config: {
+          enabled: true,
+          text: 'CHARACTER CERTIFICATE',
+          opacity: 0.06,
+          rotation: -35,
+          font_size: 70,
+        },
+      },
+      branding: {
+        logo_url: 'https://example.com/logos/school-emblem.png',
+        primary_color: '#7c3aed',
+        secondary_color: '#6d28d9',
+        accent_color: '#ede9fe',
+        fonts: {
+          heading: 'Garamond, serif',
+          body: 'Tahoma, sans-serif',
+          signature: 'Monotype Corsiva, cursive',
+        },
+      },
+    },
+    is_default: true,
+    is_active: true,
+    created_at: '2024-01-10T09:00:00Z',
+    updated_at: '2024-02-15T10:00:00Z',
+  },
+  {
+    id: 5,
+    institution_id: 1,
+    template_name: 'Study Certificate',
+    certificate_type: 'study_certificate',
+    template_config: {
+      layout: {
+        header_logo_position: 'center',
+        institution_name_style: {
+          font_size: 27,
+          font_weight: 'bold',
+          color: '#0891b2',
+          text_align: 'center',
+          margin_bottom: 16,
+        },
+        certificate_title_style: {
+          font_size: 21,
+          font_weight: 'bold',
+          color: '#0e7490',
+          text_align: 'center',
+          margin_top: 22,
+          margin_bottom: 22,
+          text_transform: 'uppercase',
+        },
+        body_text_template: `Certificate Number: {{certificate_number}}
+
+This is to certify that {{student_name}}, son/daughter of {{parent_name}}, is currently studying in Grade {{grade}}, Section {{section}} at {{institution_name}}.
+
+Academic Details:
+- Admission Number: {{admission_number}}
+- Roll Number: {{roll_number}}
+- Academic Year: {{academic_year}}
+- Medium of Instruction: {{medium_of_instruction}}
+- Board: {{board_affiliation}}
+
+The student has been regular in attendance and is progressing satisfactorily in studies.
+
+This certificate is issued for {{purpose}}.
+
+Date: {{issue_date}}`,
+        signature_positions: [
+          {
+            title: 'Principal',
+            name_placeholder: '{{principal_name}}',
+            position_x: 70,
+            position_y: 88,
+            alignment: 'right',
+          },
+          {
+            title: 'Office Seal',
+            name_placeholder: '',
+            position_x: 25,
+            position_y: 88,
+            alignment: 'left',
+          },
+        ],
+        border_style: {
+          enabled: true,
+          type: 'solid',
+          width: 3,
+          color: '#0891b2',
+          padding: 32,
+        },
+        watermark_config: {
+          enabled: true,
+          text: 'STUDY CERTIFICATE',
+          opacity: 0.07,
+          rotation: -40,
+          font_size: 75,
+        },
+      },
+      branding: {
+        logo_url: 'https://example.com/logos/educational-logo.png',
+        primary_color: '#0891b2',
+        secondary_color: '#0e7490',
+        accent_color: '#cffafe',
+        fonts: {
+          heading: 'Book Antiqua, serif',
+          body: 'Segoe UI, sans-serif',
+          signature: 'Script MT Bold, cursive',
+        },
+      },
+    },
+    is_default: false,
+    is_active: true,
+    created_at: '2024-01-12T09:00:00Z',
+    updated_at: '2024-02-15T10:00:00Z',
+  },
+  {
+    id: 6,
+    institution_id: 1,
+    template_name: 'Conduct Certificate',
+    certificate_type: 'conduct_certificate',
+    template_config: {
+      layout: {
+        header_logo_position: 'left',
+        institution_name_style: {
+          font_size: 29,
+          font_weight: 'bold',
+          color: '#ea580c',
+          text_align: 'center',
+          margin_bottom: 22,
+        },
+        certificate_title_style: {
+          font_size: 23,
+          font_weight: 'bold',
+          color: '#c2410c',
+          text_align: 'center',
+          margin_top: 26,
+          margin_bottom: 26,
+          text_transform: 'uppercase',
+        },
+        body_text_template: `This is to certify that {{student_name}} (Admission No: {{admission_number}}), son/daughter of {{parent_name}}, was a student of {{institution_name}} from {{admission_date}} to {{leaving_date}}.
+
+During his/her stay at this institution, he/she maintained:
+- Excellent Conduct
+- Good Discipline
+- Regular Attendance
+- Respectful Behavior
+
+The student never indulged in any activity that would tarnish the reputation of the institution. His/Her conduct and behavior were found to be {{conduct_rating}}.
+
+This certificate is issued upon request for {{purpose}}.
+
+Issued on: {{issue_date}}`,
+        signature_positions: [
+          {
+            title: 'Principal',
+            name_placeholder: '{{principal_name}}',
+            position_x: 70,
+            position_y: 86,
+            alignment: 'center',
+          },
+          {
+            title: 'Discipline Coordinator',
+            name_placeholder: '{{discipline_coordinator}}',
+            position_x: 30,
+            position_y: 86,
+            alignment: 'center',
+          },
+        ],
+        border_style: {
+          enabled: true,
+          type: 'ornamental',
+          width: 3,
+          color: '#ea580c',
+          padding: 36,
+        },
+        watermark_config: {
+          enabled: true,
+          text: 'VERIFIED',
+          opacity: 0.04,
+          rotation: 0,
+          font_size: 120,
+        },
+      },
+      branding: {
+        logo_url: 'https://example.com/logos/conduct-seal.png',
+        primary_color: '#ea580c',
+        secondary_color: '#c2410c',
+        accent_color: '#fed7aa',
+        fonts: {
+          heading: 'Cambria, serif',
+          body: 'Century Gothic, sans-serif',
+          signature: 'Kunstler Script, cursive',
+        },
+      },
+    },
+    is_default: true,
+    is_active: true,
+    created_at: '2024-01-15T09:00:00Z',
+    updated_at: '2024-02-15T10:00:00Z',
+  },
+  {
+    id: 7,
+    institution_id: 1,
+    template_name: 'Migration Certificate',
+    certificate_type: 'migration_certificate',
+    template_config: {
+      layout: {
+        header_logo_position: 'center',
+        institution_name_style: {
+          font_size: 28,
+          font_weight: 'bold',
+          color: '#be123c',
+          text_align: 'center',
+          margin_bottom: 20,
+        },
+        certificate_title_style: {
+          font_size: 24,
+          font_weight: 'bold',
+          color: '#9f1239',
+          text_align: 'center',
+          margin_top: 30,
+          margin_bottom: 30,
+          text_transform: 'uppercase',
+        },
+        body_text_template: `Certificate No: {{certificate_number}}
+Admission No: {{admission_number}}
+
+This is to certify that {{student_name}}, son/daughter of {{parent_name}}, has successfully completed Grade {{completed_grade}} from {{institution_name}} under {{board_affiliation}} Board during the academic year {{academic_year}}.
+
+Student Information:
+- Date of Birth: {{date_of_birth}}
+- Enrollment Number: {{enrollment_number}}
+- Final Examination Roll No: {{exam_roll_number}}
+- Results: {{exam_result}}
+
+The student is granted permission to migrate to another institution/board for further studies. All academic records are in order and the student has cleared all dues.
+
+This Migration Certificate is issued for admission to higher classes/other institutions.
+
+Date of Issue: {{issue_date}}`,
+        signature_positions: [
+          {
+            title: 'Principal',
+            name_placeholder: '{{principal_name}}',
+            position_x: 75,
+            position_y: 90,
+            alignment: 'right',
+          },
+          {
+            title: 'Examination Controller',
+            name_placeholder: '{{exam_controller}}',
+            position_x: 25,
+            position_y: 90,
+            alignment: 'left',
+          },
+        ],
+        border_style: {
+          enabled: true,
+          type: 'double',
+          width: 4,
+          color: '#be123c',
+          padding: 40,
+        },
+        watermark_config: {
+          enabled: true,
+          text: 'MIGRATION CERTIFICATE',
+          opacity: 0.05,
+          rotation: -45,
+          font_size: 65,
+        },
+      },
+      branding: {
+        logo_url: 'https://example.com/logos/migration-logo.png',
+        primary_color: '#be123c',
+        secondary_color: '#9f1239',
+        accent_color: '#fecdd3',
+        fonts: {
+          heading: 'Baskerville, serif',
+          body: 'Helvetica, sans-serif',
+          signature: 'Freestyle Script, cursive',
+        },
+      },
+    },
+    is_default: true,
+    is_active: true,
+    created_at: '2024-01-18T09:00:00Z',
+    updated_at: '2024-02-15T10:00:00Z',
+  },
+  {
+    id: 8,
+    institution_id: 1,
+    template_name: 'Fee Payment Certificate',
+    certificate_type: 'fee_certificate',
+    template_config: {
+      layout: {
+        header_logo_position: 'right',
+        institution_name_style: {
+          font_size: 26,
+          font_weight: 'bold',
+          color: '#15803d',
+          text_align: 'center',
+          margin_bottom: 18,
+        },
+        certificate_title_style: {
+          font_size: 20,
+          font_weight: 'bold',
+          color: '#166534',
+          text_align: 'center',
+          margin_top: 24,
+          margin_bottom: 24,
+          text_transform: 'uppercase',
+        },
+        body_text_template: `Receipt No: {{receipt_number}}
+Date: {{issue_date}}
+
+This is to certify that {{student_name}} (Admission No: {{admission_number}}), studying in Grade {{grade}}, Section {{section}}, has paid all the required fees for the academic year {{academic_year}}.
+
+Fee Payment Details:
+- Tuition Fee: {{tuition_fee}}
+- Activity Fee: {{activity_fee}}
+- Examination Fee: {{examination_fee}}
+- Other Charges: {{other_charges}}
+- Total Amount Paid: {{total_amount}}
+
+Payment Mode: {{payment_mode}}
+Transaction ID: {{transaction_id}}
+Payment Date: {{payment_date}}
+
+This certificate is issued as per the request for {{purpose}}.
+
+No dues are outstanding against this student.`,
+        signature_positions: [
+          {
+            title: 'Accounts Officer',
+            name_placeholder: '{{accounts_officer}}',
+            position_x: 70,
+            position_y: 88,
+            alignment: 'center',
+          },
+          {
+            title: 'Principal',
+            name_placeholder: '{{principal_name}}',
+            position_x: 30,
+            position_y: 88,
+            alignment: 'center',
+          },
+        ],
+        border_style: {
+          enabled: true,
+          type: 'solid',
+          width: 2,
+          color: '#15803d',
+          padding: 34,
+        },
+        watermark_config: {
+          enabled: true,
+          text: 'PAID',
+          opacity: 0.08,
+          rotation: 0,
+          font_size: 110,
+        },
+      },
+      branding: {
+        logo_url: 'https://example.com/logos/accounts-seal.png',
+        primary_color: '#15803d',
+        secondary_color: '#166534',
+        accent_color: '#dcfce7',
+        fonts: {
+          heading: 'Rockwell, serif',
+          body: 'Franklin Gothic Medium, sans-serif',
+          signature: 'Vladimir Script, cursive',
+        },
+      },
+    },
+    is_default: false,
+    is_active: true,
+    created_at: '2024-01-20T09:00:00Z',
+    updated_at: '2024-02-15T10:00:00Z',
+  },
+  {
+    id: 9,
+    institution_id: 1,
+    template_name: 'No Dues Certificate',
+    certificate_type: 'no_dues_certificate',
+    template_config: {
+      layout: {
+        header_logo_position: 'center',
+        institution_name_style: {
+          font_size: 27,
+          font_weight: 'bold',
+          color: '#0d9488',
+          text_align: 'center',
+          margin_bottom: 19,
+        },
+        certificate_title_style: {
+          font_size: 21,
+          font_weight: 'bold',
+          color: '#0f766e',
+          text_align: 'center',
+          margin_top: 25,
+          margin_bottom: 25,
+          text_transform: 'uppercase',
+        },
+        body_text_template: `Certificate No: {{certificate_number}}
+
+TO WHOM IT MAY CONCERN
+
+This is to certify that {{student_name}} (Admission No: {{admission_number}}), son/daughter of {{parent_name}}, was a student of {{institution_name}} from {{admission_date}} to {{leaving_date}}.
+
+The following departments have verified that the student has no outstanding dues:
+
+✓ Accounts Department - All fees cleared
+✓ Library - All books returned
+✓ Laboratory - No equipment pending
+✓ Sports Department - All equipment returned
+✓ Transport Department - No pending charges
+✓ Administration - All documents submitted
+
+The student has cleared all institutional dues and is free to collect documents and proceed.
+
+Date of Clearance: {{clearance_date}}
+Valid Until: {{validity_date}}`,
+        signature_positions: [
+          {
+            title: 'Administrative Officer',
+            name_placeholder: '{{admin_officer}}',
+            position_x: 30,
+            position_y: 87,
+            alignment: 'center',
+          },
+          {
+            title: 'Accounts Officer',
+            name_placeholder: '{{accounts_officer}}',
+            position_x: 50,
+            position_y: 87,
+            alignment: 'center',
+          },
+          {
+            title: 'Principal',
+            name_placeholder: '{{principal_name}}',
+            position_x: 70,
+            position_y: 87,
+            alignment: 'center',
+          },
+        ],
+        border_style: {
+          enabled: true,
+          type: 'double',
+          width: 3,
+          color: '#0d9488',
+          padding: 35,
+        },
+        watermark_config: {
+          enabled: true,
+          text: 'NO DUES',
+          opacity: 0.06,
+          rotation: -30,
+          font_size: 90,
+        },
+      },
+      branding: {
+        logo_url: 'https://example.com/logos/clearance-seal.png',
+        primary_color: '#0d9488',
+        secondary_color: '#0f766e',
+        accent_color: '#ccfbf1',
+        fonts: {
+          heading: 'Trebuchet MS, sans-serif',
+          body: 'Georgia, serif',
+          signature: 'Rage Italic, cursive',
+        },
+      },
+    },
+    is_default: true,
+    is_active: true,
+    created_at: '2024-01-22T09:00:00Z',
+    updated_at: '2024-02-15T10:00:00Z',
+  },
+  {
+    id: 10,
+    institution_id: 1,
+    template_name: 'Sports Achievement Certificate',
+    certificate_type: 'sports_certificate',
+    template_config: {
+      layout: {
+        header_logo_position: 'left',
+        institution_name_style: {
+          font_size: 30,
+          font_weight: 'bold',
+          color: '#c026d3',
+          text_align: 'center',
+          margin_bottom: 25,
+        },
+        certificate_title_style: {
+          font_size: 26,
+          font_weight: 'bold',
+          color: '#a21caf',
+          text_align: 'center',
+          margin_top: 35,
+          margin_bottom: 35,
+          text_transform: 'uppercase',
+        },
+        body_text_template: `This is to certify that
+
+{{student_name}}
+Grade {{grade}}, Section {{section}}
+Admission No: {{admission_number}}
+
+has participated in {{event_name}} held on {{event_date}} and secured {{position}} position.
+
+Event Details:
+- Category: {{category}}
+- Level: {{competition_level}}
+- Venue: {{venue}}
+- Performance: {{performance_details}}
+
+The student has demonstrated exceptional {{sport_name}} skills and sportsmanship. His/Her dedication, discipline, and team spirit are commendable.
+
+We congratulate the student on this achievement and wish continued success in sports.
+
+Date: {{issue_date}}`,
+        signature_positions: [
+          {
+            title: 'Sports Coordinator',
+            name_placeholder: '{{sports_coordinator}}',
+            position_x: 30,
+            position_y: 85,
+            alignment: 'center',
+          },
+          {
+            title: 'Principal',
+            name_placeholder: '{{principal_name}}',
+            position_x: 70,
+            position_y: 85,
+            alignment: 'center',
+          },
+        ],
+        border_style: {
+          enabled: true,
+          type: 'ornamental',
+          width: 5,
+          color: '#c026d3',
+          padding: 38,
+        },
+        watermark_config: {
+          enabled: true,
+          text: '🏆',
+          opacity: 0.1,
+          rotation: 0,
+          font_size: 150,
+        },
+      },
+      branding: {
+        logo_url: 'https://example.com/logos/sports-emblem.png',
+        primary_color: '#c026d3',
+        secondary_color: '#a21caf',
+        accent_color: '#fae8ff',
+        fonts: {
+          heading: 'Impact, sans-serif',
+          body: 'Arial Rounded MT Bold, sans-serif',
+          signature: 'Brush Script MT, cursive',
+        },
+      },
+    },
+    is_default: false,
+    is_active: true,
+    created_at: '2024-01-25T09:00:00Z',
+    updated_at: '2024-02-15T10:00:00Z',
+  },
+  {
+    id: 11,
+    institution_id: 1,
+    template_name: 'Merit Certificate',
+    certificate_type: 'merit_certificate',
+    template_config: {
+      layout: {
+        header_logo_position: 'center',
+        institution_name_style: {
+          font_size: 32,
+          font_weight: 'bold',
+          color: '#ca8a04',
+          text_align: 'center',
+          margin_bottom: 24,
+        },
+        certificate_title_style: {
+          font_size: 28,
+          font_weight: 'bold',
+          color: '#a16207',
+          text_align: 'center',
+          margin_top: 32,
+          margin_bottom: 32,
+          text_transform: 'uppercase',
+        },
+        body_text_template: `This Certificate of Merit is awarded to
+
+{{student_name}}
+Grade {{grade}}, Section {{section}}
+
+in recognition of outstanding academic excellence in the {{academic_year}} academic year.
+
+Achievements:
+- Overall Percentage: {{percentage}}%
+- Class Rank: {{rank}}
+- Subjects of Excellence: {{excellent_subjects}}
+- Special Recognition: {{special_achievement}}
+
+{{student_name}} has consistently demonstrated exceptional dedication to learning, intellectual curiosity, and academic prowess. This achievement reflects hard work, perseverance, and commitment to excellence.
+
+We are proud of this accomplishment and wish continued success in all future endeavors.
+
+Awarded on: {{award_date}}`,
+        signature_positions: [
+          {
+            title: 'Academic Coordinator',
+            name_placeholder: '{{academic_coordinator}}',
+            position_x: 25,
+            position_y: 86,
+            alignment: 'center',
+          },
+          {
+            title: 'Principal',
+            name_placeholder: '{{principal_name}}',
+            position_x: 75,
+            position_y: 86,
+            alignment: 'center',
+          },
+        ],
+        border_style: {
+          enabled: true,
+          type: 'ornamental',
+          width: 6,
+          color: '#ca8a04',
+          padding: 42,
+        },
+        watermark_config: {
+          enabled: true,
+          text: '⭐ MERIT ⭐',
+          opacity: 0.07,
+          rotation: 0,
+          font_size: 85,
+        },
+      },
+      branding: {
+        logo_url: 'https://example.com/logos/merit-seal.png',
+        primary_color: '#ca8a04',
+        secondary_color: '#a16207',
+        accent_color: '#fef3c7',
+        fonts: {
+          heading: 'Copperplate Gothic Bold, serif',
+          body: 'Palatino Linotype, serif',
+          signature: 'Edwardian Script ITC, cursive',
+        },
+      },
+    },
+    is_default: true,
+    is_active: true,
+    created_at: '2024-01-28T09:00:00Z',
+    updated_at: '2024-02-15T10:00:00Z',
+  },
+  {
+    id: 12,
+    institution_id: 1,
+    template_name: 'Event Participation Certificate',
+    certificate_type: 'participation_certificate',
+    template_config: {
+      layout: {
+        header_logo_position: 'right',
+        institution_name_style: {
+          font_size: 28,
+          font_weight: 'bold',
+          color: '#0284c7',
+          text_align: 'center',
+          margin_bottom: 20,
+        },
+        certificate_title_style: {
+          font_size: 24,
+          font_weight: 'bold',
+          color: '#0369a1',
+          text_align: 'center',
+          margin_top: 28,
+          margin_bottom: 28,
+          text_transform: 'uppercase',
+        },
+        body_text_template: `This is to certify that
+
+{{student_name}}
+Grade {{grade}}, Section {{section}}
+Admission No: {{admission_number}}
+
+has actively participated in
+
+{{event_name}}
+
+held on {{event_date}} at {{venue}}.
+
+Event Details:
+- Type: {{event_type}}
+- Duration: {{event_duration}}
+- Role: {{participation_role}}
+- Level: {{event_level}}
+
+The student showed great enthusiasm, creativity, and team spirit during the event. His/Her participation contributed significantly to the success of the program.
+
+We appreciate the effort and commend the student for taking initiative in co-curricular activities.
+
+Date: {{issue_date}}`,
+        signature_positions: [
+          {
+            title: 'Event Coordinator',
+            name_placeholder: '{{event_coordinator}}',
+            position_x: 30,
+            position_y: 88,
+            alignment: 'center',
+          },
+          {
+            title: 'Principal',
+            name_placeholder: '{{principal_name}}',
+            position_x: 70,
+            position_y: 88,
+            alignment: 'center',
+          },
+        ],
+        border_style: {
+          enabled: true,
+          type: 'solid',
+          width: 3,
+          color: '#0284c7',
+          padding: 36,
+        },
+        watermark_config: {
+          enabled: true,
+          text: 'PARTICIPANT',
+          opacity: 0.05,
+          rotation: -40,
+          font_size: 80,
+        },
+      },
+      branding: {
+        logo_url: 'https://example.com/logos/participation-badge.png',
+        primary_color: '#0284c7',
+        secondary_color: '#0369a1',
+        accent_color: '#e0f2fe',
+        fonts: {
+          heading: 'Century Schoolbook, serif',
+          body: 'Calibri Light, sans-serif',
+          signature: 'Lucida Calligraphy, cursive',
+        },
+      },
+    },
+    is_default: false,
+    is_active: true,
+    created_at: '2024-01-30T09:00:00Z',
+    updated_at: '2024-02-15T10:00:00Z',
+  },
+  {
+    id: 13,
+    institution_id: 1,
+    template_name: 'Custom Certificate Template',
+    certificate_type: 'custom',
+    template_config: {
+      layout: {
+        header_logo_position: 'center',
+        institution_name_style: {
+          font_size: 26,
+          font_weight: 'bold',
+          color: '#475569',
+          text_align: 'center',
+          margin_bottom: 18,
+        },
+        certificate_title_style: {
+          font_size: 22,
+          font_weight: 'bold',
+          color: '#334155',
+          text_align: 'center',
+          margin_top: 24,
+          margin_bottom: 24,
+          text_transform: 'capitalize',
+        },
+        body_text_template: `{{custom_content}}
+
+This certificate is issued by {{institution_name}} on {{issue_date}}.
+
+{{additional_notes}}`,
+        signature_positions: [
+          {
+            title: 'Authorized Signatory',
+            name_placeholder: '{{signatory_name}}',
+            position_x: 70,
+            position_y: 88,
+            alignment: 'center',
+          },
+          {
+            title: 'Verified By',
+            name_placeholder: '{{verifier_name}}',
+            position_x: 30,
+            position_y: 88,
+            alignment: 'center',
+          },
+        ],
+        border_style: {
+          enabled: true,
+          type: 'solid',
+          width: 2,
+          color: '#475569',
+          padding: 30,
+        },
+        watermark_config: {
+          enabled: false,
+          opacity: 0,
+          rotation: 0,
+          font_size: 0,
+        },
+      },
+      branding: {
+        logo_url: 'https://example.com/logos/default-logo.png',
+        primary_color: '#475569',
+        secondary_color: '#334155',
+        accent_color: '#f1f5f9',
+        fonts: {
+          heading: 'Arial, sans-serif',
+          body: 'Times New Roman, serif',
+          signature: 'Segoe Script, cursive',
+        },
+      },
+    },
+    is_default: false,
+    is_active: true,
+    created_at: '2024-02-01T09:00:00Z',
+    updated_at: '2024-02-15T10:00:00Z',
+  },
+  {
+    id: 14,
+    institution_id: 1,
+    template_name: 'Academic Excellence Certificate',
+    certificate_type: 'merit_certificate',
+    template_config: {
+      layout: {
+        header_logo_position: 'center',
+        institution_name_style: {
+          font_size: 30,
+          font_weight: 'bold',
+          color: '#7c2d12',
+          text_align: 'center',
+          margin_bottom: 22,
+        },
+        certificate_title_style: {
+          font_size: 25,
+          font_weight: 'bold',
+          color: '#92400e',
+          text_align: 'center',
+          margin_top: 30,
+          margin_bottom: 30,
+          text_transform: 'uppercase',
+        },
+        body_text_template: `This certificate is proudly presented to
+
+{{student_name}}
+
+for achieving Academic Excellence in {{subject_name}} during the {{academic_year}} academic year.
+
+Performance Highlights:
+- Test Average: {{test_average}}%
+- Assignment Score: {{assignment_score}}%
+- Examination Result: {{exam_result}}%
+- Overall Grade: {{overall_grade}}
+
+{{student_name}} has demonstrated consistent hard work, intellectual curiosity, and a passion for learning. This outstanding achievement sets a benchmark for academic excellence.
+
+Congratulations on this well-deserved recognition!
+
+Awarded on: {{award_date}}`,
+        signature_positions: [
+          {
+            title: 'Subject Teacher',
+            name_placeholder: '{{subject_teacher}}',
+            position_x: 25,
+            position_y: 87,
+            alignment: 'center',
+          },
+          {
+            title: 'Head of Department',
+            name_placeholder: '{{hod_name}}',
+            position_x: 50,
+            position_y: 87,
+            alignment: 'center',
+          },
+          {
+            title: 'Principal',
+            name_placeholder: '{{principal_name}}',
+            position_x: 75,
+            position_y: 87,
+            alignment: 'center',
+          },
+        ],
+        border_style: {
+          enabled: true,
+          type: 'ornamental',
+          width: 5,
+          color: '#7c2d12',
+          padding: 40,
+        },
+        watermark_config: {
+          enabled: true,
+          text: 'EXCELLENCE',
+          opacity: 0.06,
+          rotation: -25,
+          font_size: 95,
+        },
+      },
+      branding: {
+        logo_url: 'https://example.com/logos/excellence-badge.png',
+        primary_color: '#7c2d12',
+        secondary_color: '#92400e',
+        accent_color: '#ffedd5',
+        fonts: {
+          heading: 'Goudy Old Style, serif',
+          body: 'Garamond, serif',
+          signature: 'Snell Roundhand, cursive',
+        },
+      },
+    },
+    is_default: false,
+    is_active: true,
+    created_at: '2024-02-03T09:00:00Z',
+    updated_at: '2024-02-15T10:00:00Z',
+  },
+];
+
+/**
+ * Issued certificate status
+ */
+export type IssuedCertificateStatus = 'issued' | 'pending' | 'revoked' | 'draft';
+
+/**
+ * Issued certificate interface
+ */
+export interface IssuedCertificate {
+  certificate_id: number;
+  student_id: number;
+  certificate_type: CertificateType;
+  template_id: number;
+  serial_number: string;
+  issue_date: string;
+  data_snapshot: {
+    student_name: string;
+    father_name: string;
+    mother_name: string;
+    admission_number: string;
+    class_section: string;
+    date_of_birth: string;
+    admission_date: string;
+    leaving_date?: string;
+    reason_for_leaving?: string;
+    conduct_rating: string;
+    exam_passed?: string;
+    fee_status: string;
+    academic_performance: string;
+    grade?: string;
+    roll_number?: string;
+    academic_year?: string;
+    percentage?: number;
+    rank?: number;
+    purpose?: string;
+    institution_name?: string;
+    board_affiliation?: string;
+    medium_of_instruction?: string;
+    [key: string]: string | number | boolean | undefined;
+  };
+  pdf_url: string;
+  issued_by: string;
+  remarks?: string;
+  status: IssuedCertificateStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Demo issued certificates for student Alex Johnson
+ * Comprehensive collection of 10 issued certificates covering different types
+ * Each certificate has complete data snapshot for UI testing
+ * @type {IssuedCertificate[]}
+ */
+export const issuedCertificates: IssuedCertificate[] = [
+  {
+    certificate_id: 1,
+    student_id: 1001,
+    certificate_type: 'bonafide',
+    template_id: 3,
+    serial_number: 'BC/2024/001',
+    issue_date: '2024-02-10T10:00:00Z',
+    data_snapshot: {
+      student_name: 'Alex Johnson',
+      father_name: 'Robert Johnson',
+      mother_name: 'Sarah Johnson',
+      admission_number: 'STD2023001',
+      class_section: '10th Grade - Section A',
+      date_of_birth: '2008-05-15',
+      admission_date: '2023-04-01',
+      conduct_rating: 'Excellent',
+      fee_status: 'All fees paid',
+      academic_performance: 'Outstanding - Average 86.4%',
+      grade: '10th Grade',
+      roll_number: '12',
+      academic_year: '2023-2024',
+      purpose: 'Bank account opening',
+      institution_name: 'Springfield High School',
+      board_affiliation: 'CBSE',
+      medium_of_instruction: 'English',
+    },
+    pdf_url: 'https://s3.amazonaws.com/certificates/BC-2024-001.pdf',
+    issued_by: 'Michael Anderson (Admin)',
+    remarks: 'Issued for bank account opening purpose',
+    status: 'issued',
+    created_at: '2024-02-10T09:30:00Z',
+    updated_at: '2024-02-10T10:00:00Z',
+  },
+  {
+    certificate_id: 2,
+    student_id: 1001,
+    certificate_type: 'study_certificate',
+    template_id: 5,
+    serial_number: 'SC/2024/015',
+    issue_date: '2024-01-25T11:30:00Z',
+    data_snapshot: {
+      student_name: 'Alex Johnson',
+      father_name: 'Robert Johnson',
+      mother_name: 'Sarah Johnson',
+      admission_number: 'STD2023001',
+      class_section: '10th Grade - Section A',
+      date_of_birth: '2008-05-15',
+      admission_date: '2023-04-01',
+      conduct_rating: 'Excellent',
+      fee_status: 'No dues pending',
+      academic_performance: 'Above Average',
+      grade: '10th Grade',
+      roll_number: '12',
+      academic_year: '2023-2024',
+      purpose: 'Passport application',
+      institution_name: 'Springfield High School',
+      board_affiliation: 'CBSE',
+      medium_of_instruction: 'English',
+    },
+    pdf_url: 'https://s3.amazonaws.com/certificates/SC-2024-015.pdf',
+    issued_by: 'Dr. Emily Carter (Principal)',
+    remarks: 'Issued for passport application - Student currently enrolled',
+    status: 'issued',
+    created_at: '2024-01-25T10:45:00Z',
+    updated_at: '2024-01-25T11:30:00Z',
+  },
+  {
+    certificate_id: 3,
+    student_id: 1001,
+    certificate_type: 'character_certificate',
+    template_id: 4,
+    serial_number: 'CC/2023/089',
+    issue_date: '2023-12-20T14:00:00Z',
+    data_snapshot: {
+      student_name: 'Alex Johnson',
+      father_name: 'Robert Johnson',
+      mother_name: 'Sarah Johnson',
+      admission_number: 'STD2023001',
+      class_section: '10th Grade - Section A',
+      date_of_birth: '2008-05-15',
+      admission_date: '2023-04-01',
+      leaving_date: '',
+      conduct_rating: 'Exemplary',
+      fee_status: 'Fully paid',
+      academic_performance: 'Excellent - Consistently above 85%',
+      discipline_rating: 'Excellent',
+      extracurricular_participation: 'Active in Science Club and Debate Team',
+      purpose: 'Scholarship application',
+    },
+    pdf_url: 'https://s3.amazonaws.com/certificates/CC-2023-089.pdf',
+    issued_by: 'Dr. Emily Carter (Principal)',
+    remarks: 'Issued for scholarship application to State Science Academy',
+    status: 'issued',
+    created_at: '2023-12-20T13:15:00Z',
+    updated_at: '2023-12-20T14:00:00Z',
+  },
+  {
+    certificate_id: 4,
+    student_id: 1001,
+    certificate_type: 'merit_certificate',
+    template_id: 11,
+    serial_number: 'MC/2023/042',
+    issue_date: '2023-12-22T16:00:00Z',
+    data_snapshot: {
+      student_name: 'Alex Johnson',
+      father_name: 'Robert Johnson',
+      mother_name: 'Sarah Johnson',
+      admission_number: 'STD2023001',
+      class_section: '10th Grade - Section A',
+      date_of_birth: '2008-05-15',
+      admission_date: '2023-04-01',
+      conduct_rating: 'Outstanding',
+      fee_status: 'Paid',
+      academic_performance: 'Exceptional',
+      grade: '10th Grade',
+      academic_year: '2023-2024',
+      percentage: 86.4,
+      rank: 3,
+      excellent_subjects: 'Mathematics, Physics, Chemistry',
+      special_achievement: 'Secured rank 3 in Mid-Term Examination',
+    },
+    pdf_url: 'https://s3.amazonaws.com/certificates/MC-2023-042.pdf',
+    issued_by: 'Dr. Emily Carter (Principal)',
+    remarks: 'Merit certificate for Mid-Term examination excellence',
+    status: 'issued',
+    created_at: '2023-12-22T15:30:00Z',
+    updated_at: '2023-12-22T16:00:00Z',
+  },
+  {
+    certificate_id: 5,
+    student_id: 1001,
+    certificate_type: 'participation_certificate',
+    template_id: 12,
+    serial_number: 'PC/2024/028',
+    issue_date: '2024-01-15T12:00:00Z',
+    data_snapshot: {
+      student_name: 'Alex Johnson',
+      father_name: 'Robert Johnson',
+      mother_name: 'Sarah Johnson',
+      admission_number: 'STD2023001',
+      class_section: '10th Grade - Section A',
+      date_of_birth: '2008-05-15',
+      admission_date: '2023-04-01',
+      conduct_rating: 'Very Good',
+      fee_status: 'Paid',
+      academic_performance: 'Good',
+      grade: '10th Grade',
+      event_name: 'Annual Science Fair 2024',
+      event_date: '2024-01-12',
+      venue: 'Main Auditorium',
+      event_type: 'Academic Exhibition',
+      event_duration: '2 days',
+      participation_role: 'Exhibitor - Physics Project',
+      event_level: 'School Level',
+    },
+    pdf_url: 'https://s3.amazonaws.com/certificates/PC-2024-028.pdf',
+    issued_by: 'Prof. James Wilson (Event Coordinator)',
+    remarks: 'Participated with project on Renewable Energy Sources',
+    status: 'issued',
+    created_at: '2024-01-15T11:30:00Z',
+    updated_at: '2024-01-15T12:00:00Z',
+  },
+  {
+    certificate_id: 6,
+    student_id: 1001,
+    certificate_type: 'conduct_certificate',
+    template_id: 6,
+    serial_number: 'CD/2024/007',
+    issue_date: '2024-02-05T10:30:00Z',
+    data_snapshot: {
+      student_name: 'Alex Johnson',
+      father_name: 'Robert Johnson',
+      mother_name: 'Sarah Johnson',
+      admission_number: 'STD2023001',
+      class_section: '10th Grade - Section A',
+      date_of_birth: '2008-05-15',
+      admission_date: '2023-04-01',
+      leaving_date: '',
+      conduct_rating: 'Excellent and Satisfactory',
+      fee_status: 'All dues cleared',
+      academic_performance: 'Very Good',
+      purpose: 'College admission application',
+    },
+    pdf_url: 'https://s3.amazonaws.com/certificates/CD-2024-007.pdf',
+    issued_by: 'Michael Anderson (Admin)',
+    remarks: 'Clean disciplinary record throughout tenure',
+    status: 'issued',
+    created_at: '2024-02-05T09:45:00Z',
+    updated_at: '2024-02-05T10:30:00Z',
+  },
+  {
+    certificate_id: 7,
+    student_id: 1001,
+    certificate_type: 'fee_certificate',
+    template_id: 8,
+    serial_number: 'FC/2024/123',
+    issue_date: '2024-02-01T15:00:00Z',
+    data_snapshot: {
+      student_name: 'Alex Johnson',
+      father_name: 'Robert Johnson',
+      mother_name: 'Sarah Johnson',
+      admission_number: 'STD2023001',
+      class_section: '10th Grade - Section A',
+      date_of_birth: '2008-05-15',
+      admission_date: '2023-04-01',
+      conduct_rating: 'Good',
+      fee_status: 'Fully Paid',
+      academic_performance: 'Good',
+      grade: '10th Grade',
+      academic_year: '2023-2024',
+      tuition_fee: '$5,000',
+      activity_fee: '$500',
+      examination_fee: '$300',
+      other_charges: '$200',
+      total_amount: '$6,000',
+      payment_mode: 'Online Transfer',
+      transaction_id: 'TXN2024012456789',
+      payment_date: '2024-01-15',
+      purpose: 'Income tax filing',
+    },
+    pdf_url: 'https://s3.amazonaws.com/certificates/FC-2024-123.pdf',
+    issued_by: 'Richard Clark (Accounts Officer)',
+    remarks: 'All fees paid for academic year 2023-2024',
+    status: 'issued',
+    created_at: '2024-02-01T14:30:00Z',
+    updated_at: '2024-02-01T15:00:00Z',
+  },
+  {
+    certificate_id: 8,
+    student_id: 1001,
+    certificate_type: 'no_dues_certificate',
+    template_id: 9,
+    serial_number: 'ND/2024/045',
+    issue_date: '2024-01-30T11:00:00Z',
+    data_snapshot: {
+      student_name: 'Alex Johnson',
+      father_name: 'Robert Johnson',
+      mother_name: 'Sarah Johnson',
+      admission_number: 'STD2023001',
+      class_section: '10th Grade - Section A',
+      date_of_birth: '2008-05-15',
+      admission_date: '2023-04-01',
+      leaving_date: '',
+      conduct_rating: 'Excellent',
+      fee_status: 'No Outstanding Dues',
+      academic_performance: 'Above Average',
+      purpose: 'Record verification',
+      clearance_date: '2024-01-30',
+      validity_date: '2024-03-30',
+    },
+    pdf_url: 'https://s3.amazonaws.com/certificates/ND-2024-045.pdf',
+    issued_by: 'Michael Anderson (Admin)',
+    remarks: 'All departments cleared - No pending items',
+    status: 'issued',
+    created_at: '2024-01-30T10:15:00Z',
+    updated_at: '2024-01-30T11:00:00Z',
+  },
+  {
+    certificate_id: 9,
+    student_id: 1001,
+    certificate_type: 'sports_certificate',
+    template_id: 10,
+    serial_number: 'SP/2023/056',
+    issue_date: '2023-11-25T13:30:00Z',
+    data_snapshot: {
+      student_name: 'Alex Johnson',
+      father_name: 'Robert Johnson',
+      mother_name: 'Sarah Johnson',
+      admission_number: 'STD2023001',
+      class_section: '10th Grade - Section A',
+      date_of_birth: '2008-05-15',
+      admission_date: '2023-04-01',
+      conduct_rating: 'Very Good',
+      fee_status: 'Paid',
+      academic_performance: 'Good',
+      grade: '10th Grade',
+      event_name: 'Inter-School Athletics Championship',
+      event_date: '2023-11-20',
+      position: '2nd',
+      category: '100m Sprint - Boys Under 16',
+      competition_level: 'District Level',
+      venue: 'City Sports Complex',
+      performance_details: 'Time: 12.5 seconds',
+      sport_name: 'Athletics',
+    },
+    pdf_url: 'https://s3.amazonaws.com/certificates/SP-2023-056.pdf',
+    issued_by: 'Coach Martin Davis (Sports Coordinator)',
+    remarks: 'Silver medal in 100m sprint - District Championship',
+    status: 'issued',
+    created_at: '2023-11-25T12:45:00Z',
+    updated_at: '2023-11-25T13:30:00Z',
+  },
+  {
+    certificate_id: 10,
+    student_id: 1001,
+    certificate_type: 'merit_certificate',
+    template_id: 14,
+    serial_number: 'AE/2024/018',
+    issue_date: '2024-02-08T14:00:00Z',
+    data_snapshot: {
+      student_name: 'Alex Johnson',
+      father_name: 'Robert Johnson',
+      mother_name: 'Sarah Johnson',
+      admission_number: 'STD2023001',
+      class_section: '10th Grade - Section A',
+      date_of_birth: '2008-05-15',
+      admission_date: '2023-04-01',
+      conduct_rating: 'Outstanding',
+      fee_status: 'Paid',
+      academic_performance: 'Exceptional in Mathematics',
+      grade: '10th Grade',
+      academic_year: '2023-2024',
+      subject_name: 'Mathematics',
+      test_average: 91.5,
+      assignment_score: 94.0,
+      exam_result: 88.0,
+      overall_grade: 'A+',
+    },
+    pdf_url: 'https://s3.amazonaws.com/certificates/AE-2024-018.pdf',
+    issued_by: 'Dr. Emily Carter (Mathematics Teacher)',
+    remarks: 'Recognition for consistent excellence in Mathematics throughout the year',
+    status: 'issued',
+    created_at: '2024-02-08T13:15:00Z',
+    updated_at: '2024-02-08T14:00:00Z',
+  },
+];
+
 export default demoData;
