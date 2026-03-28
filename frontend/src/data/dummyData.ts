@@ -5975,6 +5975,281 @@ Awarded on: {{award_date}}`,
 ];
 
 /**
+ * ID Card Template interface
+ */
+export interface IdCardTemplate {
+  template_id: number;
+  template_name: string;
+  layout_config: {
+    orientation: 'portrait' | 'landscape';
+    front_design: {
+      photo_position: { x: number; y: number };
+      photo_size: { width: number; height: number };
+      student_name_position: { x: number; y: number };
+      admission_number_position: { x: number; y: number };
+      class_section_position: { x: number; y: number };
+      institution_logo_position: { x: number; y: number };
+      barcode_position: { x: number; y: number };
+      qr_code_position: { x: number; y: number };
+    };
+    back_design: {
+      emergency_contact_section: { x: number; y: number; width: number; height: number };
+      blood_group_display: { x: number; y: number };
+      address_section: { x: number; y: number; width: number; height: number };
+      validity_section: { x: number; y: number };
+      instructions_text: { x: number; y: number; width: number; height: number };
+    };
+    color_scheme: {
+      primary_color: string;
+      secondary_color: string;
+      accent_color: string;
+      text_color: string;
+      background_color: string;
+    };
+    fields_to_show: string[];
+  };
+  is_default: boolean;
+  preview_image_url: string;
+}
+
+/**
+ * Demo ID card templates with various design variations
+ * @type {IdCardTemplate[]}
+ */
+export const idCardTemplates: IdCardTemplate[] = [
+  {
+    template_id: 1,
+    template_name: 'Modern Portrait',
+    layout_config: {
+      orientation: 'portrait',
+      front_design: {
+        photo_position: { x: 50, y: 20 },
+        photo_size: { width: 120, height: 140 },
+        student_name_position: { x: 50, y: 170 },
+        admission_number_position: { x: 50, y: 195 },
+        class_section_position: { x: 50, y: 215 },
+        institution_logo_position: { x: 15, y: 10 },
+        barcode_position: { x: 30, y: 250 },
+        qr_code_position: { x: 150, y: 250 },
+      },
+      back_design: {
+        emergency_contact_section: { x: 20, y: 30, width: 180, height: 70 },
+        blood_group_display: { x: 20, y: 110 },
+        address_section: { x: 20, y: 135, width: 180, height: 60 },
+        validity_section: { x: 20, y: 205 },
+        instructions_text: { x: 20, y: 230, width: 180, height: 50 },
+      },
+      color_scheme: {
+        primary_color: '#2563eb',
+        secondary_color: '#1e40af',
+        accent_color: '#dbeafe',
+        text_color: '#1f2937',
+        background_color: '#ffffff',
+      },
+      fields_to_show: [
+        'student_name',
+        'admission_number',
+        'class',
+        'section',
+        'photo',
+        'date_of_birth',
+        'blood_group',
+        'emergency_contact',
+        'address',
+        'valid_until',
+        'barcode',
+        'qr_code',
+      ],
+    },
+    is_default: true,
+    preview_image_url: 'https://example.com/id-templates/modern-portrait-preview.png',
+  },
+  {
+    template_id: 2,
+    template_name: 'Classic Landscape',
+    layout_config: {
+      orientation: 'landscape',
+      front_design: {
+        photo_position: { x: 20, y: 30 },
+        photo_size: { width: 100, height: 120 },
+        student_name_position: { x: 140, y: 40 },
+        admission_number_position: { x: 140, y: 70 },
+        class_section_position: { x: 140, y: 95 },
+        institution_logo_position: { x: 250, y: 10 },
+        barcode_position: { x: 140, y: 130 },
+        qr_code_position: { x: 250, y: 100 },
+      },
+      back_design: {
+        emergency_contact_section: { x: 25, y: 20, width: 280, height: 50 },
+        blood_group_display: { x: 25, y: 80 },
+        address_section: { x: 25, y: 100, width: 280, height: 45 },
+        validity_section: { x: 230, y: 155 },
+        instructions_text: { x: 25, y: 155, width: 190, height: 35 },
+      },
+      color_scheme: {
+        primary_color: '#059669',
+        secondary_color: '#047857',
+        accent_color: '#d1fae5',
+        text_color: '#111827',
+        background_color: '#f9fafb',
+      },
+      fields_to_show: [
+        'student_name',
+        'admission_number',
+        'class',
+        'section',
+        'photo',
+        'blood_group',
+        'emergency_contact',
+        'address',
+        'valid_until',
+        'barcode',
+        'qr_code',
+      ],
+    },
+    is_default: false,
+    preview_image_url: 'https://example.com/id-templates/classic-landscape-preview.png',
+  },
+  {
+    template_id: 3,
+    template_name: 'Colorful Horizontal',
+    layout_config: {
+      orientation: 'landscape',
+      front_design: {
+        photo_position: { x: 25, y: 35 },
+        photo_size: { width: 95, height: 115 },
+        student_name_position: { x: 135, y: 45 },
+        admission_number_position: { x: 135, y: 75 },
+        class_section_position: { x: 135, y: 100 },
+        institution_logo_position: { x: 240, y: 15 },
+        barcode_position: { x: 135, y: 135 },
+        qr_code_position: { x: 245, y: 105 },
+      },
+      back_design: {
+        emergency_contact_section: { x: 30, y: 25, width: 270, height: 55 },
+        blood_group_display: { x: 30, y: 90 },
+        address_section: { x: 30, y: 110, width: 270, height: 40 },
+        validity_section: { x: 220, y: 160 },
+        instructions_text: { x: 30, y: 160, width: 180, height: 30 },
+      },
+      color_scheme: {
+        primary_color: '#dc2626',
+        secondary_color: '#991b1b',
+        accent_color: '#fee2e2',
+        text_color: '#1f2937',
+        background_color: '#fffbeb',
+      },
+      fields_to_show: [
+        'student_name',
+        'admission_number',
+        'class',
+        'section',
+        'photo',
+        'date_of_birth',
+        'blood_group',
+        'emergency_contact',
+        'valid_until',
+        'qr_code',
+        'barcode',
+      ],
+    },
+    is_default: false,
+    preview_image_url: 'https://example.com/id-templates/colorful-horizontal-preview.png',
+  },
+  {
+    template_id: 4,
+    template_name: 'Professional Vertical',
+    layout_config: {
+      orientation: 'portrait',
+      front_design: {
+        photo_position: { x: 50, y: 25 },
+        photo_size: { width: 115, height: 135 },
+        student_name_position: { x: 50, y: 170 },
+        admission_number_position: { x: 50, y: 195 },
+        class_section_position: { x: 50, y: 220 },
+        institution_logo_position: { x: 20, y: 8 },
+        barcode_position: { x: 25, y: 255 },
+        qr_code_position: { x: 145, y: 255 },
+      },
+      back_design: {
+        emergency_contact_section: { x: 25, y: 35, width: 170, height: 65 },
+        blood_group_display: { x: 25, y: 110 },
+        address_section: { x: 25, y: 135, width: 170, height: 55 },
+        validity_section: { x: 25, y: 200 },
+        instructions_text: { x: 25, y: 225, width: 170, height: 55 },
+      },
+      color_scheme: {
+        primary_color: '#7c3aed',
+        secondary_color: '#6d28d9',
+        accent_color: '#ede9fe',
+        text_color: '#111827',
+        background_color: '#ffffff',
+      },
+      fields_to_show: [
+        'student_name',
+        'admission_number',
+        'class',
+        'section',
+        'photo',
+        'date_of_birth',
+        'blood_group',
+        'emergency_contact',
+        'address',
+        'valid_until',
+        'barcode',
+        'qr_code',
+      ],
+    },
+    is_default: false,
+    preview_image_url: 'https://example.com/id-templates/professional-vertical-preview.png',
+  },
+  {
+    template_id: 5,
+    template_name: 'Minimalist',
+    layout_config: {
+      orientation: 'portrait',
+      front_design: {
+        photo_position: { x: 50, y: 30 },
+        photo_size: { width: 110, height: 130 },
+        student_name_position: { x: 50, y: 170 },
+        admission_number_position: { x: 50, y: 195 },
+        class_section_position: { x: 50, y: 215 },
+        institution_logo_position: { x: 20, y: 12 },
+        barcode_position: { x: 35, y: 250 },
+        qr_code_position: { x: 140, y: 250 },
+      },
+      back_design: {
+        emergency_contact_section: { x: 30, y: 40, width: 160, height: 60 },
+        blood_group_display: { x: 30, y: 110 },
+        address_section: { x: 30, y: 135, width: 160, height: 50 },
+        validity_section: { x: 30, y: 195 },
+        instructions_text: { x: 30, y: 220, width: 160, height: 60 },
+      },
+      color_scheme: {
+        primary_color: '#0891b2',
+        secondary_color: '#0e7490',
+        accent_color: '#cffafe',
+        text_color: '#0f172a',
+        background_color: '#f8fafc',
+      },
+      fields_to_show: [
+        'student_name',
+        'admission_number',
+        'class',
+        'section',
+        'photo',
+        'blood_group',
+        'emergency_contact',
+        'valid_until',
+        'qr_code',
+      ],
+    },
+    is_default: false,
+    preview_image_url: 'https://example.com/id-templates/minimalist-preview.png',
+  },
+];
+
+/**
  * Issued certificate status
  */
 export type IssuedCertificateStatus = 'issued' | 'pending' | 'revoked' | 'draft';
