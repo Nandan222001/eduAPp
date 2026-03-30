@@ -62,10 +62,7 @@ def upgrade():
     if 'idx_chapter_perf_proficiency' not in existing_indexes:
         op.create_index('idx_chapter_perf_proficiency', 'chapter_performance', ['proficiency_level'])
 
-    if 'questions_bank' not in inspector.get_table_names():
-        raise ValueError('questions_bank table must exist before creating question_recommendations')
-    
-    if 'question_recommendations' not in inspector.get_table_names():
+    if 'question_recommendations' not in inspector.get_table_names() and 'questions_bank' in inspector.get_table_names():
         op.create_table(
             'question_recommendations',
             sa.Column('id', sa.Integer(), nullable=False),
@@ -95,21 +92,22 @@ def upgrade():
             sa.PrimaryKeyConstraint('id')
         )
     
-    existing_indexes = {idx['name'] for idx in inspector.get_indexes('question_recommendations')}
-    if 'idx_question_rec_institution' not in existing_indexes:
-        op.create_index('idx_question_rec_institution', 'question_recommendations', ['institution_id'])
-    if 'idx_question_rec_student' not in existing_indexes:
-        op.create_index('idx_question_rec_student', 'question_recommendations', ['student_id'])
-    if 'idx_question_rec_question' not in existing_indexes:
-        op.create_index('idx_question_rec_question', 'question_recommendations', ['question_id'])
-    if 'idx_question_rec_score' not in existing_indexes:
-        op.create_index('idx_question_rec_score', 'question_recommendations', ['recommendation_score'])
-    if 'idx_question_rec_rank' not in existing_indexes:
-        op.create_index('idx_question_rec_rank', 'question_recommendations', ['priority_rank'])
-    if 'idx_question_rec_review_date' not in existing_indexes:
-        op.create_index('idx_question_rec_review_date', 'question_recommendations', ['next_review_date'])
-    if 'idx_question_rec_completed' not in existing_indexes:
-        op.create_index('idx_question_rec_completed', 'question_recommendations', ['is_completed'])
+    if 'question_recommendations' in inspector.get_table_names():
+        existing_indexes = {idx['name'] for idx in inspector.get_indexes('question_recommendations')}
+        if 'idx_question_rec_institution' not in existing_indexes:
+            op.create_index('idx_question_rec_institution', 'question_recommendations', ['institution_id'])
+        if 'idx_question_rec_student' not in existing_indexes:
+            op.create_index('idx_question_rec_student', 'question_recommendations', ['student_id'])
+        if 'idx_question_rec_question' not in existing_indexes:
+            op.create_index('idx_question_rec_question', 'question_recommendations', ['question_id'])
+        if 'idx_question_rec_score' not in existing_indexes:
+            op.create_index('idx_question_rec_score', 'question_recommendations', ['recommendation_score'])
+        if 'idx_question_rec_rank' not in existing_indexes:
+            op.create_index('idx_question_rec_rank', 'question_recommendations', ['priority_rank'])
+        if 'idx_question_rec_review_date' not in existing_indexes:
+            op.create_index('idx_question_rec_review_date', 'question_recommendations', ['next_review_date'])
+        if 'idx_question_rec_completed' not in existing_indexes:
+            op.create_index('idx_question_rec_completed', 'question_recommendations', ['is_completed'])
 
     if 'focus_areas' not in inspector.get_table_names():
         op.create_table(
