@@ -18,6 +18,7 @@ import {
   type ParentMessage,
   type StudentPerformanceMetric,
 } from '@/data/dummyData';
+import type { Certificate, CertificateTemplate as SchoolCertificateTemplate } from './schoolAdmin';
 import type { StudentProfile, StudentDashboardData } from './students';
 import type { AssignmentListParams, Assignment } from '@/types/assignment';
 import type { AttendanceListResponse, StudentAttendanceDetail } from './attendance';
@@ -4225,29 +4226,16 @@ const demoOlympicsApi = {
   getCertificates: async (_userId: number) => [],
 };
 
-export interface CertificateTemplate {
-  id: number;
-  institution_id: number;
-  certificate_type: string;
-  template_name: string;
-  template_content: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
+export interface CertificateTemplate extends Omit<
+  SchoolCertificateTemplate,
+  'template_name' | 'template_content' | 'is_active'
+> {
+  template_name?: string;
+  template_content?: string;
+  is_active?: boolean;
 }
 
-export interface IssuedCertificate {
-  id: number;
-  institution_id: number;
-  student_id: number;
-  certificate_type: string;
-  certificate_number: string;
-  issue_date: string;
-  data: Record<string, unknown>;
-  issued_by: number;
-  created_at: string;
-  updated_at: string;
-}
+export type IssuedCertificate = Certificate;
 
 export interface CertificatePreviewData {
   template_id: number;
@@ -4328,7 +4316,7 @@ export const demoCertificatesApi = {
   downloadCertificatePDF: async (id: number): Promise<Blob> => {
     const certificate = demoCertificates.find((c) => c.id === id);
     const content = certificate
-      ? `Certificate PDF - ${certificate.certificate_number}`
+      ? `Certificate PDF - ${certificate.serial_number || certificate.certificate_number || 'Unknown'}`
       : 'Certificate PDF content';
     return Promise.resolve(new Blob([content], { type: 'application/pdf' }));
   },
@@ -4338,10 +4326,13 @@ export const demoCertificatesApi = {
     student_data: object
   ): Promise<CertificatePreviewData> => {
     const template = demoCertificateTemplates.find((t) => t.id === template_id);
+    const previewHtml = template
+      ? `<html><body><h1>${template.template_config.header}</h1><p>${template.template_config.body_text}</p><footer>${template.template_config.footer_text}</footer></body></html>`
+      : '<html><body>Certificate Preview</body></html>';
     return Promise.resolve({
       template_id,
       student_data: student_data as Record<string, unknown>,
-      preview_html: template?.template_content || '<html>Certificate Preview</html>',
+      preview_html: template?.template_content || previewHtml,
       generated_at: new Date().toISOString(),
     });
   },
@@ -4377,6 +4368,129 @@ export const demoCertificatesApi = {
 
   download: async (_certificateId: number): Promise<Blob> => {
     return Promise.resolve(new Blob(['Certificate PDF content'], { type: 'application/pdf' }));
+  },
+
+  issue: async (data: Record<string, unknown>) => {
+    const now = new Date();
+    const certificateType = data.certificate_type as string;
+    const studentId = data.student_id as number;
+
+    const newCertificate = {
+      id: demoCertificates.length + 1,
+      institution_id: 1,
+      student_id: studentId,
+      student_name:
+        ((data.data as Record<string, unknown>)?.student_name as string) || 'Student Name',
+      certificate_type: certificateType,
+      serial_number: `${certificateType.toUpperCase().substring(0, 2)}-${now.getFullYear()}-${String(demoCertificates.length + 1).padStart(4, '0')}`,
+      issue_date: now.toISOString().split('T')[0],
+      template_id: data.template_id as number | undefined,
+      remarks: data.remarks as string | undefined,
+      issued_by_id: 3001,
+      issued_by_name: 'Michael Anderson',
+      is_revoked: false,
+      created_at: now.toISOString(),
+      updated_at: now.toISOString(),
+    };
+
+    return Promise.resolve(newCertificate);
+  },
+};
+
+export const demoIDCardsApi = {
+  getIDCardTemplates: async (): Promise<IDCardTemplate[]> => {
+    return Promise.resolve(demoIDCardTemplates);
+  },
+
+  getStudentIDCardData: async (student_id: number): Promise<StudentIDCardData | undefined> => {
+    const cardData = demoIDCardData.find((card) => card.student_id === student_id);
+    return Promise.resolve(cardData);
+  },
+
+  generateIDCard: async (
+    student_id: number,
+    template_id: number
+  ): Promise<IDCardGenerationResult> => {
+    const template = demoIDCardTemplates.find((t) => t.id === template_id);
+    const student = demoData.student.profile;
+
+    if (!template) {
+      return Promise.resolve({
+        success: false,
+        card_data: {} as StudentIDCardData,
+        message: 'Template not found',
+      });
+    }
+
+    const newCard: StudentIDCardData = {
+      id: demoIDCardData.length + 1,
+      student_id,
+      institution_id: 1,
+      card_number: `ID-2024-${student_id}`,
+      student_name:
+        student_id === student.id ? `${student.first_name} ${student.last_name}` : 'Student Name',
+      grade:
+        student_id === student.id ? student.section?.grade?.name || '10th Grade' : '10th Grade',
+      section: student_id === student.id ? student.section?.name || 'A' : 'A',
+      admission_number:
+        student_id === student.id
+          ? student.admission_number
+          : `STD2023${String(student_id).padStart(3, '0')}`,
+      photo_url:
+        student_id === student.id
+          ? student.photo_url || 'https://i.pravatar.cc/150?img=12'
+          : 'https://i.pravatar.cc/150?img=12',
+      blood_group: student_id === student.id ? student.blood_group || 'O+' : 'O+',
+      emergency_contact:
+        student_id === student.id ? student.parent_phone || '+1-555-0000' : '+1-555-0000',
+      valid_from: new Date().toISOString().split('T')[0],
+      valid_until: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
+        .toISOString()
+        .split('T')[0],
+      barcode_data:
+        student_id === student.id
+          ? student.admission_number
+          : `STD2023${String(student_id).padStart(3, '0')}`,
+      qr_code_data: `https://school.edu/verify/${student_id === student.id ? student.admission_number : `STD2023${String(student_id).padStart(3, '0')}`}`,
+      template_id,
+      issued_at: new Date().toISOString(),
+    };
+
+    return Promise.resolve({
+      success: true,
+      card_data: newCard,
+      message: 'ID card generated successfully',
+    });
+  },
+
+  bulkGenerateIDCards: async (
+    student_ids: number[],
+    template_id: number
+  ): Promise<BulkIDCardGenerationResult> => {
+    const successful: number[] = [];
+    const failed: number[] = [];
+    const cards_generated: StudentIDCardData[] = [];
+
+    for (const student_id of student_ids) {
+      try {
+        const result = await demoIDCardsApi.generateIDCard(student_id, template_id);
+        if (result.success) {
+          successful.push(student_id);
+          cards_generated.push(result.card_data);
+        } else {
+          failed.push(student_id);
+        }
+      } catch {
+        failed.push(student_id);
+      }
+    }
+
+    return Promise.resolve({
+      successful,
+      failed,
+      total_processed: student_ids.length,
+      cards_generated,
+    });
   },
 };
 

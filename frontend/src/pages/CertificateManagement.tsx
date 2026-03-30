@@ -23,6 +23,10 @@ import {
   CircularProgress,
   IconButton,
   Chip,
+  Card,
+  CardContent,
+  CardMedia,
+  CardActions,
 } from '@mui/material';
 import { DataGrid, GridColDef, GridActionsCellItem } from '@mui/x-data-grid';
 import {
@@ -32,6 +36,8 @@ import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   Add as AddIcon,
+  Visibility as VisibilityIcon,
+  CheckCircle as CheckCircleIcon,
 } from '@mui/icons-material';
 import schoolAdminApi, {
   CertificateType,
@@ -39,11 +45,9 @@ import schoolAdminApi, {
   IssueCertificateRequest,
   CertificateTemplate,
   CertificateTemplateConfig,
-  IDCardTemplate,
-  BulkIDCardGenerateRequest,
-} from '../api/schoolAdmin';
-import studentsApi, { Student } from '../api/students';
-import { academicApi } from '../api/academic';
+} from '@/api/schoolAdmin';
+import studentsApi, { Student } from '@/api/students';
+import { isDemoUser, demoCertificatesApi } from '@/api/demoDataApi';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -93,7 +97,7 @@ export const CertificateManagement: React.FC = () => {
           Certificate Management
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          Issue certificates, manage ID cards, and configure templates
+          Issue and manage student certificates with customizable templates
         </Typography>
       </Box>
 
@@ -101,7 +105,6 @@ export const CertificateManagement: React.FC = () => {
         <Tabs value={tabValue} onChange={(_, newValue) => setTabValue(newValue)}>
           <Tab label="Issue Certificate" />
           <Tab label="Issued Certificates" />
-          <Tab label="ID Card Generation" />
           <Tab label="Certificate Templates" />
         </Tabs>
 
@@ -114,10 +117,6 @@ export const CertificateManagement: React.FC = () => {
         </TabPanel>
 
         <TabPanel value={tabValue} index={2}>
-          <IDCardGenerationTab showSnackbar={showSnackbar} />
-        </TabPanel>
-
-        <TabPanel value={tabValue} index={3}>
           <CertificateTemplatesTab showSnackbar={showSnackbar} />
         </TabPanel>
       </Paper>
@@ -149,11 +148,15 @@ const IssueCertificateTab: React.FC<TabProps> = ({ showSnackbar }) => {
   const [templates, setTemplates] = useState<CertificateTemplate[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<number | undefined>(undefined);
   const [remarks, setRemarks] = useState('');
+  const [reasonForLeaving, setReasonForLeaving] = useState('');
+  const [additionalData, setAdditionalData] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [studentSearchLoading, setStudentSearchLoading] = useState(false);
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
   const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
   const [issuedCertificate, setIssuedCertificate] = useState<Certificate | null>(null);
+
+  const isDemo = isDemoUser();
 
   useEffect(() => {
     loadTemplates();
@@ -162,10 +165,16 @@ const IssueCertificateTab: React.FC<TabProps> = ({ showSnackbar }) => {
 
   const loadTemplates = async () => {
     try {
-      const data = await schoolAdminApi.certificateTemplates.list(certificateType);
+      let data: CertificateTemplate[];
+      if (isDemo) {
+        data = await demoCertificatesApi.getCertificateTemplates(certificateType);
+      } else {
+        data = await schoolAdminApi.certificateTemplates.list(certificateType);
+      }
       setTemplates(data);
-      if (data.length > 0 && data.find((t) => t.is_default)) {
-        setSelectedTemplate(data.find((t) => t.is_default)?.id);
+      if (data.length > 0) {
+        const defaultTemplate = data.find((t) => t.is_default);
+        setSelectedTemplate(defaultTemplate?.id || data[0]?.id);
       }
     } catch (error) {
       showSnackbar('Failed to load templates', 'error');
@@ -185,6 +194,59 @@ const IssueCertificateTab: React.FC<TabProps> = ({ showSnackbar }) => {
     }
   };
 
+  const handlePreview = async () => {
+    if (!selectedStudent || !selectedTemplate) {
+      showSnackbar('Please select a student and template', 'error');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const studentData = {
+        student_name: `${selectedStudent.first_name} ${selectedStudent.last_name}`,
+        admission_number: selectedStudent.admission_number,
+        class: selectedStudent.section?.grade?.name || '',
+        section: selectedStudent.section?.name || '',
+        date_of_birth: selectedStudent.date_of_birth,
+        reason_for_leaving: reasonForLeaving,
+        remarks,
+        ...additionalData,
+      };
+
+      if (isDemo) {
+        const preview = await demoCertificatesApi.previewCertificateTemplate(
+          selectedTemplate,
+          studentData
+        );
+        const htmlBlob = new Blob([preview.preview_html], { type: 'text/html' });
+        setPreviewBlob(htmlBlob);
+      } else {
+        // For production, generate a simple HTML preview from template
+        const template = templates.find((t) => t.id === selectedTemplate);
+        if (template) {
+          const previewHtml = `
+            <html>
+              <head><style>body { padding: 40px; font-family: Arial; }</style></head>
+              <body>
+                <h1 style="text-align: center;">${template.template_config.header}</h1>
+                <p style="white-space: pre-wrap; margin: 40px 0;">${template.template_config.body_text}</p>
+                <footer style="text-align: center; margin-top: 60px;">${template.template_config.footer_text}</footer>
+              </body>
+            </html>
+          `;
+          const htmlBlob = new Blob([previewHtml], { type: 'text/html' });
+          setPreviewBlob(htmlBlob);
+        }
+      }
+
+      setPreviewDialogOpen(true);
+    } catch (error) {
+      showSnackbar('Failed to generate preview', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleIssueCertificate = async () => {
     if (!selectedStudent) {
       showSnackbar('Please select a student', 'error');
@@ -200,16 +262,34 @@ const IssueCertificateTab: React.FC<TabProps> = ({ showSnackbar }) => {
         remarks: remarks || undefined,
       };
 
-      const certificate = await schoolAdminApi.certificates.issue(data);
+      let certificate: Certificate;
+      if (isDemo) {
+        certificate = await demoCertificatesApi.issue({
+          ...data,
+          data: {
+            student_name: `${selectedStudent.first_name} ${selectedStudent.last_name}`,
+            reason_for_leaving: reasonForLeaving,
+            additional_data: additionalData,
+          },
+        });
+      } else {
+        certificate = await schoolAdminApi.certificates.issue(data);
+      }
+
       setIssuedCertificate(certificate);
 
-      const blob = await schoolAdminApi.certificates.download(certificate.id);
+      const blob = isDemo
+        ? await demoCertificatesApi.downloadCertificatePDF(certificate.id)
+        : await schoolAdminApi.certificates.download(certificate.id);
+
       setPreviewBlob(blob);
       setPreviewDialogOpen(true);
 
       showSnackbar('Certificate issued successfully', 'success');
       setSelectedStudent(null);
       setRemarks('');
+      setReasonForLeaving('');
+      setAdditionalData({});
     } catch (error) {
       showSnackbar('Failed to issue certificate', 'error');
     } finally {
@@ -242,6 +322,8 @@ const IssueCertificateTab: React.FC<TabProps> = ({ showSnackbar }) => {
       };
     }
   };
+
+  const showAdditionalFields = ['TC', 'LC', 'Migration'].includes(certificateType);
 
   return (
     <Box>
@@ -299,6 +381,7 @@ const IssueCertificateTab: React.FC<TabProps> = ({ showSnackbar }) => {
               value={selectedTemplate || ''}
               onChange={(e) => setSelectedTemplate(Number(e.target.value))}
               label="Template"
+              disabled={templates.length === 0}
             >
               {templates.map((template) => (
                 <MenuItem key={template.id} value={template.id}>
@@ -308,6 +391,18 @@ const IssueCertificateTab: React.FC<TabProps> = ({ showSnackbar }) => {
             </Select>
           </FormControl>
         </Grid>
+
+        {showAdditionalFields && (
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              label="Reason for Leaving"
+              value={reasonForLeaving}
+              onChange={(e) => setReasonForLeaving(e.target.value)}
+              placeholder="Enter reason for leaving"
+            />
+          </Grid>
+        )}
 
         <Grid item xs={12}>
           <TextField
@@ -322,15 +417,26 @@ const IssueCertificateTab: React.FC<TabProps> = ({ showSnackbar }) => {
         </Grid>
 
         <Grid item xs={12}>
-          <Button
-            variant="contained"
-            size="large"
-            onClick={handleIssueCertificate}
-            disabled={loading || !selectedStudent}
-            startIcon={loading ? <CircularProgress size={20} /> : undefined}
-          >
-            Issue Certificate
-          </Button>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Button
+              variant="outlined"
+              size="large"
+              onClick={handlePreview}
+              disabled={loading || !selectedStudent || !selectedTemplate}
+              startIcon={<VisibilityIcon />}
+            >
+              Preview
+            </Button>
+            <Button
+              variant="contained"
+              size="large"
+              onClick={handleIssueCertificate}
+              disabled={loading || !selectedStudent}
+              startIcon={loading ? <CircularProgress size={20} /> : <CheckCircleIcon />}
+            >
+              Issue Certificate
+            </Button>
+          </Box>
         </Grid>
       </Grid>
 
@@ -349,6 +455,7 @@ const IssueCertificateTab: React.FC<TabProps> = ({ showSnackbar }) => {
                 width="100%"
                 height="100%"
                 style={{ border: 'none' }}
+                title="Certificate Preview"
               />
             </Box>
           )}
@@ -373,26 +480,46 @@ const IssuedCertificatesTab: React.FC<TabProps> = ({ showSnackbar }) => {
   const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 10 });
   const [totalRows, setTotalRows] = useState(0);
   const [filterType, setFilterType] = useState<CertificateType | ''>('');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'revoked'>('all');
   const [filterDateFrom, setFilterDateFrom] = useState('');
   const [filterDateTo, setFilterDateTo] = useState('');
+
+  const isDemo = isDemoUser();
 
   useEffect(() => {
     loadCertificates();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paginationModel, filterType, filterDateFrom, filterDateTo]);
+  }, [paginationModel, filterType, filterStatus, filterDateFrom, filterDateTo]);
 
   const loadCertificates = async () => {
     setLoading(true);
     try {
-      const response = await schoolAdminApi.certificates.list({
-        skip: paginationModel.page * paginationModel.pageSize,
-        limit: paginationModel.pageSize,
-        certificate_type: filterType || undefined,
-        from_date: filterDateFrom || undefined,
-        to_date: filterDateTo || undefined,
-      });
-      setCertificates(response.items);
-      setTotalRows(response.total);
+      if (isDemo) {
+        const allCerts = await demoCertificatesApi.list({
+          certificate_type: filterType || undefined,
+        });
+        let filteredCerts = allCerts;
+
+        if (filterStatus === 'active') {
+          filteredCerts = filteredCerts.filter((c) => !c.is_revoked);
+        } else if (filterStatus === 'revoked') {
+          filteredCerts = filteredCerts.filter((c) => c.is_revoked);
+        }
+
+        setCertificates(filteredCerts);
+        setTotalRows(filteredCerts.length);
+      } else {
+        const response = await schoolAdminApi.certificates.list({
+          skip: paginationModel.page * paginationModel.pageSize,
+          limit: paginationModel.pageSize,
+          certificate_type: filterType || undefined,
+          from_date: filterDateFrom || undefined,
+          to_date: filterDateTo || undefined,
+          is_revoked: filterStatus === 'all' ? undefined : filterStatus === 'revoked',
+        });
+        setCertificates(response.items);
+        setTotalRows(response.total);
+      }
     } catch (error) {
       showSnackbar('Failed to load certificates', 'error');
     } finally {
@@ -402,7 +529,10 @@ const IssuedCertificatesTab: React.FC<TabProps> = ({ showSnackbar }) => {
 
   const handleDownload = async (id: number, serialNumber: string, type: string) => {
     try {
-      const blob = await schoolAdminApi.certificates.download(id);
+      const blob = isDemo
+        ? await demoCertificatesApi.downloadCertificatePDF(id)
+        : await schoolAdminApi.certificates.download(id);
+
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -424,9 +554,13 @@ const IssuedCertificatesTab: React.FC<TabProps> = ({ showSnackbar }) => {
     if (!reason) return;
 
     try {
-      await schoolAdminApi.certificates.revoke(id, { reason });
-      showSnackbar('Certificate revoked successfully', 'success');
-      loadCertificates();
+      if (isDemo) {
+        showSnackbar('Certificate revocation is not available in demo mode', 'info');
+      } else {
+        await schoolAdminApi.certificates.revoke(id, { reason });
+        showSnackbar('Certificate revoked successfully', 'success');
+        loadCertificates();
+      }
     } catch (error) {
       showSnackbar('Failed to revoke certificate', 'error');
     }
@@ -436,7 +570,14 @@ const IssuedCertificatesTab: React.FC<TabProps> = ({ showSnackbar }) => {
     { field: 'serial_number', headerName: 'Serial Number', width: 150 },
     { field: 'certificate_type', headerName: 'Type', width: 120 },
     { field: 'student_name', headerName: 'Student', width: 200 },
-    { field: 'issue_date', headerName: 'Issue Date', width: 120 },
+    {
+      field: 'issue_date',
+      headerName: 'Issue Date',
+      width: 120,
+      valueFormatter: (params) => {
+        return new Date(params).toLocaleDateString();
+      },
+    },
     { field: 'issued_by_name', headerName: 'Issued By', width: 150 },
     {
       field: 'is_revoked',
@@ -478,7 +619,7 @@ const IssuedCertificatesTab: React.FC<TabProps> = ({ showSnackbar }) => {
   return (
     <Box>
       <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={12} md={4}>
+        <Grid item xs={12} md={3}>
           <FormControl fullWidth size="small">
             <InputLabel>Filter by Type</InputLabel>
             <Select
@@ -495,7 +636,21 @@ const IssuedCertificatesTab: React.FC<TabProps> = ({ showSnackbar }) => {
             </Select>
           </FormControl>
         </Grid>
-        <Grid item xs={12} md={4}>
+        <Grid item xs={12} md={3}>
+          <FormControl fullWidth size="small">
+            <InputLabel>Filter by Status</InputLabel>
+            <Select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value as 'all' | 'active' | 'revoked')}
+              label="Filter by Status"
+            >
+              <MenuItem value="all">All</MenuItem>
+              <MenuItem value="active">Active</MenuItem>
+              <MenuItem value="revoked">Revoked</MenuItem>
+            </Select>
+          </FormControl>
+        </Grid>
+        <Grid item xs={12} md={3}>
           <TextField
             fullWidth
             size="small"
@@ -506,7 +661,7 @@ const IssuedCertificatesTab: React.FC<TabProps> = ({ showSnackbar }) => {
             onChange={(e) => setFilterDateFrom(e.target.value)}
           />
         </Grid>
-        <Grid item xs={12} md={4}>
+        <Grid item xs={12} md={3}>
           <TextField
             fullWidth
             size="small"
@@ -526,7 +681,7 @@ const IssuedCertificatesTab: React.FC<TabProps> = ({ showSnackbar }) => {
         paginationModel={paginationModel}
         onPaginationModelChange={setPaginationModel}
         rowCount={totalRows}
-        paginationMode="server"
+        paginationMode={isDemo ? 'client' : 'server'}
         pageSizeOptions={[10, 25, 50]}
         autoHeight
         disableRowSelectionOnClick
@@ -535,253 +690,12 @@ const IssuedCertificatesTab: React.FC<TabProps> = ({ showSnackbar }) => {
   );
 };
 
-const IDCardGenerationTab: React.FC<TabProps> = ({ showSnackbar }) => {
-  const [grades, setGrades] = useState<{ id: number; name: string }[]>([]);
-  const [sections, setSections] = useState<{ id: number; name: string }[]>([]);
-  const [selectedGrade, setSelectedGrade] = useState<number | ''>('');
-  const [selectedSection, setSelectedSection] = useState<number | ''>('');
-  const [templates, setTemplates] = useState<IDCardTemplate[]>([]);
-  const [selectedTemplate, setSelectedTemplate] = useState<number | undefined>(undefined);
-  const [loading, setLoading] = useState(false);
-  const [students, setStudents] = useState<Student[]>([]);
-  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
-
-  useEffect(() => {
-    loadGrades();
-    loadTemplates();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    if (selectedGrade) {
-      loadSections(selectedGrade as number);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedGrade]);
-
-  useEffect(() => {
-    if (selectedSection) {
-      loadStudents();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedSection]);
-
-  const loadGrades = async () => {
-    try {
-      const data = await academicApi.getGrades();
-      setGrades(data);
-    } catch (error) {
-      showSnackbar('Failed to load grades', 'error');
-    }
-  };
-
-  const loadSections = async (gradeId: number) => {
-    try {
-      const data = await academicApi.getSections(gradeId);
-      setSections(data);
-    } catch (error) {
-      showSnackbar('Failed to load sections', 'error');
-    }
-  };
-
-  const loadTemplates = async () => {
-    try {
-      const data = await schoolAdminApi.idCardTemplates.list();
-      setTemplates(data);
-      const defaultTemplate = data.find((t) => t.is_default);
-      if (defaultTemplate) {
-        setSelectedTemplate(defaultTemplate.id);
-      }
-    } catch (error) {
-      showSnackbar('Failed to load templates', 'error');
-    }
-  };
-
-  const loadStudents = async () => {
-    if (!selectedSection) return;
-    try {
-      const response = await studentsApi.listStudents({
-        section_id: selectedSection as number,
-        limit: 1000,
-      });
-      setStudents(response.items);
-    } catch (error) {
-      showSnackbar('Failed to load students', 'error');
-    }
-  };
-
-  const handleBulkGenerate = async () => {
-    if (!selectedGrade && !selectedSection) {
-      showSnackbar('Please select a grade or section', 'error');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const data: BulkIDCardGenerateRequest = {
-        grade_id: selectedGrade ? (selectedGrade as number) : undefined,
-        section_id: selectedSection ? (selectedSection as number) : undefined,
-        template_id: selectedTemplate,
-      };
-
-      const blob = await schoolAdminApi.idCards.bulkGenerate(data);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `id_cards_bulk.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-
-      showSnackbar('ID cards generated successfully', 'success');
-    } catch (error) {
-      showSnackbar('Failed to generate ID cards', 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSingleGenerate = async () => {
-    if (!selectedStudent) {
-      showSnackbar('Please select a student', 'error');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const blob = await schoolAdminApi.idCards.generate(selectedStudent.id, selectedTemplate);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `id_card_${selectedStudent.admission_number}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-
-      showSnackbar('ID card generated successfully', 'success');
-    } catch (error) {
-      showSnackbar('Failed to generate ID card', 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <Box>
-      <Grid container spacing={3}>
-        <Grid item xs={12}>
-          <Typography variant="h6" gutterBottom>
-            Bulk Generation
-          </Typography>
-        </Grid>
-
-        <Grid item xs={12} md={4}>
-          <FormControl fullWidth>
-            <InputLabel>Grade</InputLabel>
-            <Select
-              value={selectedGrade}
-              onChange={(e) => setSelectedGrade(e.target.value as number)}
-              label="Grade"
-            >
-              <MenuItem value="">All Grades</MenuItem>
-              {grades.map((grade) => (
-                <MenuItem key={grade.id} value={grade.id}>
-                  {grade.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
-
-        <Grid item xs={12} md={4}>
-          <FormControl fullWidth>
-            <InputLabel>Section</InputLabel>
-            <Select
-              value={selectedSection}
-              onChange={(e) => setSelectedSection(e.target.value as number)}
-              label="Section"
-              disabled={!selectedGrade}
-            >
-              <MenuItem value="">All Sections</MenuItem>
-              {sections.map((section) => (
-                <MenuItem key={section.id} value={section.id}>
-                  {section.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
-
-        <Grid item xs={12} md={4}>
-          <FormControl fullWidth>
-            <InputLabel>Template</InputLabel>
-            <Select
-              value={selectedTemplate || ''}
-              onChange={(e) => setSelectedTemplate(Number(e.target.value))}
-              label="Template"
-            >
-              {templates.map((template) => (
-                <MenuItem key={template.id} value={template.id}>
-                  {template.name} {template.is_default && '(Default)'}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
-
-        <Grid item xs={12}>
-          <Button
-            variant="contained"
-            onClick={handleBulkGenerate}
-            disabled={loading}
-            startIcon={loading ? <CircularProgress size={20} /> : undefined}
-          >
-            Generate ID Cards for Entire Class
-          </Button>
-        </Grid>
-
-        <Grid item xs={12}>
-          <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
-            Single Student ID Card
-          </Typography>
-        </Grid>
-
-        <Grid item xs={12} md={8}>
-          <Autocomplete
-            options={students}
-            getOptionLabel={(option) =>
-              `${option.first_name} ${option.last_name} - ${option.admission_number || 'N/A'}`
-            }
-            value={selectedStudent}
-            onChange={(_, newValue) => setSelectedStudent(newValue)}
-            renderInput={(params) => (
-              <TextField {...params} label="Select Student" placeholder="Choose a student" />
-            )}
-          />
-        </Grid>
-
-        <Grid item xs={12} md={4}>
-          <Button
-            variant="outlined"
-            fullWidth
-            onClick={handleSingleGenerate}
-            disabled={loading || !selectedStudent}
-            sx={{ height: '56px' }}
-          >
-            Generate Single ID Card
-          </Button>
-        </Grid>
-      </Grid>
-    </Box>
-  );
-};
-
 const CertificateTemplatesTab: React.FC<TabProps> = ({ showSnackbar }) => {
   const [templates, setTemplates] = useState<CertificateTemplate[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<CertificateTemplate | null>(null);
+  const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
+  const [previewTemplate, setPreviewTemplate] = useState<CertificateTemplate | null>(null);
   const [formData, setFormData] = useState<{
     name: string;
     certificate_type: CertificateType;
@@ -791,13 +705,15 @@ const CertificateTemplatesTab: React.FC<TabProps> = ({ showSnackbar }) => {
     name: '',
     certificate_type: 'Bonafide',
     template_config: {
-      header: '',
-      body_text: '',
-      footer_text: '',
+      header: 'Certificate Header',
+      body_text: 'This is to certify that...',
+      footer_text: 'Institution Name and Seal',
       custom_fields: [],
     },
     is_default: false,
   });
+
+  const isDemo = isDemoUser();
 
   useEffect(() => {
     loadTemplates();
@@ -806,7 +722,12 @@ const CertificateTemplatesTab: React.FC<TabProps> = ({ showSnackbar }) => {
 
   const loadTemplates = async () => {
     try {
-      const data = await schoolAdminApi.certificateTemplates.list();
+      let data: CertificateTemplate[];
+      if (isDemo) {
+        data = await demoCertificatesApi.getCertificateTemplates();
+      } else {
+        data = await schoolAdminApi.certificateTemplates.list();
+      }
       setTemplates(data);
     } catch (error) {
       showSnackbar('Failed to load templates', 'error');
@@ -819,9 +740,9 @@ const CertificateTemplatesTab: React.FC<TabProps> = ({ showSnackbar }) => {
       name: '',
       certificate_type: 'Bonafide',
       template_config: {
-        header: '',
-        body_text: '',
-        footer_text: '',
+        header: 'Certificate Header',
+        body_text: 'This is to certify that...',
+        footer_text: 'Institution Name and Seal',
         custom_fields: [],
       },
       is_default: false,
@@ -840,7 +761,18 @@ const CertificateTemplatesTab: React.FC<TabProps> = ({ showSnackbar }) => {
     setDialogOpen(true);
   };
 
+  const handlePreview = (template: CertificateTemplate) => {
+    setPreviewTemplate(template);
+    setPreviewDialogOpen(true);
+  };
+
   const handleSave = async () => {
+    if (isDemo) {
+      showSnackbar('Template creation/editing is not available in demo mode', 'info');
+      setDialogOpen(false);
+      return;
+    }
+
     try {
       if (editingTemplate) {
         await schoolAdminApi.certificateTemplates.update(editingTemplate.id, formData);
@@ -857,6 +789,11 @@ const CertificateTemplatesTab: React.FC<TabProps> = ({ showSnackbar }) => {
   };
 
   const handleDelete = async (id: number) => {
+    if (isDemo) {
+      showSnackbar('Template deletion is not available in demo mode', 'info');
+      return;
+    }
+
     if (!confirm('Are you sure you want to delete this template?')) return;
 
     try {
@@ -876,41 +813,83 @@ const CertificateTemplatesTab: React.FC<TabProps> = ({ showSnackbar }) => {
         </Button>
       </Box>
 
-      <Grid container spacing={2}>
+      <Grid container spacing={3}>
         {templates.map((template) => (
-          <Grid item xs={12} md={6} key={template.id}>
-            <Paper sx={{ p: 2 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
-                <Box>
-                  <Typography variant="h6">{template.name}</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Type: {template.certificate_type}
+          <Grid item xs={12} md={6} lg={4} key={template.id}>
+            <Card>
+              <CardMedia
+                sx={{
+                  height: 140,
+                  bgcolor: 'primary.light',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'white',
+                }}
+              >
+                <Box sx={{ textAlign: 'center', p: 2 }}>
+                  <Typography variant="h6" gutterBottom>
+                    {template.certificate_type}
                   </Typography>
-                  {template.is_default && (
-                    <Chip label="Default" color="primary" size="small" sx={{ mt: 1 }} />
-                  )}
+                  <Typography variant="caption">Template Preview</Typography>
                 </Box>
-                <Box>
-                  <IconButton onClick={() => handleEdit(template)} size="small">
-                    <EditIcon />
-                  </IconButton>
-                  <IconButton onClick={() => handleDelete(template.id)} size="small">
-                    <DeleteIcon />
-                  </IconButton>
+              </CardMedia>
+              <CardContent>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
+                  <Box>
+                    <Typography variant="h6" gutterBottom>
+                      {template.name}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                      Type: {template.certificate_type}
+                    </Typography>
+                    {template.is_default && (
+                      <Chip label="Default" color="primary" size="small" sx={{ mt: 1 }} />
+                    )}
+                  </Box>
                 </Box>
-              </Box>
-              <Box sx={{ mt: 2 }}>
-                <Typography variant="body2" fontWeight="bold">
-                  Preview Configuration:
-                </Typography>
-                <Typography variant="caption" component="pre" sx={{ whiteSpace: 'pre-wrap' }}>
-                  {JSON.stringify(template.template_config, null, 2)}
-                </Typography>
-              </Box>
-            </Paper>
+                <Box sx={{ mt: 2 }}>
+                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                    Configuration:
+                  </Typography>
+                  <Typography variant="caption" sx={{ display: 'block', mb: 1 }}>
+                    • Header: {template.template_config.header || 'Not set'}
+                  </Typography>
+                  <Typography variant="caption" sx={{ display: 'block' }}>
+                    • Custom fields: {template.template_config.custom_fields?.length || 0}
+                  </Typography>
+                </Box>
+              </CardContent>
+              <CardActions>
+                <Button
+                  size="small"
+                  startIcon={<VisibilityIcon />}
+                  onClick={() => handlePreview(template)}
+                >
+                  Preview
+                </Button>
+                <Button size="small" startIcon={<EditIcon />} onClick={() => handleEdit(template)}>
+                  Edit
+                </Button>
+                <IconButton size="small" onClick={() => handleDelete(template.id)}>
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              </CardActions>
+            </Card>
           </Grid>
         ))}
       </Grid>
+
+      {templates.length === 0 && (
+        <Box sx={{ textAlign: 'center', py: 8 }}>
+          <Typography variant="h6" color="text.secondary" gutterBottom>
+            No templates found
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Create your first certificate template to get started
+          </Typography>
+        </Box>
+      )}
 
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="md" fullWidth>
         <DialogTitle>{editingTemplate ? 'Edit Template' : 'Create Template'}</DialogTitle>
@@ -948,19 +927,43 @@ const CertificateTemplatesTab: React.FC<TabProps> = ({ showSnackbar }) => {
             <Grid item xs={12}>
               <TextField
                 fullWidth
+                label="Header Text"
+                value={formData.template_config.header || ''}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    template_config: { ...formData.template_config, header: e.target.value },
+                  })
+                }
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
                 multiline
-                rows={10}
-                label="Template Configuration (JSON)"
-                value={JSON.stringify(formData.template_config, null, 2)}
-                onChange={(e) => {
-                  try {
-                    const config = JSON.parse(e.target.value);
-                    setFormData({ ...formData, template_config: config });
-                  } catch (error) {
-                    // Invalid JSON, ignore
-                  }
-                }}
-                helperText="Enter valid JSON configuration for the template"
+                rows={4}
+                label="Body Text"
+                value={formData.template_config.body_text || ''}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    template_config: { ...formData.template_config, body_text: e.target.value },
+                  })
+                }
+                helperText="Use {{student_name}}, {{admission_number}}, etc. as placeholders"
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Footer Text"
+                value={formData.template_config.footer_text || ''}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    template_config: { ...formData.template_config, footer_text: e.target.value },
+                  })
+                }
               />
             </Grid>
           </Grid>
@@ -970,6 +973,35 @@ const CertificateTemplatesTab: React.FC<TabProps> = ({ showSnackbar }) => {
           <Button onClick={handleSave} variant="contained">
             Save
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={previewDialogOpen}
+        onClose={() => setPreviewDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>Template Preview: {previewTemplate?.name}</DialogTitle>
+        <DialogContent>
+          {previewTemplate && (
+            <Box sx={{ p: 3, bgcolor: 'grey.100', borderRadius: 1 }}>
+              <Paper sx={{ p: 4 }}>
+                <Typography variant="h5" align="center" gutterBottom>
+                  {previewTemplate.template_config.header}
+                </Typography>
+                <Typography variant="body1" sx={{ my: 3, whiteSpace: 'pre-wrap' }}>
+                  {previewTemplate.template_config.body_text}
+                </Typography>
+                <Typography variant="body2" align="center" sx={{ mt: 4 }}>
+                  {previewTemplate.template_config.footer_text}
+                </Typography>
+              </Paper>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPreviewDialogOpen(false)}>Close</Button>
         </DialogActions>
       </Dialog>
     </Box>
