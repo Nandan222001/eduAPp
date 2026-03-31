@@ -2069,11 +2069,14 @@ export const demoParentsApi = {
     });
   },
 
-  updatePrivacySettings: async (settings: Partial<PrivacySettings>) => {
+  updatePrivacySettings: async (settings: Partial<PrivacySettings>): Promise<PrivacySettings> => {
     return Promise.resolve({
       id: 1,
       parent_id: 5001,
-      ...settings,
+      disable_sibling_comparisons: settings.disable_sibling_comparisons ?? false,
+      hide_performance_rankings: settings.hide_performance_rankings ?? false,
+      hide_attendance_from_siblings: settings.hide_attendance_from_siblings ?? false,
+      allow_data_sharing: settings.allow_data_sharing ?? true,
       updated_at: new Date().toISOString(),
     });
   },

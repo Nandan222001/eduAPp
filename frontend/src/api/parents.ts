@@ -203,10 +203,15 @@ export const parentsApi = {
     if (isDemoUser()) {
       return demoDataApi.parents.updatePrivacySettings(settings);
     }
-    const response = await axios.put<PrivacySettings>(
-      '/api/v1/parents/family/privacy-settings',
-      settings
-    );
+    const response = await axios.put<{
+      id: number;
+      parent_id: number;
+      disable_sibling_comparisons: boolean;
+      hide_performance_rankings: boolean;
+      hide_attendance_from_siblings: boolean;
+      allow_data_sharing: boolean;
+      updated_at: string;
+    }>('/api/v1/parents/family/privacy-settings', settings);
     return response.data;
   },
 };
