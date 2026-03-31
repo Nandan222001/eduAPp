@@ -72,7 +72,7 @@ export const EnquiryManagement: React.FC = () => {
     severity: 'success' | 'error';
   }>({ open: false, message: '', severity: 'success' });
 
-  const [formData, setFormData] = useState<EnquiryCreate & { source?: string }>({
+  const [formData, setFormData] = useState<EnquiryCreate>({
     student_name: '',
     parent_name: '',
     parent_phone: '',
@@ -101,7 +101,15 @@ export const EnquiryManagement: React.FC = () => {
       const response = await api.list({
         skip: paginationModel.page * paginationModel.pageSize,
         limit: paginationModel.pageSize,
-        status: filterStatus || undefined,
+        status:
+          (filterStatus as
+            | 'new'
+            | 'contacted'
+            | 'visited'
+            | 'follow_up'
+            | 'converted'
+            | 'closed'
+            | undefined) || undefined,
         grade_interested: filterGrade || undefined,
         from_date: filterDate || undefined,
       });
@@ -143,7 +151,6 @@ export const EnquiryManagement: React.FC = () => {
       parent_email: '',
       grade_interested: '',
       notes: '',
-      source: 'Walk-in',
     });
     setDialogOpen(true);
   };
@@ -367,6 +374,7 @@ export const EnquiryManagement: React.FC = () => {
                 <MenuItem value="new">New</MenuItem>
                 <MenuItem value="contacted">Contacted</MenuItem>
                 <MenuItem value="visited">Visited</MenuItem>
+                <MenuItem value="follow_up">Follow-up</MenuItem>
                 <MenuItem value="converted">Converted</MenuItem>
                 <MenuItem value="closed">Closed</MenuItem>
               </Select>
@@ -494,22 +502,7 @@ export const EnquiryManagement: React.FC = () => {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth>
-                <InputLabel>Source</InputLabel>
-                <Select
-                  value={formData.source}
-                  label="Source"
-                  onChange={(e) => setFormData({ ...formData, source: e.target.value })}
-                >
-                  {sourceOptions.map((src) => (
-                    <MenuItem key={src} value={src}>
-                      {src}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
+
             <Grid item xs={12}>
               <TextField
                 fullWidth

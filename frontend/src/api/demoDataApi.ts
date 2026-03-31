@@ -246,31 +246,36 @@ export const generateDemoTeachers = (count: number) => {
 
 export const generateDemoExams = (count: number) => {
   const exams = [];
-  const examTypes = ['Mid-Term', 'Final', 'Unit Test', 'Monthly Test', 'Quiz'];
+  const examTypes = ['unit', 'mid_term', 'final', 'mock'];
+  const examStatuses = ['scheduled', 'ongoing', 'completed', 'cancelled'];
   const grades = [6, 7, 8, 9, 10, 11, 12];
   const subjects = demoData.academics.subjects;
 
   for (let i = 0; i < count; i++) {
     const examType = examTypes[i % examTypes.length];
     const gradeId = grades[i % grades.length];
-    const subjectId = (i % subjects.length) + 1;
     const examId = 300 + i;
+    const startDate = `2024-0${(i % 5) + 2}-${String((i % 28) + 1).padStart(2, '0')}`;
+    const endDate = `2024-0${(i % 5) + 2}-${String((((i % 28) + 3) % 28) + 1).padStart(2, '0')}`;
 
     exams.push({
       id: examId,
       institution_id: 1,
-      exam_name: `${examType} - ${subjects[i % subjects.length].name}`,
-      exam_type: examType,
+      academic_year_id: 1,
       grade_id: gradeId,
-      subject_id: subjectId,
-      date: `2024-0${(i % 5) + 2}-${String((i % 28) + 1).padStart(2, '0')}`,
-      start_time: '09:00:00',
-      end_time: '12:00:00',
-      duration_minutes: 180,
+      name: `${examType.replace('_', ' ').charAt(0).toUpperCase() + examType.slice(1).replace('_', ' ')} - ${subjects[i % subjects.length].name}`,
+      exam_type: examType,
+      start_date: startDate,
+      end_date: endDate,
+      status: examStatuses[i % examStatuses.length],
+      description: `${examType.replace('_', ' ')} examination for ${subjects[i % subjects.length].name}`,
       total_marks: 100,
       passing_marks: 40,
-      status: i % 4 < 3 ? 'completed' : 'scheduled',
-      is_active: true,
+      result_published: i % 4 < 2,
+      result_published_at:
+        i % 4 < 2
+          ? `2024-0${(i % 5) + 3}-${String((i % 28) + 5).padStart(2, '0')}T10:00:00Z`
+          : undefined,
       created_at: `2024-0${(i % 5) + 1}-01T09:00:00Z`,
       updated_at: '2024-02-01T10:30:00Z',
     });
@@ -2193,7 +2198,7 @@ export const demoInstitutionAdminApi = {
     }
     if (params?.search) {
       const searchLower = params.search.toLowerCase();
-      filteredExams = filteredExams.filter((e) => e.exam_name.toLowerCase().includes(searchLower));
+      filteredExams = filteredExams.filter((e) => e.name.toLowerCase().includes(searchLower));
     }
 
     const skip = params?.skip || 0;

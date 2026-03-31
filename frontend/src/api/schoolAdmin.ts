@@ -380,9 +380,9 @@ export interface Enquiry {
   parent_phone: string;
   enquiry_date: string;
   grade_interested?: string;
-  status: 'new' | 'contacted' | 'visited' | 'converted' | 'closed';
+  status: 'new' | 'contacted' | 'visited' | 'follow_up' | 'converted' | 'closed';
   notes?: string;
-  follow_up_date?: string;
+  follow_up_date?: string | null;
   assigned_to_id?: number;
   assigned_to_name?: string;
   created_at: string;
@@ -407,16 +407,16 @@ export interface EnquiryUpdate {
   parent_email?: string;
   parent_phone?: string;
   grade_interested?: string;
-  status?: 'new' | 'contacted' | 'visited' | 'converted' | 'closed';
+  status?: 'new' | 'contacted' | 'visited' | 'follow_up' | 'converted' | 'closed';
   notes?: string;
-  follow_up_date?: string;
+  follow_up_date?: string | null;
   assigned_to_id?: number;
 }
 
 export interface EnquiryListParams {
   skip?: number;
   limit?: number;
-  status?: 'new' | 'contacted' | 'visited' | 'converted' | 'closed';
+  status?: 'new' | 'contacted' | 'visited' | 'follow_up' | 'converted' | 'closed';
   grade_interested?: string;
   from_date?: string;
   to_date?: string;

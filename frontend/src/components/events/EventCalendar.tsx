@@ -88,24 +88,24 @@ const EventCalendar: React.FC<EventCalendarProps> = ({ onSelectEvent }) => {
   const handleSubmit = (formEvent: React.FormEvent<HTMLFormElement>) => {
     formEvent.preventDefault();
     const formData = new FormData(formEvent.currentTarget);
-    const data = {
+    const data: Partial<Event> = {
       institution_id: 1,
       title: formData.get('title') as string,
-      description: formData.get('description') as string,
+      description: (formData.get('description') as string) || undefined,
       event_type: formData.get('event_type') as string,
       start_date: formData.get('start_date') as string,
       end_date: formData.get('end_date') as string,
-      location: formData.get('location') as string,
-      venue: formData.get('venue') as string,
-      organizer: formData.get('organizer') as string,
-      contact_person: formData.get('contact_person') as string,
-      contact_email: formData.get('contact_email') as string,
-      contact_phone: formData.get('contact_phone') as string,
+      location: (formData.get('location') as string) || undefined,
+      venue: (formData.get('venue') as string) || undefined,
+      organizer: (formData.get('organizer') as string) || undefined,
+      contact_person: (formData.get('contact_person') as string) || undefined,
+      contact_email: (formData.get('contact_email') as string) || undefined,
+      contact_phone: (formData.get('contact_phone') as string) || undefined,
       max_participants: formData.get('max_participants')
         ? parseInt(formData.get('max_participants') as string)
         : undefined,
       registration_required: formData.get('registration_required') === 'on',
-      registration_deadline: formData.get('registration_deadline') as string,
+      registration_deadline: (formData.get('registration_deadline') as string) || undefined,
       is_public: formData.get('is_public') === 'on',
       allow_guests: formData.get('allow_guests') === 'on',
       status: (formData.get('status') as string) || 'scheduled',
@@ -114,7 +114,7 @@ const EventCalendar: React.FC<EventCalendarProps> = ({ onSelectEvent }) => {
     if (editingEvent) {
       updateMutation.mutate({ id: editingEvent.id, data });
     } else {
-      createMutation.mutate(data);
+      createMutation.mutate(data as Omit<Event, 'id' | 'created_at' | 'updated_at'>);
     }
   };
 

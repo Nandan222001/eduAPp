@@ -83,18 +83,18 @@ const FeeStructureConfig: React.FC = () => {
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-    const data = {
+    const data: Partial<FeeStructure> = {
       institution_id: 1,
       academic_year_id: 1,
       grade_id: parseInt(formData.get('grade_id') as string),
       name: formData.get('name') as string,
-      description: formData.get('description') as string,
+      description: (formData.get('description') as string) || undefined,
       category: formData.get('category') as string,
       amount: parseFloat(formData.get('amount') as string),
       is_mandatory: formData.get('is_mandatory') === 'on',
       is_recurring: formData.get('is_recurring') === 'on',
-      recurrence_period: formData.get('recurrence_period') as string,
-      due_date: formData.get('due_date') as string,
+      recurrence_period: (formData.get('recurrence_period') as string) || undefined,
+      due_date: (formData.get('due_date') as string) || undefined,
       late_fee_applicable: formData.get('late_fee_applicable') === 'on',
       late_fee_amount: formData.get('late_fee_amount')
         ? parseFloat(formData.get('late_fee_amount') as string)
@@ -108,7 +108,7 @@ const FeeStructureConfig: React.FC = () => {
     if (editingStructure) {
       updateMutation.mutate({ id: editingStructure.id, data });
     } else {
-      createMutation.mutate(data);
+      createMutation.mutate(data as Omit<FeeStructure, 'id' | 'created_at' | 'updated_at'>);
     }
   };
 
