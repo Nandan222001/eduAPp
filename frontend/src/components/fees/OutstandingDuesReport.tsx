@@ -112,18 +112,18 @@ const OutstandingDuesReport: React.FC = () => {
               <TableRow key={student.student_id}>
                 <TableCell>{student.student_name}</TableCell>
                 <TableCell>{student.grade_name}</TableCell>
-                <TableCell align="right">₹{parseFloat(student.total_fees).toFixed(2)}</TableCell>
-                <TableCell align="right">₹{parseFloat(student.amount_paid).toFixed(2)}</TableCell>
+                <TableCell align="right">₹{Number(student.total_fees).toFixed(2)}</TableCell>
+                <TableCell align="right">₹{Number(student.amount_paid).toFixed(2)}</TableCell>
                 <TableCell align="right">
                   <Typography
                     color={student.outstanding_amount > 0 ? 'warning.main' : 'success.main'}
                   >
-                    ₹{parseFloat(student.outstanding_amount).toFixed(2)}
+                    ₹{Number(student.outstanding_amount).toFixed(2)}
                   </Typography>
                 </TableCell>
                 <TableCell align="right">
                   <Typography color={student.overdue_amount > 0 ? 'error.main' : 'text.secondary'}>
-                    ₹{parseFloat(student.overdue_amount).toFixed(2)}
+                    ₹{Number(student.overdue_amount).toFixed(2)}
                   </Typography>
                 </TableCell>
                 <TableCell>

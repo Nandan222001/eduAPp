@@ -87,21 +87,21 @@ const FeeStructureConfig: React.FC = () => {
       institution_id: 1,
       academic_year_id: 1,
       grade_id: parseInt(formData.get('grade_id') as string),
-      name: formData.get('name'),
-      description: formData.get('description'),
-      category: formData.get('category'),
+      name: formData.get('name') as string,
+      description: formData.get('description') as string,
+      category: formData.get('category') as string,
       amount: parseFloat(formData.get('amount') as string),
       is_mandatory: formData.get('is_mandatory') === 'on',
       is_recurring: formData.get('is_recurring') === 'on',
-      recurrence_period: formData.get('recurrence_period'),
-      due_date: formData.get('due_date'),
+      recurrence_period: formData.get('recurrence_period') as string,
+      due_date: formData.get('due_date') as string,
       late_fee_applicable: formData.get('late_fee_applicable') === 'on',
       late_fee_amount: formData.get('late_fee_amount')
         ? parseFloat(formData.get('late_fee_amount') as string)
-        : null,
+        : undefined,
       late_fee_percentage: formData.get('late_fee_percentage')
         ? parseFloat(formData.get('late_fee_percentage') as string)
-        : null,
+        : undefined,
       is_active: true,
     };
 

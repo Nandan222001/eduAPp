@@ -53,13 +53,13 @@ const PaymentRecording: React.FC = () => {
       institution_id: 1,
       student_id: parseInt(formData.get('student_id') as string),
       fee_structure_id: parseInt(formData.get('fee_structure_id') as string),
-      payment_date: formData.get('payment_date'),
+      payment_date: formData.get('payment_date') as string,
       amount_paid: parseFloat(formData.get('amount_paid') as string),
       late_fee: parseFloat(formData.get('late_fee') as string) || 0,
       discount_amount: parseFloat(formData.get('discount_amount') as string) || 0,
-      payment_method: formData.get('payment_method'),
-      transaction_id: formData.get('transaction_id'),
-      remarks: formData.get('remarks'),
+      payment_method: formData.get('payment_method') as string,
+      transaction_id: formData.get('transaction_id') as string,
+      remarks: formData.get('remarks') as string,
     };
 
     recordMutation.mutate(data);
