@@ -90,25 +90,25 @@ const EventCalendar: React.FC<EventCalendarProps> = ({ onSelectEvent }) => {
     const formData = new FormData(formEvent.currentTarget);
     const data = {
       institution_id: 1,
-      title: formData.get('title'),
-      description: formData.get('description'),
-      event_type: formData.get('event_type'),
-      start_date: formData.get('start_date'),
-      end_date: formData.get('end_date'),
-      location: formData.get('location'),
-      venue: formData.get('venue'),
-      organizer: formData.get('organizer'),
-      contact_person: formData.get('contact_person'),
-      contact_email: formData.get('contact_email'),
-      contact_phone: formData.get('contact_phone'),
+      title: formData.get('title') as string,
+      description: formData.get('description') as string,
+      event_type: formData.get('event_type') as string,
+      start_date: formData.get('start_date') as string,
+      end_date: formData.get('end_date') as string,
+      location: formData.get('location') as string,
+      venue: formData.get('venue') as string,
+      organizer: formData.get('organizer') as string,
+      contact_person: formData.get('contact_person') as string,
+      contact_email: formData.get('contact_email') as string,
+      contact_phone: formData.get('contact_phone') as string,
       max_participants: formData.get('max_participants')
         ? parseInt(formData.get('max_participants') as string)
-        : null,
+        : undefined,
       registration_required: formData.get('registration_required') === 'on',
-      registration_deadline: formData.get('registration_deadline'),
+      registration_deadline: formData.get('registration_deadline') as string,
       is_public: formData.get('is_public') === 'on',
       allow_guests: formData.get('allow_guests') === 'on',
-      status: formData.get('status') || 'scheduled',
+      status: (formData.get('status') as string) || 'scheduled',
     };
 
     if (editingEvent) {

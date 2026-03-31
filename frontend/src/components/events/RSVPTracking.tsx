@@ -77,9 +77,9 @@ const RSVPTracking: React.FC<RSVPTrackingProps> = ({ eventId }) => {
     const formData = new FormData(formEvent.currentTarget);
     const data = {
       user_id: parseInt(formData.get('user_id') as string),
-      status: formData.get('status'),
+      status: formData.get('status') as string,
       number_of_guests: parseInt(formData.get('number_of_guests') as string) || 0,
-      remarks: formData.get('remarks'),
+      remarks: formData.get('remarks') as string,
     };
 
     createMutation.mutate({ eventId, data });

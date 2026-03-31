@@ -58,7 +58,20 @@ export const TicketPurchaseDialog: React.FC<TicketPurchaseDialogProps> = ({
   });
 
   const purchaseTicketMutation = useMutation({
-    mutationFn: () => eventsApi.purchaseTicket(event.id, paymentData),
+    mutationFn: () =>
+      eventsApi.purchaseTicket(event.id, {
+        ticketTypeId: 1,
+        quantity: 1,
+        paymentMethod: 'credit_card',
+        paymentDetails: {
+          card_number: paymentData.cardNumber,
+          card_name: paymentData.cardName,
+          expiry_month: paymentData.expiryMonth,
+          expiry_year: paymentData.expiryYear,
+          cvv: paymentData.cvv,
+          billing_email: paymentData.billingEmail,
+        },
+      }),
     onSuccess: (data) => {
       setTicketNumber(data.ticket_number);
       setActiveStep(2);

@@ -55,7 +55,7 @@ export const HLSVideoPlayer: React.FC<HLSVideoPlayerProps> = ({
           window as unknown as {
             Hls: {
               isSupported: () => boolean;
-              new: (config: object) => {
+              new (config: object): {
                 loadSource: (src: string) => void;
                 attachMedia: (video: HTMLVideoElement) => void;
                 on: (event: string, callback: () => void) => void;
