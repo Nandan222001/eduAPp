@@ -1587,10 +1587,29 @@ export const demoParentsApi = {
         const childKey = childId === 1101 ? 'child1' : 'child2';
         const gradesData =
           demoData.parent.gradesMonitor[childKey as keyof typeof demoData.parent.gradesMonitor];
+        const childMetricsData = {
+          1101: {
+            attendance_percentage: 94.5,
+            current_rank: 5,
+            average_score: 88.2,
+            total_students: 48,
+            attendance_status: 'present',
+          },
+          1102: {
+            attendance_percentage: 78.5,
+            current_rank: 28,
+            average_score: 72.4,
+            total_students: 42,
+            attendance_status: 'absent',
+          },
+        };
 
         return Promise.resolve({
           ...parentDashboardData,
-          selected_child: child as ChildOverview,
+          selected_child: {
+            ...child,
+            ...childMetricsData[childId as keyof typeof childMetricsData],
+          },
           recent_grades: gradesData.recent_grades,
           today_attendance:
             childId === 1101
@@ -1611,12 +1630,53 @@ export const demoParentsApi = {
   },
 
   getChildren: async (): Promise<ChildOverview[]> => {
-    return Promise.resolve(parentDashboardData.children as ChildOverview[]);
+    const childMetricsData = {
+      1101: {
+        attendance_percentage: 94.5,
+        current_rank: 5,
+        average_score: 88.2,
+        total_students: 48,
+        attendance_status: 'present',
+      },
+      1102: {
+        attendance_percentage: 78.5,
+        current_rank: 28,
+        average_score: 72.4,
+        total_students: 42,
+        attendance_status: 'absent',
+      },
+    };
+    return Promise.resolve(
+      parentDashboardData.children.map((c) => ({
+        ...c,
+        ...childMetricsData[c.id as keyof typeof childMetricsData],
+      }))
+    );
   },
 
   getChildOverview: async (childId: number): Promise<ChildOverview> => {
     const child = parentDashboardData.children.find((c) => c.id === childId);
-    return Promise.resolve((child || parentDashboardData.children[0]) as ChildOverview);
+    const childMetricsData = {
+      1101: {
+        attendance_percentage: 94.5,
+        current_rank: 5,
+        average_score: 88.2,
+        total_students: 48,
+        attendance_status: 'present',
+      },
+      1102: {
+        attendance_percentage: 78.5,
+        current_rank: 28,
+        average_score: 72.4,
+        total_students: 42,
+        attendance_status: 'absent',
+      },
+    };
+    const selectedChild = child || parentDashboardData.children[0];
+    return Promise.resolve({
+      ...selectedChild,
+      ...childMetricsData[selectedChild.id as keyof typeof childMetricsData],
+    });
   },
 
   getTodayAttendance: async (childId: number): Promise<TodayAttendance> => {
@@ -1842,19 +1902,29 @@ export const demoParentsApi = {
   },
 
   getFamilyOverviewMetrics: async () => {
-    const children = parentDashboardData.children as ChildOverview[];
+    const children = parentDashboardData.children;
+    const childMetricsData = {
+      1101: { attendance_percentage: 94.5, average_score: 88.2 },
+      1102: { attendance_percentage: 78.5, average_score: 72.4 },
+    };
     return Promise.resolve({
       total_children: children.length,
       total_assignments_due: 5,
       upcoming_events_count: 3,
       average_attendance:
-        children.reduce((sum, c) => sum + (c.attendance_percentage || 0), 0) / children.length,
+        children.reduce(
+          (sum, c) =>
+            sum +
+            (childMetricsData[c.id as keyof typeof childMetricsData]?.attendance_percentage || 0),
+          0
+        ) / children.length,
       children_metrics: children.map((c) => ({
         child_id: c.id,
         child_name: `${c.first_name} ${c.last_name}`,
         assignments_due: c.id === 1101 ? 2 : 3,
-        attendance_percentage: c.attendance_percentage || 0,
-        average_score: c.average_score || 0,
+        attendance_percentage:
+          childMetricsData[c.id as keyof typeof childMetricsData]?.attendance_percentage || 0,
+        average_score: childMetricsData[c.id as keyof typeof childMetricsData]?.average_score || 0,
       })),
     });
   },
