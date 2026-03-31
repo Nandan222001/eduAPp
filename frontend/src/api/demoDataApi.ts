@@ -36,6 +36,7 @@ import type {
   LeaderboardEntry,
   Badge,
 } from '@/types/gamification';
+import { LeaderboardType, LeaderboardPeriod } from '@/types/gamification';
 import type { Goal, GoalAnalytics } from '@/types/goals';
 import type { StudentPerformanceAnalytics } from '@/types/analytics';
 import type { Teacher, TeacherMyDashboardData, ClassAssignment } from './teachers';
@@ -758,9 +759,16 @@ export const demoGamificationApi = {
       institution_id: 1,
       name: 'Monthly Points Leaderboard',
       description: 'Top students by points this month',
-      period_type: 'monthly',
+      leaderboard_type: LeaderboardType.GLOBAL,
+      period: LeaderboardPeriod.MONTHLY,
+      grade_id: null,
+      section_id: null,
+      subject_id: null,
       start_date: new Date().toISOString(),
       end_date: new Date().toISOString(),
+      is_public: true,
+      show_full_names: false,
+      max_entries: 50,
       is_active: true,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),

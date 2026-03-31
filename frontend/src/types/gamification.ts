@@ -269,6 +269,7 @@ export interface LeaderboardFilter {
   sectionId?: number;
   subjectId?: number;
   friendsOnly?: boolean;
+  [key: string]: unknown;
 }
 
 export interface AchievementNotification {
