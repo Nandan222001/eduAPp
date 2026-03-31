@@ -199,10 +199,10 @@ export const olympicsAPI = {
 
   getCompetition: async (competitionId: number): Promise<Competition> => {
     if (isDemoUser()) {
-      return demoDataApi.olympics?.getCompetition?.(competitionId) || ({} as Competition);
+      return (demoDataApi.olympics?.getCompetition?.(competitionId) || {}) as Competition;
     }
     const response = await api.get(`/api/v1/olympics/competitions/${competitionId}`);
-    return response.data;
+    return response.data as Competition;
   },
 
   // Events
@@ -216,29 +216,29 @@ export const olympicsAPI = {
 
   getEvent: async (eventId: number): Promise<CompetitionEvent> => {
     if (isDemoUser()) {
-      return demoDataApi.olympics?.getEvent?.(eventId) || ({} as CompetitionEvent);
+      return (demoDataApi.olympics?.getEvent?.(eventId) || {}) as CompetitionEvent;
     }
     const response = await api.get(`/api/v1/olympics/events/${eventId}`);
-    return response.data;
+    return response.data as CompetitionEvent;
   },
 
   // Participation
   startEvent: async (eventId: number, teamId?: number): Promise<ParticipationSession> => {
     if (isDemoUser()) {
-      return demoDataApi.olympics?.startEvent?.(eventId, teamId) || ({} as ParticipationSession);
+      return (demoDataApi.olympics?.startEvent?.(eventId, teamId) || {}) as ParticipationSession;
     }
     const response = await api.post(`/api/v1/olympics/events/${eventId}/start`, {
       team_id: teamId,
     });
-    return response.data;
+    return response.data as ParticipationSession;
   },
 
   getSession: async (sessionId: number): Promise<ParticipationSession> => {
     if (isDemoUser()) {
-      return demoDataApi.olympics?.getSession?.(sessionId) || ({} as ParticipationSession);
+      return (demoDataApi.olympics?.getSession?.(sessionId) || {}) as ParticipationSession;
     }
     const response = await api.get(`/api/v1/olympics/sessions/${sessionId}`);
-    return response.data;
+    return response.data as ParticipationSession;
   },
 
   getQuestions: async (eventId: number): Promise<Question[]> => {
@@ -251,21 +251,21 @@ export const olympicsAPI = {
 
   submitAnswer: async (sessionId: number, questionId: number, answer: string): Promise<Answer> => {
     if (isDemoUser()) {
-      return demoDataApi.olympics?.submitAnswer?.(sessionId, questionId, answer) || ({} as Answer);
+      return (demoDataApi.olympics?.submitAnswer?.(sessionId, questionId, answer) || {}) as Answer;
     }
     const response = await api.post(`/api/v1/olympics/sessions/${sessionId}/answer`, {
       question_id: questionId,
       answer_text: answer,
     });
-    return response.data;
+    return response.data as Answer;
   },
 
   completeSession: async (sessionId: number): Promise<ParticipationSession> => {
     if (isDemoUser()) {
-      return demoDataApi.olympics?.completeSession?.(sessionId) || ({} as ParticipationSession);
+      return (demoDataApi.olympics?.completeSession?.(sessionId) || {}) as ParticipationSession;
     }
     const response = await api.post(`/api/v1/olympics/sessions/${sessionId}/complete`);
-    return response.data;
+    return response.data as ParticipationSession;
   },
 
   // Teams
@@ -279,23 +279,23 @@ export const olympicsAPI = {
 
   createTeam: async (competitionId: number, name: string, memberIds: number[]): Promise<Team> => {
     if (isDemoUser()) {
-      return demoDataApi.olympics?.createTeam?.(competitionId, name, memberIds) || ({} as Team);
+      return (demoDataApi.olympics?.createTeam?.(competitionId, name, memberIds) || {}) as Team;
     }
     const response = await api.post(`/api/v1/olympics/competitions/${competitionId}/teams`, {
       name,
       member_ids: memberIds,
     });
-    return response.data;
+    return response.data as Team;
   },
 
   joinTeam: async (teamCode: string): Promise<Team> => {
     if (isDemoUser()) {
-      return demoDataApi.olympics?.joinTeam?.(teamCode) || ({} as Team);
+      return (demoDataApi.olympics?.joinTeam?.(teamCode) || {}) as Team;
     }
     const response = await api.post('/api/v1/olympics/teams/join', {
       team_code: teamCode,
     });
-    return response.data;
+    return response.data as Team;
   },
 
   // Leaderboards
