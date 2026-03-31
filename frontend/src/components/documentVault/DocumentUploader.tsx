@@ -25,7 +25,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { documentVaultApi } from '@/api/documentVault';
+import { documentVaultApi, UploadDocumentRequest } from '@/api/documentVault';
 import { parentsApi } from '@/api/parents';
 import { DocumentType } from '@/types/documentVault';
 
@@ -73,7 +73,8 @@ export const DocumentUploader: React.FC<DocumentUploaderProps> = ({ open, onClos
   });
 
   const uploadMutation = useMutation({
-    mutationFn: documentVaultApi.uploadDocument,
+    mutationFn: ({ file, data }: { file: File; data: UploadDocumentRequest }) =>
+      documentVaultApi.uploadDocument(file, data),
     onSuccess: () => {
       if (currentFileIndex < files.length - 1) {
         setCurrentFileIndex(currentFileIndex + 1);
@@ -84,6 +85,27 @@ export const DocumentUploader: React.FC<DocumentUploaderProps> = ({ open, onClos
       }
     },
   });
+
+  const performOCR = useCallback(
+    async (file: File) => {
+      setOcrLoading(true);
+      try {
+        const suggestions = await documentVaultApi.performOCR(file);
+        setOcrSuggestions(suggestions as { document_type?: DocumentType; confidence?: number });
+        if (suggestions.document_type) {
+          setDocumentType(suggestions.document_type as DocumentType);
+        }
+        if (!title && file.name) {
+          setTitle(file.name.replace(/\.[^/.]+$/, ''));
+        }
+      } catch (error) {
+        console.error('OCR failed:', error);
+      } finally {
+        setOcrLoading(false);
+      }
+    },
+    [title]
+  );
 
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
@@ -105,24 +127,6 @@ export const DocumentUploader: React.FC<DocumentUploaderProps> = ({ open, onClos
     maxSize: 10485760,
   });
 
-  const performOCR = async (file: File) => {
-    setOcrLoading(true);
-    try {
-      const suggestions = await documentVaultApi.performOCR(file);
-      setOcrSuggestions(suggestions);
-      if (suggestions.document_type) {
-        setDocumentType(suggestions.document_type);
-      }
-      if (!title && file.name) {
-        setTitle(file.name.replace(/\.[^/.]+$/, ''));
-      }
-    } catch (error) {
-      console.error('OCR failed:', error);
-    } finally {
-      setOcrLoading(false);
-    }
-  };
-
   const handleAddTag = () => {
     if (tagInput.trim() && !tags.includes(tagInput.trim())) {
       setTags([...tags, tagInput.trim()]);
@@ -138,13 +142,15 @@ export const DocumentUploader: React.FC<DocumentUploaderProps> = ({ open, onClos
     if (!childId || !documentType || !title || files.length === 0) return;
 
     await uploadMutation.mutateAsync({
-      child_id: childId as number,
-      document_type: documentType as DocumentType,
-      title,
-      description,
-      expiry_date: expiryDate?.toISOString(),
-      tags,
       file: files[currentFileIndex],
+      data: {
+        student_id: childId as number,
+        document_type: documentType as DocumentType,
+        title,
+        description,
+        expiry_date: expiryDate?.toISOString(),
+        tags,
+      },
     });
   };
 
@@ -241,7 +247,7 @@ export const DocumentUploader: React.FC<DocumentUploaderProps> = ({ open, onClos
                 }
               >
                 OCR detected: {ocrSuggestions.document_type?.replace(/_/g, ' ')} (
-                {Math.round(ocrSuggestions.confidence * 100)}% confidence)
+                {Math.round((ocrSuggestions.confidence ?? 0) * 100)}% confidence)
               </Alert>
             )}
 
