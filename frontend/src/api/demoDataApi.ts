@@ -4348,6 +4348,95 @@ export interface BulkIDCardGenerationResult {
   cards_generated: StudentIDCardData[];
 }
 
+const demoIDCardTemplates: IDCardTemplate[] = [
+  {
+    id: 1,
+    institution_id: 1,
+    name: 'Default Portrait Template',
+    orientation: 'portrait',
+    front_config: {
+      background_color: '#ffffff',
+      header_color: '#1e40af',
+      border_color: '#3b82f6',
+      logo_url: '/logo.png',
+      show_photo: true,
+      show_name: true,
+      show_admission_number: true,
+      show_class: true,
+      show_blood_group: true,
+      show_emergency_contact: true,
+    },
+    back_config: {
+      background_color: '#f9fafb',
+      header_color: '#1e40af',
+      border_color: '#3b82f6',
+      show_address: true,
+      show_phone: true,
+      show_parent_phone: true,
+      custom_fields: [
+        { label: 'Emergency Contact', value: '{emergency_contact}' },
+        { label: 'Blood Group', value: '{blood_group}' },
+      ],
+    },
+    is_default: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: 2,
+    institution_id: 1,
+    name: 'Landscape Template',
+    orientation: 'landscape',
+    front_config: {
+      background_color: '#fef3c7',
+      header_color: '#92400e',
+      border_color: '#d97706',
+      logo_url: '/logo.png',
+      show_photo: true,
+      show_name: true,
+      show_admission_number: true,
+      show_class: true,
+      show_dob: true,
+      show_blood_group: true,
+    },
+    back_config: {
+      background_color: '#fef3c7',
+      header_color: '#92400e',
+      border_color: '#d97706',
+      show_emergency_contact: true,
+      show_parent_phone: true,
+      custom_fields: [{ label: 'Valid Until', value: '{valid_until}' }],
+    },
+    is_default: false,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+];
+
+const demoIDCardData: StudentIDCardData[] = [
+  {
+    id: 1,
+    student_id: 1,
+    institution_id: 1,
+    card_number: 'ID-2024-001',
+    student_name: 'John Doe',
+    grade: '10th Grade',
+    section: 'A',
+    admission_number: 'STD2023001',
+    photo_url: 'https://i.pravatar.cc/150?img=1',
+    blood_group: 'O+',
+    emergency_contact: '+1-555-0001',
+    valid_from: new Date().toISOString().split('T')[0],
+    valid_until: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
+      .toISOString()
+      .split('T')[0],
+    barcode_data: 'STD2023001',
+    qr_code_data: 'https://school.edu/verify/STD2023001',
+    template_id: 1,
+    issued_at: new Date().toISOString(),
+  },
+];
+
 export const demoCertificatesApi = {
   getCertificateTemplates: async (certificate_type?: string): Promise<CertificateTemplate[]> => {
     let templates = [...demoCertificateTemplates];
@@ -4452,95 +4541,6 @@ export const demoCertificatesApi = {
     return Promise.resolve(newCertificate);
   },
 };
-
-const demoIDCardTemplates: IDCardTemplate[] = [
-  {
-    id: 1,
-    institution_id: 1,
-    name: 'Default Portrait Template',
-    orientation: 'portrait',
-    front_config: {
-      background_color: '#ffffff',
-      header_color: '#1e40af',
-      border_color: '#3b82f6',
-      logo_url: '/logo.png',
-      show_photo: true,
-      show_name: true,
-      show_admission_number: true,
-      show_class: true,
-      show_blood_group: true,
-      show_emergency_contact: true,
-    },
-    back_config: {
-      background_color: '#f9fafb',
-      header_color: '#1e40af',
-      border_color: '#3b82f6',
-      show_address: true,
-      show_phone: true,
-      show_parent_phone: true,
-      custom_fields: [
-        { label: 'Emergency Contact', value: '{emergency_contact}' },
-        { label: 'Blood Group', value: '{blood_group}' },
-      ],
-    },
-    is_default: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-  {
-    id: 2,
-    institution_id: 1,
-    name: 'Landscape Template',
-    orientation: 'landscape',
-    front_config: {
-      background_color: '#fef3c7',
-      header_color: '#92400e',
-      border_color: '#d97706',
-      logo_url: '/logo.png',
-      show_photo: true,
-      show_name: true,
-      show_admission_number: true,
-      show_class: true,
-      show_dob: true,
-      show_blood_group: true,
-    },
-    back_config: {
-      background_color: '#fef3c7',
-      header_color: '#92400e',
-      border_color: '#d97706',
-      show_emergency_contact: true,
-      show_parent_phone: true,
-      custom_fields: [{ label: 'Valid Until', value: '{valid_until}' }],
-    },
-    is_default: false,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-];
-
-const demoIDCardData: StudentIDCardData[] = [
-  {
-    id: 1,
-    student_id: 1,
-    institution_id: 1,
-    card_number: 'ID-2024-001',
-    student_name: 'John Doe',
-    grade: '10th Grade',
-    section: 'A',
-    admission_number: 'STD2023001',
-    photo_url: 'https://i.pravatar.cc/150?img=1',
-    blood_group: 'O+',
-    emergency_contact: '+1-555-0001',
-    valid_from: new Date().toISOString().split('T')[0],
-    valid_until: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
-      .toISOString()
-      .split('T')[0],
-    barcode_data: 'STD2023001',
-    qr_code_data: 'https://school.edu/verify/STD2023001',
-    template_id: 1,
-    issued_at: new Date().toISOString(),
-  },
-];
 
 export const demoIDCardsApi = {
   getIDCardTemplates: async (): Promise<IDCardTemplate[]> => {
