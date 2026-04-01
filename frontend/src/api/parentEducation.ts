@@ -71,6 +71,8 @@ export interface CourseEnrollment {
   enrolled_at: string;
   created_at: string;
   updated_at: string;
+  current_lesson?: { id: number; title: string };
+  course?: { id: number; title: string; thumbnail_url?: string };
 }
 
 export interface LessonProgress {
