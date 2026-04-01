@@ -61,6 +61,7 @@ import {
   Tooltip as ChartTooltip,
   Legend,
   Filler,
+  TooltipItem,
 } from 'chart.js';
 
 ChartJS.register(
@@ -520,9 +521,9 @@ function GrowthVisualization({ moodEntries, selProgress }: GrowthVisualizationPr
       },
       tooltip: {
         callbacks: {
-          label: (context: { parsed: { y: number | null } }) => {
-            const mood = MOOD_OPTIONS.find((m) => m.value === context.parsed.y);
-            return mood ? mood.label : '';
+          label: (tooltipItem: TooltipItem<'line'>) => {
+            const value = tooltipItem.parsed.y ?? 0;
+            return `Score: ${value}`;
           },
         },
       },
