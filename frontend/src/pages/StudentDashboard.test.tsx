@@ -32,7 +32,7 @@ const mockDashboardData: StudentDashboardData = {
   study_streak: {
     current_streak: demoData.gamification.userPoints.current_streak,
     longest_streak: demoData.gamification.userPoints.longest_streak,
-    last_activity: demoData.gamification.userPoints.last_activity_date,
+    last_activity: undefined,
   },
   points_and_rank: {
     total_points: demoData.gamification.userPoints.total_points,
@@ -40,12 +40,12 @@ const mockDashboardData: StudentDashboardData = {
     rank: 3,
   },
   badges: demoData.gamification.userBadges.map((ub) => ({
-    id: ub.badge.id,
-    name: ub.badge.name,
-    description: ub.badge.description,
-    icon_url: ub.badge.icon_url,
-    badge_type: ub.badge.badge_type,
-    rarity: ub.badge.rarity,
+    id: ub.badge!.id,
+    name: ub.badge!.name,
+    description: ub.badge!.description,
+    icon_url: ub.badge!.icon_url ?? undefined,
+    badge_type: ub.badge!.badge_type,
+    rarity: ub.badge!.rarity,
     earned_at: ub.earned_at,
   })),
   todays_tasks: [],
@@ -236,7 +236,7 @@ describe('StudentDashboard - Demo User Integration Tests', () => {
 
     // Verify individual badges are displayed
     demoData.gamification.userBadges.forEach((userBadge) => {
-      expect(screen.getByText(userBadge.badge.name)).toBeInTheDocument();
+      expect(screen.getByText(userBadge.badge!.name)).toBeInTheDocument();
     });
   });
 
@@ -289,7 +289,7 @@ describe('StudentDashboard - Demo User Integration Tests', () => {
 
     // Verify badges structure
     demoData.gamification.userBadges.forEach((userBadge) => {
-      expect(screen.getByText(userBadge.badge.name)).toBeInTheDocument();
+      expect(screen.getByText(userBadge.badge!.name)).toBeInTheDocument();
     });
   });
 
@@ -317,11 +317,11 @@ describe('StudentDashboard - Demo User Integration Tests', () => {
     expect(userBadges.length).toBeGreaterThan(0);
 
     userBadges.forEach((userBadge) => {
-      const badgeElement = screen.getByText(userBadge.badge.name);
+      const badgeElement = screen.getByText(userBadge.badge!.name);
       expect(badgeElement).toBeInTheDocument();
 
       // Verify badge has proper rarity (Epic, Legendary, Common, Rare)
-      const badge = userBadge.badge;
+      const badge = userBadge.badge!;
       expect(['common', 'rare', 'epic', 'legendary']).toContain(badge.rarity.toLowerCase());
     });
   });
