@@ -163,7 +163,7 @@ export const ParentVolunteerHours: React.FC = () => {
     }
   };
 
-  const getStatusIcon = (status: string) => {
+  const getStatusIcon = (status: string): React.ReactElement | null => {
     switch (status) {
       case 'approved':
         return <CheckCircleIcon color="success" />;
@@ -422,7 +422,7 @@ export const ParentVolunteerHours: React.FC = () => {
                         </TableCell>
                         <TableCell>
                           <Chip
-                            icon={getStatusIcon(activity.status)}
+                            icon={getStatusIcon(activity.status) || undefined}
                             label={activity.status}
                             color={
                               getStatusColor(activity.status) as
