@@ -260,12 +260,16 @@ const SchoolEventsCalendar: React.FC = () => {
               variant="outlined"
               fullWidth
               startIcon={
-                hasReminder(event.id) ? <NotificationsActiveIcon /> : <NotificationsIcon />
+                hasReminder(event.id as number) ? (
+                  <NotificationsActiveIcon />
+                ) : (
+                  <NotificationsIcon />
+                )
               }
-              onClick={() => handleSetReminder(event.id)}
-              color={hasReminder(event.id) ? 'success' : 'primary'}
+              onClick={() => handleSetReminder(event.id as number)}
+              color={hasReminder(event.id as number) ? 'success' : 'primary'}
             >
-              {hasReminder(event.id) ? 'Reminder Set' : 'Set Reminder'}
+              {hasReminder(event.id as number) ? 'Reminder Set' : 'Set Reminder'}
             </Button>
           </>
         )}
