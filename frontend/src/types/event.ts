@@ -90,6 +90,7 @@ export interface LiveEvent extends Event {
   event_date: string;
   requires_purchase?: boolean;
   related_documents?: EventDocument[];
+  [key: string]: unknown;
 }
 
 export interface StreamHealth {

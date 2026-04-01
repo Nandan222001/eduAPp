@@ -58,6 +58,7 @@ export interface Credential {
   institution_name?: string;
   verification_count?: number;
   share_count?: number;
+  [key: string]: unknown;
 }
 
 export interface CredentialShare {
