@@ -8,6 +8,7 @@ export const getDashboardRoute = (role: UserRole): string => {
     institution_admin: '/admin',
     parent: '/parent/dashboard',
     superadmin: '/super-admin',
+    tutor: '/peer-tutoring-marketplace',
   };
   return dashboardRoutes[role] || '/';
 };

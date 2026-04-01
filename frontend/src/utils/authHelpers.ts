@@ -20,6 +20,7 @@ export const getRoleLabel = (role: UserRole): string => {
     parent: 'Parent',
     institution_admin: 'Institution Administrator',
     superadmin: 'Super Administrator',
+    tutor: 'Tutor',
   };
   return labels[role] || role;
 };
@@ -32,6 +33,7 @@ export const getRolePriority = (role: UserRole): number => {
     student: 1,
     institution_admin: 5,
     superadmin: 6,
+    tutor: 2,
   };
   return priorities[role] || 0;
 };
