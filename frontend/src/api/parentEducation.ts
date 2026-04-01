@@ -409,9 +409,20 @@ export const parentEducationApi = {
     return response.data;
   },
 
-  getDiscussionThreads: async (courseId: number): Promise<unknown[]> => {
+  getDiscussionThreads: async (courseId: number) => {
     const response = await axios.get(`/api/v1/parent-education/courses/${courseId}/discussions`);
-    return response.data;
+    return response.data as Array<{
+      id: number;
+      title: string;
+      content: string;
+      is_pinned: boolean;
+      is_locked?: boolean;
+      parent_name?: string;
+      parent_photo_url?: string;
+      view_count?: number;
+      created_at: string;
+      reply_count?: number;
+    }>;
   },
 
   createDiscussionThread: async (
@@ -425,9 +436,18 @@ export const parentEducationApi = {
     return response.data;
   },
 
-  getThreadReplies: async (threadId: number): Promise<unknown[]> => {
+  getThreadReplies: async (threadId: number) => {
     const response = await axios.get(`/api/v1/parent-education/discussions/${threadId}/replies`);
-    return response.data;
+    return response.data as Array<{
+      id: number;
+      content: string;
+      parent_name?: string;
+      user_name?: string;
+      user_photo_url?: string;
+      user_role?: string;
+      is_answer?: boolean;
+      created_at: string;
+    }>;
   },
 
   createThreadReply: async (threadId: number, data: { content: string }): Promise<unknown> => {

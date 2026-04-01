@@ -148,7 +148,7 @@ export const ParentConferenceBooking: React.FC = () => {
   });
 
   useEffect(() => {
-    let timer: NodeJS.Timeout;
+    let timer: ReturnType<typeof setInterval> | undefined;
     if (speedSession.active && speedSession.timeRemaining > 0) {
       timer = setInterval(() => {
         setSpeedSession((prev) => ({
@@ -159,7 +159,9 @@ export const ParentConferenceBooking: React.FC = () => {
     } else if (speedSession.active && speedSession.timeRemaining === 0) {
       handleNextTeacher();
     }
-    return () => clearInterval(timer);
+    return () => {
+      if (timer) clearInterval(timer);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [speedSession.active, speedSession.timeRemaining]);
 

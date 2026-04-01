@@ -69,8 +69,6 @@ interface StatCardProps {
 }
 
 function StatCard({ title, value, icon, color, subtitle }: StatCardProps) {
-  const _theme = useTheme();
-
   return (
     <GlassDashboardCard
       elevation={0}

@@ -37,8 +37,8 @@ export interface FamilyDocument {
   updated_at: string;
   folder_id?: number;
   student_id?: number;
-  child_id?: number;
-  child_name?: string;
+  child_id: number;
+  child_name: string;
   verified_by?: string;
   verified_date?: string;
   rejection_reason?: string;

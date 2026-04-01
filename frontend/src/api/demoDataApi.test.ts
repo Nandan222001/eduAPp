@@ -1087,7 +1087,7 @@ describe('demoAnalyticsApi', () => {
       expect(result).toBeDefined();
       expect(result.report_id).toBe('1');
       expect(result.title).toBe('Custom Report');
-      expect(result.generated_at).toBeDefined();
+      expect(result.generatedAt).toBeDefined();
       expect(result.filters).toEqual(filters);
     });
   });

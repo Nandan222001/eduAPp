@@ -155,7 +155,7 @@ export const ParentConferenceDashboard: React.FC = () => {
   const canJoinMeeting = (conference: UpcomingConference) => {
     const conferenceDateTime = parseISO(`${conference.date}T${conference.start_time}`);
     const minutesUntil = differenceInMinutes(conferenceDateTime, currentTime);
-    return minutesUntil <= 5 && minutesUntil >= -conference.duration_minutes;
+    return minutesUntil <= 5 && minutesUntil >= -(conference.duration_minutes || 30);
   };
 
   const handleDownloadICS = async (bookingId: number) => {

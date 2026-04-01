@@ -92,7 +92,6 @@ export const ParentCourseDiscussions: React.FC = () => {
     mutationFn: (data: { threadId: number; content: string; parentId?: number }) =>
       parentEducationApi.createThreadReply(data.threadId, {
         content: data.content,
-        parent_id: data.parentId,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['thread-replies'] });

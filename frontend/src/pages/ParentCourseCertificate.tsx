@@ -28,7 +28,17 @@ export const ParentCourseCertificatePage: React.FC = () => {
     );
   }
 
-  if (error || !certificate) {
+  if (error) {
+    return (
+      <Container maxWidth="lg">
+        <Alert severity="error" sx={{ mt: 3 }}>
+          Failed to load certificate
+        </Alert>
+      </Container>
+    );
+  }
+
+  if (!certificate) {
     return (
       <Container maxWidth="lg">
         <Alert severity="error" sx={{ mt: 3 }}>
