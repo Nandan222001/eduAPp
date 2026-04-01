@@ -72,20 +72,6 @@ export const DocumentUploader: React.FC<DocumentUploaderProps> = ({ open, onClos
     enabled: open,
   });
 
-  const uploadMutation = useMutation({
-    mutationFn: ({ file, data }: { file: File; data: UploadDocumentRequest }) =>
-      documentVaultApi.uploadDocument(file, data),
-    onSuccess: () => {
-      if (currentFileIndex < files.length - 1) {
-        setCurrentFileIndex(currentFileIndex + 1);
-        resetForm();
-      } else {
-        onSuccess();
-        handleClose();
-      }
-    },
-  });
-
   const performOCR = useCallback(
     async (file: File) => {
       setOcrLoading(true);
@@ -106,6 +92,20 @@ export const DocumentUploader: React.FC<DocumentUploaderProps> = ({ open, onClos
     },
     [title]
   );
+
+  const uploadMutation = useMutation({
+    mutationFn: (request: { file: File; data: UploadDocumentRequest }) =>
+      documentVaultApi.uploadDocument(request.file, request.data),
+    onSuccess: () => {
+      if (currentFileIndex < files.length - 1) {
+        setCurrentFileIndex(currentFileIndex + 1);
+        resetForm();
+      } else {
+        onSuccess();
+        handleClose();
+      }
+    },
+  });
 
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
