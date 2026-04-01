@@ -179,7 +179,7 @@ export const queueAttendanceRequest = async (data: Record<string, unknown>): Pro
     metadata: {
       date: data.date,
       section_id: data.section_id,
-      count: data.attendances?.length || 0,
+      count: Array.isArray(data.attendances) ? data.attendances.length : 0,
     },
   });
 };
