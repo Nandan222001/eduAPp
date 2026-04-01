@@ -78,15 +78,16 @@ export interface EventCalendarItem {
 
 export interface LiveEvent extends Event {
   is_live: boolean;
-  stream_url?: string;
+  stream_url: string;
   hls_url?: string;
   rtmp_url?: string;
-  viewer_count?: number;
+  viewer_count: number;
   stream_health?: StreamHealth;
   camera_angles?: CameraAngle[];
   recording_url?: string;
-  is_ticketed?: boolean;
-  ticket_price?: number;
+  is_ticketed: boolean;
+  ticket_price: number;
+  event_date: string;
   requires_purchase?: boolean;
   related_documents?: EventDocument[];
 }

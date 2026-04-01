@@ -41,6 +41,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { eventsApi } from '@/api/events';
 import { format, isFuture, differenceInHours } from 'date-fns';
+import { LiveEvent } from '@/types/event';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -138,7 +139,7 @@ const SchoolEventsCalendar: React.FC = () => {
     event,
     type,
   }: {
-    event: Record<string, unknown>;
+    event: LiveEvent;
     type: 'live' | 'upcoming' | 'recorded';
   }) => (
     <Card
@@ -215,14 +216,14 @@ const SchoolEventsCalendar: React.FC = () => {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <PeopleIcon fontSize="small" color="action" />
               <Typography variant="body2" color="text.secondary">
-                {event.viewer_count} watching
+                {String(event.viewer_count || '')} watching
               </Typography>
             </Box>
           )}
           {event.is_ticketed && (
             <Chip
               icon={<PaymentIcon />}
-              label={`$${event.ticket_price}`}
+              label={`$${String(event.ticket_price || '')}`}
               size="small"
               color="secondary"
             />
@@ -238,7 +239,7 @@ const SchoolEventsCalendar: React.FC = () => {
             overflow: 'hidden',
           }}
         >
-          {event.description}
+          {String(event.description || '')}
         </Typography>
       </CardContent>
       <CardActions sx={{ p: 2, pt: 0 }}>
