@@ -260,7 +260,7 @@ export const ParentEducationPortal: React.FC = () => {
         </Box>
 
         {/* Tabs */}
-        <Tabs value={selectedTab} onChange={(e, v) => setSelectedTab(v)} sx={{ mb: 3 }}>
+        <Tabs value={selectedTab} onChange={(_e, v) => setSelectedTab(v)} sx={{ mb: 3 }}>
           <Tab label="Catalog" icon={<MenuBook />} iconPosition="start" />
           <Tab label="My Courses" icon={<VideoLibrary />} iconPosition="start" />
           <Tab label="Certificates" icon={<EmojiEvents />} iconPosition="start" />
