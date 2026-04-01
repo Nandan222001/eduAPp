@@ -97,6 +97,7 @@ const StudyGroups: React.FC = () => {
         my_groups: 0,
         total_members: 0,
         active_today: 0,
+        total_messages: 0,
       });
       return;
     }
