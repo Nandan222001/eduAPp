@@ -14,7 +14,6 @@ import {
   DialogContent,
   DialogActions,
   Chip,
-  Paper,
   Divider,
   Breadcrumbs,
   Link,
@@ -26,14 +25,8 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   List,
   ListItem,
-  ListItemText,
-  IconButton,
 } from '@mui/material';
 import {
   School as SchoolIcon,
@@ -44,17 +37,9 @@ import {
   Work as WorkIcon,
   Warning as WarningIcon,
   VerifiedUser as VerifyIcon,
-  People as PeopleIcon,
-  Description as DescriptionIcon,
 } from '@mui/icons-material';
 import employmentApi from '@/api/employment';
-import {
-  WorkPermit,
-  StudentJobListing,
-  StudentEmployment,
-  StudentJobListingUpdate,
-} from '@/types/employment';
-import { useAuth } from '@/hooks/useAuth';
+import { StudentJobListing, StudentEmployment, StudentJobListingUpdate } from '@/types/employment';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -72,15 +57,11 @@ function TabPanel(props: TabPanelProps) {
 }
 
 export default function CareerCounselorWorkflow() {
-  const { user } = useAuth();
   const [tabValue, setTabValue] = useState(0);
-  const [workPermits, setWorkPermits] = useState<WorkPermit[]>([]);
   const [jobListings, setJobListings] = useState<StudentJobListing[]>([]);
   const [employments, setEmployments] = useState<StudentEmployment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
-  const [selectedPermit, setSelectedPermit] = useState<WorkPermit | null>(null);
   const [selectedListing, setSelectedListing] = useState<StudentJobListing | null>(null);
   const [reviewNotes, setReviewNotes] = useState('');
   const [reviewDecision, setReviewDecision] = useState<'approve' | 'deny' | null>(null);
@@ -88,7 +69,6 @@ export default function CareerCounselorWorkflow() {
 
   useEffect(() => {
     fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchData = async () => {
@@ -99,7 +79,6 @@ export default function CareerCounselorWorkflow() {
         employmentApi.getPendingEmploymentVerifications(),
       ]);
 
-      const pendingPermits = jobs.filter((job) => !job.employer_verified);
       setJobListings(jobs);
       setEmployments(pendingEmployments);
       setError(null);
@@ -108,32 +87,6 @@ export default function CareerCounselorWorkflow() {
       console.error(err);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleReviewPermit = (permit: WorkPermit) => {
-    setSelectedPermit(permit);
-    setReviewDialogOpen(true);
-    setReviewNotes('');
-    setReviewDecision(null);
-  };
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleSubmitPermitReview = async () => {
-    if (!selectedPermit || !reviewDecision) return;
-
-    try {
-      const status = reviewDecision === 'approve' ? 'approved' : 'denied';
-      await employmentApi.authorizeWorkPermit(selectedPermit.id, status);
-      setReviewDialogOpen(false);
-      setSelectedPermit(null);
-      setReviewNotes('');
-      setReviewDecision(null);
-      fetchData();
-      setError(null);
-    } catch (err) {
-      setError('Failed to submit review');
-      console.error(err);
     }
   };
 
@@ -177,7 +130,9 @@ export default function CareerCounselorWorkflow() {
     }
   };
 
-  const getAgeAppropriatenessScore = (listing: StudentJobListing): { score: number; issues: string[] } => {
+  const getAgeAppropriatenessScore = (
+    listing: StudentJobListing
+  ): { score: number; issues: string[] } => {
     const issues: string[] = [];
     let score = 100;
 
@@ -212,7 +167,9 @@ export default function CareerCounselorWorkflow() {
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+      <Box
+        sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}
+      >
         <CircularProgress />
       </Box>
     );
@@ -365,7 +322,13 @@ export default function CareerCounselorWorkflow() {
                           <TableCell>
                             <Chip
                               label={academicRisk.toUpperCase()}
-                              color={academicRisk === 'low' ? 'success' : academicRisk === 'medium' ? 'warning' : 'error'}
+                              color={
+                                academicRisk === 'low'
+                                  ? 'success'
+                                  : academicRisk === 'medium'
+                                    ? 'warning'
+                                    : 'error'
+                              }
                               size="small"
                             />
                           </TableCell>
@@ -427,13 +390,17 @@ export default function CareerCounselorWorkflow() {
                               <Typography variant="caption" color="text.secondary">
                                 Hours/Week
                               </Typography>
-                              <Typography variant="body2">{employment.hours_per_week || 'N/A'}</Typography>
+                              <Typography variant="body2">
+                                {employment.hours_per_week || 'N/A'}
+                              </Typography>
                             </Grid>
                             <Grid item xs={6} sm={3}>
                               <Typography variant="caption" color="text.secondary">
                                 Total Hours
                               </Typography>
-                              <Typography variant="body2">{employment.total_hours_worked || 0}</Typography>
+                              <Typography variant="body2">
+                                {employment.total_hours_worked || 0}
+                              </Typography>
                             </Grid>
                             <Grid item xs={6} sm={3}>
                               <Typography variant="caption" color="text.secondary">
@@ -458,7 +425,14 @@ export default function CareerCounselorWorkflow() {
                         </Grid>
 
                         <Grid item xs={12} md={4}>
-                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, height: '100%' }}>
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: 1,
+                              height: '100%',
+                            }}
+                          >
                             <Button
                               fullWidth
                               variant="contained"
@@ -498,7 +472,8 @@ export default function CareerCounselorWorkflow() {
 
         <TabPanel value={tabValue} index={2}>
           <Alert severity="info" sx={{ mb: 3 }}>
-            Monitor students approaching maximum weekly work hours according to work permit regulations
+            Monitor students approaching maximum weekly work hours according to work permit
+            regulations
           </Alert>
 
           <Box sx={{ textAlign: 'center', py: 6 }}>
@@ -513,7 +488,12 @@ export default function CareerCounselorWorkflow() {
         </TabPanel>
       </Card>
 
-      <Dialog open={jobReviewDialogOpen} onClose={() => setJobReviewDialogOpen(false)} maxWidth="md" fullWidth>
+      <Dialog
+        open={jobReviewDialogOpen}
+        onClose={() => setJobReviewDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
         <DialogTitle>Review Job Listing</DialogTitle>
         <DialogContent>
           {selectedListing && (
@@ -532,27 +512,35 @@ export default function CareerCounselorWorkflow() {
                   <Typography variant="body2" color="text.secondary">
                     Job Type
                   </Typography>
-                  <Typography variant="body1">{selectedListing.job_type.replace('_', ' ')}</Typography>
+                  <Typography variant="body1">
+                    {selectedListing.job_type.replace('_', ' ')}
+                  </Typography>
                 </Grid>
                 <Grid item xs={6}>
                   <Typography variant="body2" color="text.secondary">
                     Hours per Week
                   </Typography>
-                  <Typography variant="body1">{selectedListing.hours_per_week || 'Not specified'}</Typography>
+                  <Typography variant="body1">
+                    {selectedListing.hours_per_week || 'Not specified'}
+                  </Typography>
                 </Grid>
                 <Grid item xs={6}>
                   <Typography variant="body2" color="text.secondary">
                     Hourly Pay
                   </Typography>
                   <Typography variant="body1">
-                    {selectedListing.hourly_pay ? `$${selectedListing.hourly_pay}` : 'Not specified'}
+                    {selectedListing.hourly_pay
+                      ? `$${selectedListing.hourly_pay}`
+                      : 'Not specified'}
                   </Typography>
                 </Grid>
                 <Grid item xs={6}>
                   <Typography variant="body2" color="text.secondary">
                     Location
                   </Typography>
-                  <Typography variant="body1">{selectedListing.location || 'Not specified'}</Typography>
+                  <Typography variant="body1">
+                    {selectedListing.location || 'Not specified'}
+                  </Typography>
                 </Grid>
               </Grid>
 
@@ -579,8 +567,8 @@ export default function CareerCounselorWorkflow() {
                   getAgeAppropriatenessScore(selectedListing).score >= 80
                     ? 'success'
                     : getAgeAppropriatenessScore(selectedListing).score >= 60
-                    ? 'warning'
-                    : 'error'
+                      ? 'warning'
+                      : 'error'
                 }
                 sx={{ mb: 2 }}
               >
@@ -603,12 +591,13 @@ export default function CareerCounselorWorkflow() {
                   getAcademicInterferenceRisk(selectedListing) === 'low'
                     ? 'success'
                     : getAcademicInterferenceRisk(selectedListing) === 'medium'
-                    ? 'warning'
-                    : 'error'
+                      ? 'warning'
+                      : 'error'
                 }
               >
                 <Typography variant="body2">
-                  Academic Interference Risk: {getAcademicInterferenceRisk(selectedListing).toUpperCase()}
+                  Academic Interference Risk:{' '}
+                  {getAcademicInterferenceRisk(selectedListing).toUpperCase()}
                 </Typography>
               </Alert>
 

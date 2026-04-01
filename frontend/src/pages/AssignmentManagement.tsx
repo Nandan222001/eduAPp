@@ -113,8 +113,12 @@ export default function AssignmentManagement() {
     grade: '',
     feedback: '',
   });
-  const [statistics, setStatistics] = useState<Record<string, unknown> | null>(null);
-  const [analytics, setAnalytics] = useState<Record<string, unknown> | null>(null);
+  const [statistics, setStatistics] = useState<Record<string, number | string | boolean> | null>(
+    null
+  );
+  const [analytics, setAnalytics] = useState<Record<string, number | string | boolean> | null>(
+    null
+  );
 
   const [formData, setFormData] = useState<AssignmentCreateInput>({
     institution_id: 1,

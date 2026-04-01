@@ -53,7 +53,7 @@ interface Teacher {
 export const ClassManagement: React.FC = () => {
   const [grades, setGrades] = useState<Grade[]>([]);
   const [sections, setSections] = useState<Section[]>([]);
-  const [teachers] = useState<Teacher[]>([]);
+  const [_teachers] = useState<Teacher[]>([]);
   const [selectedGrade, setSelectedGrade] = useState<Grade | null>(null);
   const [gradeDialogOpen, setGradeDialogOpen] = useState(false);
   const [sectionDialogOpen, setSectionDialogOpen] = useState(false);
@@ -517,7 +517,7 @@ export const ClassManagement: React.FC = () => {
                   label="Class Teacher (Optional)"
                 >
                   <MenuItem value="">None</MenuItem>
-                  {teachers.map((teacher) => (
+                  {_teachers.map((teacher) => (
                     <MenuItem key={teacher.id} value={teacher.id}>
                       {teacher.first_name} {teacher.last_name}
                     </MenuItem>

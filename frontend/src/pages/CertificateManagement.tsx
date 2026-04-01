@@ -144,7 +144,7 @@ interface TabProps {
 const IssueCertificateTab: React.FC<TabProps> = ({ showSnackbar }) => {
   const [students, setStudents] = useState<Student[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
-  const [certificateType, setCertificateType] = useState<CertificateType>('Bonafide');
+  const [certificateType, setCertificateType] = useState<string>('Bonafide');
   const [templates, setTemplates] = useState<CertificateTemplate[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<number | undefined>(undefined);
   const [remarks, setRemarks] = useState('');
@@ -167,9 +167,11 @@ const IssueCertificateTab: React.FC<TabProps> = ({ showSnackbar }) => {
     try {
       let data: CertificateTemplate[];
       if (isDemo) {
-        data = await demoCertificatesApi.getCertificateTemplates(certificateType);
+        data = await demoCertificatesApi.getCertificateTemplates(
+          certificateType as CertificateType
+        );
       } else {
-        data = await schoolAdminApi.certificateTemplates.list(certificateType);
+        data = await schoolAdminApi.certificateTemplates.list(certificateType as CertificateType);
       }
       setTemplates(data);
       if (data.length > 0) {
@@ -257,7 +259,7 @@ const IssueCertificateTab: React.FC<TabProps> = ({ showSnackbar }) => {
     try {
       const data: IssueCertificateRequest = {
         student_id: selectedStudent.id,
-        certificate_type: certificateType,
+        certificate_type: certificateType as CertificateType,
         template_id: selectedTemplate,
         remarks: remarks || undefined,
       };
@@ -362,7 +364,7 @@ const IssueCertificateTab: React.FC<TabProps> = ({ showSnackbar }) => {
             <InputLabel>Certificate Type</InputLabel>
             <Select
               value={certificateType}
-              onChange={(e) => setCertificateType(e.target.value as CertificateType)}
+              onChange={(e) => setCertificateType(e.target.value)}
               label="Certificate Type"
             >
               {certificateTypes.map((type) => (

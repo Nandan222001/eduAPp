@@ -34,7 +34,7 @@ import {
   Add as AddIcon,
   School as SchoolIcon,
   Event as EventIcon,
-  CheckCircleIcon,
+  CheckCircle as CheckCircleIcon,
   Person as PersonIcon,
   Warning as WarningIcon,
   Send as SendIcon,
@@ -74,6 +74,14 @@ export default function CollegeApplicationTracker() {
   const [statistics, setStatistics] = useState<ApplicationStatistics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [_applicationDialogOpen, setApplicationDialogOpen] = useState(false);
+  const [_selectedApplication, setSelectedApplication] = useState<CollegeApplication | null>(null);
+  const [_selectedEssay, setSelectedEssay] = useState<{
+    id: number;
+    prompt: string;
+    status: string;
+  } | null>(null);
+  const [_essayDialogOpen, setEssayDialogOpen] = useState(false);
 
   const studentId = user?.id ? parseInt(user.id, 10) : 1;
 
