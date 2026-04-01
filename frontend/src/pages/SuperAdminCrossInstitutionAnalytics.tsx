@@ -124,16 +124,16 @@ export default function SuperAdminCrossInstitutionAnalytics() {
     setFilters((prev) => ({ ...prev, [field]: event.target.value }));
   };
 
-  const handleExport = async (format: 'csv' | 'json' | 'excel') => {
+  const handleExport = async (exportFormat: 'csv' | 'json' | 'excel') => {
     try {
-      const data = await superAdminApi.exportAnalyticsData({ ...filters, format });
+      const data = await superAdminApi.exportAnalyticsData({ ...filters, format: exportFormat });
 
-      if (format === 'csv') {
+      if (exportFormat === 'csv') {
         const blob = data as Blob;
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `cross_institution_analytics_${format(new Date(), 'yyyyMMdd')}.${format}`;
+        a.download = `cross_institution_analytics_${format(new Date(), 'yyyyMMdd')}.${exportFormat}`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
