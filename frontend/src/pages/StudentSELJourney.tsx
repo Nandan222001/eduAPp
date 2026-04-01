@@ -354,7 +354,7 @@ function MindfulnessDialog({ open, onClose, onComplete }: MindfulnessDialogProps
   const [timeLeft, setTimeLeft] = useState(0);
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: number;
     if (isActive && timeLeft > 0) {
       interval = setInterval(() => {
         setTimeLeft((time) => time - 1);
@@ -520,7 +520,7 @@ function GrowthVisualization({ moodEntries, selProgress }: GrowthVisualizationPr
       },
       tooltip: {
         callbacks: {
-          label: (context: { parsed: { y: number } }) => {
+          label: (context: { parsed: { y: number | null } }) => {
             const mood = MOOD_OPTIONS.find((m) => m.value === context.parsed.y);
             return mood ? mood.label : '';
           },
