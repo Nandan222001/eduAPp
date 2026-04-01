@@ -57,26 +57,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useDropzone } from 'react-dropzone';
 import { format } from 'date-fns';
-
-interface Document {
-  id: number;
-  title: string;
-  description?: string;
-  document_type: string;
-  file_name: string;
-  file_size: number;
-  file_type: string;
-  encrypted_file_url: string;
-  ocr_text?: string;
-  extracted_metadata?: Record<string, unknown>;
-  tags?: string[];
-  status: string;
-  is_verified: boolean;
-  issue_date?: string;
-  expiry_date?: string;
-  created_at: string;
-  updated_at: string;
-}
+import { Document } from '@/types/documentVault';
 
 interface Folder {
   id: number;

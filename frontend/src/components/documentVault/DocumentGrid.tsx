@@ -27,8 +27,8 @@ interface DocumentGridProps {
   onDocumentClick: (documentId: number) => void;
 }
 
-const getFileIcon = (mimeType: string) => {
-  if (mimeType.startsWith('image/')) return <ImageIcon sx={{ fontSize: 60 }} />;
+const getFileIcon = (mimeType?: string) => {
+  if (mimeType?.startsWith('image/')) return <ImageIcon sx={{ fontSize: 60 }} />;
   if (mimeType === 'application/pdf') return <PictureAsPdf sx={{ fontSize: 60 }} />;
   return <Description sx={{ fontSize: 60 }} />;
 };
@@ -176,11 +176,11 @@ export const DocumentGrid: React.FC<DocumentGridProps> = ({ documents, onDocumen
                       size="small"
                       variant="outlined"
                     />
-                    {doc.tags.slice(0, 2).map((tag) => (
+                    {doc.tags?.slice(0, 2).map((tag) => (
                       <Chip key={tag} label={tag} size="small" variant="outlined" />
                     ))}
-                    {doc.tags.length > 2 && (
-                      <Chip label={`+${doc.tags.length - 2}`} size="small" variant="outlined" />
+                    {(doc.tags?.length ?? 0) > 2 && (
+                      <Chip label={`+${doc.tags!.length - 2}`} size="small" variant="outlined" />
                     )}
                   </Box>
 
@@ -193,7 +193,7 @@ export const DocumentGrid: React.FC<DocumentGridProps> = ({ documents, onDocumen
                     }}
                   >
                     <Typography variant="caption" color="text.secondary">
-                      {format(new Date(doc.upload_date), 'MMM d, yyyy')}
+                      {format(new Date(doc.upload_date || doc.created_at), 'MMM d, yyyy')}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
                       {formatFileSize(doc.file_size)}

@@ -1,5 +1,5 @@
 import axios from '@/lib/axios';
-import { DocumentType, DocumentStatus } from '@/types/documentVault';
+import { DocumentType, DocumentStatus, Document } from '@/types/documentVault';
 
 export interface DocumentFolder {
   id: number;
@@ -15,36 +15,8 @@ export interface DocumentFolder {
   updated_at: string;
 }
 
-export interface FamilyDocument {
-  id: number;
-  title: string;
-  description?: string;
-  document_type: DocumentType;
-  file_name: string;
-  file_size: number;
-  file_type: string;
-  mime_type?: string;
-  encrypted_file_url: string;
-  file_url?: string;
-  ocr_text?: string;
-  extracted_metadata?: Record<string, unknown>;
-  tags?: string[];
-  status: DocumentStatus;
-  is_verified: boolean;
-  issue_date?: string;
-  expiry_date?: string;
-  upload_date?: string;
-  created_at: string;
-  updated_at: string;
-  folder_id?: number;
-  student_id?: number;
-  child_id: number;
-  child_name: string;
-  verified_by?: string;
-  verified_date?: string;
-  rejection_reason?: string;
-  access_log_count?: number;
-}
+// FamilyDocument is an alias for Document from types file to maintain consistency
+export type FamilyDocument = Document;
 
 export interface DocumentShare {
   id: number;

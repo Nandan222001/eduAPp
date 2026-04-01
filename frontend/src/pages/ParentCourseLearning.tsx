@@ -399,7 +399,7 @@ export const ParentCourseLearning: React.FC = () => {
               </Box>
 
               {/* Video Player */}
-              {(currentLesson as ApiLesson).type === 'video' &&
+              {(currentLesson as ApiLesson).type === LessonType.VIDEO &&
                 (currentLesson as ApiLesson).video_url && (
                   <Paper sx={{ mb: 3, overflow: 'hidden' }}>
                     <video
@@ -442,7 +442,7 @@ export const ParentCourseLearning: React.FC = () => {
                 )}
 
               {/* Article Content */}
-              {(currentLesson as ApiLesson).type === 'article' && (
+              {(currentLesson as ApiLesson).type === LessonType.ARTICLE && (
                 <Paper sx={{ p: 3, mb: 3 }}>
                   <Typography
                     variant="body1"
@@ -464,7 +464,7 @@ export const ParentCourseLearning: React.FC = () => {
               )}
 
               {/* Quiz */}
-              {(currentLesson as ApiLesson).type === 'quiz' && (
+              {(currentLesson as ApiLesson).type === LessonType.QUIZ && (
                 <Paper sx={{ p: 3, mb: 3 }}>
                   <Typography variant="h6" gutterBottom>
                     Quiz

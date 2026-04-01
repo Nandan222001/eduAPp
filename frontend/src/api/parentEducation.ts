@@ -1,4 +1,5 @@
 import axios from '@/lib/axios';
+import type { Lesson as LessonType } from '@/types/parentEducation';
 
 export interface CourseMaterial {
   id: number;
@@ -76,15 +77,8 @@ export interface CourseLesson {
   updated_at: string;
 }
 
-export interface Lesson {
-  id: number;
-  title: string;
-  description?: string;
-  type: string;
-  video_url?: string;
-  transcript?: string;
-  content?: string;
-}
+// Export Lesson type from types file for consistency
+export type Lesson = LessonType;
 
 export interface Badge {
   id: number;

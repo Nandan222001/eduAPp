@@ -121,7 +121,7 @@ export const AdminVerificationQueue: React.FC<AdminVerificationQueueProps> = ({ 
                         size="small"
                         variant="outlined"
                       />
-                      {document.tags.map((tag) => (
+                      {document.tags?.map((tag) => (
                         <Chip key={tag} label={tag} size="small" variant="outlined" />
                       ))}
                     </Box>
@@ -134,9 +134,11 @@ export const AdminVerificationQueue: React.FC<AdminVerificationQueueProps> = ({ 
                   </Typography>
                 )}
 
-                <Typography variant="caption" color="text.secondary" display="block">
-                  Uploaded: {format(new Date(document.upload_date), 'PPp')}
-                </Typography>
+                {document.upload_date && (
+                  <Typography variant="caption" color="text.secondary" display="block">
+                    Uploaded: {format(new Date(document.upload_date), 'PPp')}
+                  </Typography>
+                )}
                 {document.expiry_date && (
                   <Typography variant="caption" color="text.secondary" display="block">
                     Expires: {format(new Date(document.expiry_date), 'PPP')}
@@ -148,7 +150,10 @@ export const AdminVerificationQueue: React.FC<AdminVerificationQueueProps> = ({ 
                 <Button
                   size="small"
                   startIcon={<Visibility />}
-                  onClick={() => window.open(document.file_url, '_blank')}
+                  onClick={() =>
+                    window.open(document.file_url || document.encrypted_file_url, '_blank')
+                  }
+                  disabled={!document.file_url && !document.encrypted_file_url}
                 >
                   View
                 </Button>
