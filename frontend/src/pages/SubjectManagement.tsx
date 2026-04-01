@@ -74,7 +74,7 @@ export const SubjectManagement: React.FC = () => {
   const [assignments, setAssignments] = useState<SubjectAssignment[]>([]);
   const [grades, setGrades] = useState<Grade[]>([]);
   const [sections, setSections] = useState<Section[]>([]);
-  const [_teachers, _setTeachers] = useState<Teacher[]>([]);
+  const [teachers] = useState<Teacher[]>([]);
   const [subjectDialogOpen, setSubjectDialogOpen] = useState(false);
   const [assignmentDialogOpen, setAssignmentDialogOpen] = useState(false);
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
@@ -595,7 +595,7 @@ export const SubjectManagement: React.FC = () => {
                   label="Teacher (Optional)"
                 >
                   <MenuItem value="">Not assigned</MenuItem>
-                  {_teachers.map((teacher: Teacher) => (
+                  {teachers.map((teacher: Teacher) => (
                     <MenuItem key={teacher.id} value={teacher.id}>
                       {teacher.first_name} {teacher.last_name}
                     </MenuItem>

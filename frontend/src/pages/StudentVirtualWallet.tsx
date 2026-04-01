@@ -124,6 +124,7 @@ export default function StudentVirtualWallet() {
   const [activeTab, setActiveTab] = useState(0);
   const [transactionDialogOpen, setTransactionDialogOpen] = useState(false);
   const [stockDialogOpen, setStockDialogOpen] = useState(false);
+  const [_goalDialogOpen, setGoalDialogOpen] = useState(false);
 
   const [balance] = useState(2450.75);
   const [monthlyIncome] = useState(500);

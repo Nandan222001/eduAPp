@@ -88,8 +88,30 @@ export default function StudentIDCard() {
         let data: IDCardData;
         if (isDemo) {
           data = await demoIDCardsApi.getStudentIDCardData(parseInt(id));
-          const templatesList = await demoIDCardsApi.getTemplates();
-          setTemplates(templatesList);
+          // Demo templates with simplified schema for preview
+          setTemplates([
+            {
+              id: 1,
+              name: 'Classic Blue',
+              gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              primaryColor: '#667eea',
+              secondaryColor: '#764ba2',
+            },
+            {
+              id: 2,
+              name: 'Green Wave',
+              gradient: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
+              primaryColor: '#11998e',
+              secondaryColor: '#38ef7d',
+            },
+            {
+              id: 3,
+              name: 'Sunset Orange',
+              gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+              primaryColor: '#f093fb',
+              secondaryColor: '#f5576c',
+            },
+          ]);
         } else {
           data = await studentsApi.getIDCardData(parseInt(id));
         }
