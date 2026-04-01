@@ -210,8 +210,11 @@ export const VolunteerLeaderboard: React.FC = () => {
                   </Avatar>
                   <Box>
                     <Typography variant="h4" fontWeight={700} color="success.main">
-                      {communityImpact?.growth_percentage >= 0 ? '+' : ''}
-                      {communityImpact?.growth_percentage.toFixed(1) || 0}%
+                      {communityImpact?.growth_percentage !== undefined &&
+                      communityImpact.growth_percentage >= 0
+                        ? '+'
+                        : ''}
+                      {communityImpact?.growth_percentage?.toFixed(1) || 0}%
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
                       Year Growth
@@ -450,8 +453,11 @@ export const VolunteerLeaderboard: React.FC = () => {
                             : 'error.main'
                         }
                       >
-                        {communityImpact?.growth_percentage >= 0 ? '+' : ''}
-                        {communityImpact?.growth_percentage.toFixed(1) || 0}%
+                        {communityImpact?.growth_percentage !== undefined &&
+                        communityImpact.growth_percentage >= 0
+                          ? '+'
+                          : ''}
+                        {communityImpact?.growth_percentage?.toFixed(1) || 0}%
                       </Typography>
                     </Box>
                   </Stack>

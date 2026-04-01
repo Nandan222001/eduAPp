@@ -831,7 +831,7 @@ export default function VentureBuilder() {
                             {projections.map((projection, index) => (
                               <Paper key={index} sx={{ p: 2, bgcolor: 'background.default' }}>
                                 <Typography variant="subtitle2" gutterBottom>
-                                  {projection.period}
+                                  {projection.period as string}
                                 </Typography>
                                 <Grid container spacing={2}>
                                   <Grid item xs={4}>
@@ -843,7 +843,7 @@ export default function VentureBuilder() {
                                       fontWeight={600}
                                       color="success.main"
                                     >
-                                      ${projection.revenue.toLocaleString()}
+                                      ${(projection.revenue as number).toLocaleString()}
                                     </Typography>
                                   </Grid>
                                   <Grid item xs={4}>
@@ -851,7 +851,7 @@ export default function VentureBuilder() {
                                       Expenses
                                     </Typography>
                                     <Typography variant="body2" fontWeight={600} color="error.main">
-                                      ${projection.expenses.toLocaleString()}
+                                      ${(projection.expenses as number).toLocaleString()}
                                     </Typography>
                                   </Grid>
                                   <Grid item xs={4}>
@@ -859,7 +859,7 @@ export default function VentureBuilder() {
                                       Profit
                                     </Typography>
                                     <Typography variant="body2" fontWeight={600}>
-                                      ${projection.profit.toLocaleString()}
+                                      ${(projection.profit as number).toLocaleString()}
                                     </Typography>
                                   </Grid>
                                 </Grid>

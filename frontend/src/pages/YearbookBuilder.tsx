@@ -670,12 +670,12 @@ export default function YearbookBuilder() {
                 {(element.type === 'text' || element.type === 'quote') && (
                   <Typography
                     sx={{
-                      fontFamily: element.style?.fontFamily,
-                      fontSize: element.style?.fontSize,
-                      color: element.style?.color,
-                      fontWeight: element.style?.fontWeight,
-                      fontStyle: element.style?.fontStyle,
-                      textAlign: element.style?.textAlign,
+                      ...(element.style?.fontFamily && { fontFamily: element.style.fontFamily }),
+                      ...(element.style?.fontSize && { fontSize: element.style.fontSize }),
+                      ...(element.style?.color && { color: element.style.color }),
+                      ...(element.style?.fontWeight && { fontWeight: element.style.fontWeight }),
+                      ...(element.style?.fontStyle && { fontStyle: element.style.fontStyle }),
+                      ...(element.style?.textAlign && { textAlign: element.style.textAlign }),
                       width: '100%',
                     }}
                   >
