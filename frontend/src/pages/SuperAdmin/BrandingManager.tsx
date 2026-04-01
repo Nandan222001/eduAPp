@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -18,9 +18,6 @@ import {
   FormControlLabel,
   Paper,
   Stack,
-  Chip,
-  Avatar,
-  useTheme,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -39,7 +36,6 @@ import {
   Email as EmailIcon,
   Login as LoginIcon,
   Settings as SettingsIcon,
-  Refresh as RefreshIcon,
   CheckCircle as CheckCircleIcon,
   Warning as WarningIcon,
 } from '@mui/icons-material';
@@ -110,7 +106,6 @@ function ColorPicker({ label, value, onChange }: ColorPickerProps) {
 export default function BrandingManager() {
   const { institutionId } = useParams<{ institutionId: string }>();
   const navigate = useNavigate();
-  const theme = useTheme();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [tabValue, setTabValue] = useState(0);
@@ -125,11 +120,7 @@ export default function BrandingManager() {
   const [domainResponse, setDomainResponse] = useState<CustomDomainResponse | null>(null);
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
 
-  useEffect(() => {
-    loadBranding();
-  }, [institutionId]);
-
-  const loadBranding = async () => {
+  const loadBranding = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -154,23 +145,29 @@ export default function BrandingManager() {
         show_powered_by: data.show_powered_by,
         is_active: data.is_active,
       });
-    } catch (err: any) {
-      if (err.response?.status === 404) {
+    } catch (err: unknown) {
+      const error = err as { response?: { status?: number; data?: { detail?: string } } };
+      if (error.response?.status === 404) {
         try {
           const newBranding = await superAdminApi.createBranding(Number(institutionId), {
             institution_id: Number(institutionId),
           });
           setBranding(newBranding);
-        } catch (createErr: any) {
-          setError(createErr.response?.data?.detail || 'Failed to create branding');
+        } catch (createErr: unknown) {
+          const createError = createErr as { response?: { data?: { detail?: string } } };
+          setError(createError.response?.data?.detail || 'Failed to create branding');
         }
       } else {
-        setError(err.response?.data?.detail || 'Failed to load branding');
+        setError(error.response?.data?.detail || 'Failed to load branding');
       }
     } finally {
       setLoading(false);
     }
-  };
+  }, [institutionId]);
+
+  useEffect(() => {
+    loadBranding();
+  }, [loadBranding]);
 
   const handleSave = async () => {
     try {
@@ -180,8 +177,9 @@ export default function BrandingManager() {
       const updated = await superAdminApi.updateBranding(Number(institutionId), brandingData);
       setBranding(updated);
       setSuccess('Branding saved successfully');
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to save branding');
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { detail?: string } } };
+      setError(error.response?.data?.detail || 'Failed to save branding');
     } finally {
       setSaving(false);
     }
@@ -197,12 +195,13 @@ export default function BrandingManager() {
     try {
       setUploadingField(field);
       setError(null);
-      const response = await superAdminApi.uploadLogo(Number(institutionId), field, file);
-      
+      await superAdminApi.uploadLogo(Number(institutionId), field, file);
+
       await loadBranding();
       setSuccess(`${field.replace('_', ' ')} uploaded successfully`);
-    } catch (err: any) {
-      setError(err.response?.data?.detail || `Failed to upload ${field}`);
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { detail?: string } } };
+      setError(error.response?.data?.detail || `Failed to upload ${field}`);
     } finally {
       setUploadingField(null);
     }
@@ -219,8 +218,9 @@ export default function BrandingManager() {
       setDomainResponse(response);
       await loadBranding();
       setSuccess('Custom domain configured successfully');
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to set custom domain');
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { detail?: string } } };
+      setError(error.response?.data?.detail || 'Failed to set custom domain');
     } finally {
       setSaving(false);
     }
@@ -233,8 +233,9 @@ export default function BrandingManager() {
       const response = await superAdminApi.verifyDomain(Number(institutionId));
       setSuccess(response.message);
       await loadBranding();
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to verify domain');
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { detail?: string } } };
+      setError(error.response?.data?.detail || 'Failed to verify domain');
     } finally {
       setSaving(false);
     }
@@ -340,7 +341,13 @@ export default function BrandingManager() {
                       <Button
                         variant="outlined"
                         component="span"
-                        startIcon={uploadingField === 'logo' ? <CircularProgress size={20} /> : <UploadIcon />}
+                        startIcon={
+                          uploadingField === 'logo' ? (
+                            <CircularProgress size={20} />
+                          ) : (
+                            <UploadIcon />
+                          )
+                        }
                         disabled={uploadingField === 'logo'}
                       >
                         Upload Logo
@@ -372,7 +379,13 @@ export default function BrandingManager() {
                       <Button
                         variant="outlined"
                         component="span"
-                        startIcon={uploadingField === 'favicon' ? <CircularProgress size={20} /> : <UploadIcon />}
+                        startIcon={
+                          uploadingField === 'favicon' ? (
+                            <CircularProgress size={20} />
+                          ) : (
+                            <UploadIcon />
+                          )
+                        }
                         disabled={uploadingField === 'favicon'}
                       >
                         Upload Favicon
@@ -404,7 +417,13 @@ export default function BrandingManager() {
                       <Button
                         variant="outlined"
                         component="span"
-                        startIcon={uploadingField === 'email_logo' ? <CircularProgress size={20} /> : <UploadIcon />}
+                        startIcon={
+                          uploadingField === 'email_logo' ? (
+                            <CircularProgress size={20} />
+                          ) : (
+                            <UploadIcon />
+                          )
+                        }
                         disabled={uploadingField === 'email_logo'}
                       >
                         Upload Email Logo
@@ -465,9 +484,7 @@ export default function BrandingManager() {
                     <ColorPicker
                       label="Text Color"
                       value={brandingData.text_color || '#000000'}
-                      onChange={(color) =>
-                        setBrandingData({ ...brandingData, text_color: color })
-                      }
+                      onChange={(color) => setBrandingData({ ...brandingData, text_color: color })}
                     />
                   </Grid>
                 </Grid>
@@ -513,10 +530,7 @@ export default function BrandingManager() {
                     fullWidth
                   />
 
-                  <Button
-                    variant="outlined"
-                    onClick={() => setDomainDialogOpen(true)}
-                  >
+                  <Button variant="outlined" onClick={() => setDomainDialogOpen(true)}>
                     Configure Custom Domain
                   </Button>
                 </Stack>
@@ -598,7 +612,13 @@ export default function BrandingManager() {
                       <Button
                         variant="outlined"
                         component="span"
-                        startIcon={uploadingField === 'login_background' ? <CircularProgress size={20} /> : <UploadIcon />}
+                        startIcon={
+                          uploadingField === 'login_background' ? (
+                            <CircularProgress size={20} />
+                          ) : (
+                            <UploadIcon />
+                          )
+                        }
                         disabled={uploadingField === 'login_background'}
                       >
                         Upload Background
@@ -770,7 +790,12 @@ export default function BrandingManager() {
         </Grid>
       </Grid>
 
-      <Dialog open={domainDialogOpen} onClose={() => setDomainDialogOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog
+        open={domainDialogOpen}
+        onClose={() => setDomainDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogTitle>Configure Custom Domain</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
@@ -784,10 +809,7 @@ export default function BrandingManager() {
 
             <FormControlLabel
               control={
-                <Switch
-                  checked={sslEnabled}
-                  onChange={(e) => setSslEnabled(e.target.checked)}
-                />
+                <Switch checked={sslEnabled} onChange={(e) => setSslEnabled(e.target.checked)} />
               }
               label="Enable SSL"
             />
@@ -826,12 +848,17 @@ export default function BrandingManager() {
         </DialogActions>
       </Dialog>
 
-      <Dialog open={previewDialogOpen} onClose={() => setPreviewDialogOpen(false)} maxWidth="md" fullWidth>
+      <Dialog
+        open={previewDialogOpen}
+        onClose={() => setPreviewDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
         <DialogTitle>Branding Preview</DialogTitle>
         <DialogContent>
           <Box sx={{ p: 2 }}>
             <Typography variant="body2" color="text.secondary" gutterBottom>
-              This is how your institution's branding will appear to users.
+              This is how your institution&apos;s branding will appear to users.
             </Typography>
           </Box>
         </DialogContent>

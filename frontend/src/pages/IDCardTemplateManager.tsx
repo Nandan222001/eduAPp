@@ -297,10 +297,6 @@ export const IDCardTemplateManager: React.FC = () => {
     });
   };
 
-  const _handleDragStart = (field: string) => {
-    setDraggedField(field);
-  };
-
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
   };

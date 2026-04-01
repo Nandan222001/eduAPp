@@ -231,19 +231,6 @@ export const ClassManagement: React.FC = () => {
     }
   };
 
-  const _handleAssignClassTeacher = async (sectionId: number, teacherId: number) => {
-    try {
-      setLoading(true);
-      await academicApi.assignClassTeacher({ section_id: sectionId, teacher_id: teacherId });
-      showSnackbar('Class teacher assigned successfully', 'success');
-      loadSections();
-    } catch (error) {
-      showSnackbar('Failed to assign class teacher', 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const getGradeSections = (gradeId: number) => {
     return sections.filter((s) => s.grade_id === gradeId);
   };

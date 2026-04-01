@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Grid,
@@ -23,7 +23,6 @@ import {
   Stack,
   Alert,
   CircularProgress,
-  Tooltip,
   Avatar,
   List,
   ListItem,
@@ -52,7 +51,6 @@ import {
   NotificationsActive as NotificationsIcon,
   AutorenewRounded as AutorenewIcon,
   Psychology as PsychologyIcon,
-  ShowChart as ShowChartIcon,
   Schedule as ScheduleIcon,
 } from '@mui/icons-material';
 import {
@@ -69,8 +67,6 @@ import {
   PolarAngleAxis,
   PolarRadiusAxis,
   Radar,
-  BarChart,
-  Bar,
 } from 'recharts';
 
 interface HealthScoreItem {
@@ -116,7 +112,7 @@ interface InstitutionHealth {
   };
   active_alerts: Alert[];
   health_history: HealthHistory[];
-  metrics_breakdown: any;
+  metrics_breakdown: Record<string, unknown>;
 }
 
 interface RiskFactor {
@@ -173,11 +169,7 @@ export default function InstitutionHealthMonitor() {
   const [filterRiskLevel, setFilterRiskLevel] = useState<string>('all');
   const [calculating, setCalculating] = useState(false);
 
-  useEffect(() => {
-    fetchHealthData();
-  }, [filterRiskLevel]);
-
-  const fetchHealthData = async () => {
+  const fetchHealthData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -203,18 +195,19 @@ export default function InstitutionHealthMonitor() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filterRiskLevel]);
+
+  useEffect(() => {
+    fetchHealthData();
+  }, [fetchHealthData]);
 
   const fetchInstitutionDetails = async (institutionId: number) => {
     try {
-      const response = await fetch(
-        `/api/v1/institution-health/institutions/${institutionId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-          },
-        }
-      );
+      const response = await fetch(`/api/v1/institution-health/institutions/${institutionId}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
 
       if (!response.ok) throw new Error('Failed to fetch institution details');
 
@@ -246,16 +239,6 @@ export default function InstitutionHealthMonitor() {
     } finally {
       setCalculating(false);
     }
-  };
-
-  const getRiskLevelColor = (riskLevel: string) => {
-    const colors: Record<string, string> = {
-      critical: theme.palette.error.main,
-      high: theme.palette.warning.main,
-      medium: theme.palette.info.main,
-      low: theme.palette.success.main,
-    };
-    return colors[riskLevel] || theme.palette.grey[500];
   };
 
   const getRiskLevelChip = (riskLevel: string) => {
@@ -355,10 +338,7 @@ export default function InstitutionHealthMonitor() {
 
       <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid item xs={12} sm={6} md={3}>
-          <Card
-            elevation={0}
-            sx={{ border: `1px solid ${theme.palette.divider}`, height: '100%' }}
-          >
+          <Card elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, height: '100%' }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Box>
@@ -369,7 +349,9 @@ export default function InstitutionHealthMonitor() {
                     {healthData.total}
                   </Typography>
                 </Box>
-                <Avatar sx={{ bgcolor: alpha(theme.palette.primary.main, 0.1), width: 56, height: 56 }}>
+                <Avatar
+                  sx={{ bgcolor: alpha(theme.palette.primary.main, 0.1), width: 56, height: 56 }}
+                >
                   <AssessmentIcon sx={{ color: theme.palette.primary.main, fontSize: 32 }} />
                 </Avatar>
               </Box>
@@ -396,7 +378,9 @@ export default function InstitutionHealthMonitor() {
                     {healthData.critical_count}
                   </Typography>
                 </Box>
-                <Avatar sx={{ bgcolor: alpha(theme.palette.error.main, 0.2), width: 56, height: 56 }}>
+                <Avatar
+                  sx={{ bgcolor: alpha(theme.palette.error.main, 0.2), width: 56, height: 56 }}
+                >
                   <ErrorIcon sx={{ color: theme.palette.error.main, fontSize: 32 }} />
                 </Avatar>
               </Box>
@@ -423,7 +407,9 @@ export default function InstitutionHealthMonitor() {
                     {healthData.high_risk_count}
                   </Typography>
                 </Box>
-                <Avatar sx={{ bgcolor: alpha(theme.palette.warning.main, 0.2), width: 56, height: 56 }}>
+                <Avatar
+                  sx={{ bgcolor: alpha(theme.palette.warning.main, 0.2), width: 56, height: 56 }}
+                >
                   <WarningIcon sx={{ color: theme.palette.warning.main, fontSize: 32 }} />
                 </Avatar>
               </Box>
@@ -450,7 +436,9 @@ export default function InstitutionHealthMonitor() {
                     {healthData.low_risk_count}
                   </Typography>
                 </Box>
-                <Avatar sx={{ bgcolor: alpha(theme.palette.success.main, 0.2), width: 56, height: 56 }}>
+                <Avatar
+                  sx={{ bgcolor: alpha(theme.palette.success.main, 0.2), width: 56, height: 56 }}
+                >
                   <CheckCircleIcon sx={{ color: theme.palette.success.main, fontSize: 32 }} />
                 </Avatar>
               </Box>
@@ -574,12 +562,7 @@ export default function InstitutionHealthMonitor() {
         </TableContainer>
       </Paper>
 
-      <Dialog
-        open={detailsOpen}
-        onClose={() => setDetailsOpen(false)}
-        maxWidth="lg"
-        fullWidth
-      >
+      <Dialog open={detailsOpen} onClose={() => setDetailsOpen(false)} maxWidth="lg" fullWidth>
         <DialogTitle>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Typography variant="h5" fontWeight={700}>
@@ -706,15 +689,16 @@ export default function InstitutionHealthMonitor() {
                                 }}
                               >
                                 <ListItemIcon>
-                                  <WarningIcon color={alert.severity as any} />
+                                  <WarningIcon
+                                    color={
+                                      alert.severity as 'error' | 'warning' | 'info' | 'success'
+                                    }
+                                  />
                                 </ListItemIcon>
-                                <ListItemText
-                                  primary={alert.title}
-                                  secondary={alert.description}
-                                />
+                                <ListItemText primary={alert.title} secondary={alert.description} />
                                 <Chip
                                   label={alert.severity.toUpperCase()}
-                                  color={alert.severity as any}
+                                  color={alert.severity as 'error' | 'warning' | 'info' | 'success'}
                                   size="small"
                                 />
                               </ListItem>
@@ -860,8 +844,8 @@ export default function InstitutionHealthMonitor() {
                                 factor.severity === 'critical'
                                   ? 'error'
                                   : factor.severity === 'high'
-                                  ? 'warning'
-                                  : 'info'
+                                    ? 'warning'
+                                    : 'info'
                               }
                             />
                           </ListItemIcon>
@@ -877,8 +861,8 @@ export default function InstitutionHealthMonitor() {
                                     factor.severity === 'critical'
                                       ? 'error'
                                       : factor.severity === 'high'
-                                      ? 'warning'
-                                      : 'info'
+                                        ? 'warning'
+                                        : 'info'
                                   }
                                   size="small"
                                 />
@@ -901,8 +885,8 @@ export default function InstitutionHealthMonitor() {
                                       factor.severity === 'critical'
                                         ? 'error'
                                         : factor.severity === 'high'
-                                        ? 'warning'
-                                        : 'info'
+                                          ? 'warning'
+                                          : 'info'
                                     }
                                   />
                                 </Box>
@@ -943,7 +927,11 @@ export default function InstitutionHealthMonitor() {
                                 <Typography variant="body1" fontWeight={600}>
                                   {action.action}
                                 </Typography>
-                                <Chip label={action.priority.toUpperCase()} size="small" color="secondary" />
+                                <Chip
+                                  label={action.priority.toUpperCase()}
+                                  size="small"
+                                  color="secondary"
+                                />
                                 <Chip label={action.category} size="small" variant="outlined" />
                               </Box>
                             }
@@ -952,7 +940,11 @@ export default function InstitutionHealthMonitor() {
                                 <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                                   {action.description}
                                 </Typography>
-                                <Typography variant="caption" color="primary" sx={{ mt: 1, display: 'block' }}>
+                                <Typography
+                                  variant="caption"
+                                  color="primary"
+                                  sx={{ mt: 1, display: 'block' }}
+                                >
                                   Expected Impact: {action.expected_impact}
                                 </Typography>
                               </>

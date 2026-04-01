@@ -316,16 +316,6 @@ export const ParentConferenceBooking: React.FC = () => {
     }));
   };
 
-  const _handleAddActionItem = (teacherIndex: number, item: string) => {
-    setSpeedSession((prev) => ({
-      ...prev,
-      actionItems: {
-        ...prev.actionItems,
-        [teacherIndex]: [...(prev.actionItems[teacherIndex] || []), item],
-      },
-    }));
-  };
-
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
