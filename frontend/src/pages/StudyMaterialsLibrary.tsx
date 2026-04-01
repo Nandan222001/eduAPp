@@ -133,9 +133,12 @@ const StudyMaterialsLibrary: React.FC = () => {
     if (isDemo) {
       setStats({
         total_materials: 45,
-        total_views: 1234,
-        total_downloads: 567,
+        total_views: 230,
+        total_downloads: 89,
         bookmarked_count: 12,
+        materials_by_type: {},
+        recent_uploads: [],
+        popular_materials: [],
       });
       return;
     }
