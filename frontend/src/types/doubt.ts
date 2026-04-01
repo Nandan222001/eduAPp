@@ -9,7 +9,7 @@ export interface DoubtPost {
   description: string;
   images?: string[];
   tags?: string[];
-  status: DoubtStatus | 'unanswered' | 'answered' | 'resolved' | 'closed';
+  status: DoubtStatusValue;
   view_count: number;
   answer_count: number;
   upvote_count: number;
@@ -73,7 +73,7 @@ export interface DoubtVote {
   user_id: number;
   doubt_id?: number;
   answer_id?: number;
-  vote_type: VoteType | 'upvote' | 'downvote';
+  vote_type: VoteTypeValue;
   created_at: string;
 }
 
