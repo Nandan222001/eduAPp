@@ -699,7 +699,17 @@ export default function StudentContentMarketplace() {
               <Select
                 value={filters.sort_by}
                 label="Sort By"
-                onChange={(e) => setFilters({ ...filters, sort_by: e.target.value as string })}
+                onChange={(e) =>
+                  setFilters({
+                    ...filters,
+                    sort_by: e.target.value as
+                      | 'recent'
+                      | 'rating'
+                      | 'popular'
+                      | 'price_low'
+                      | 'price_high',
+                  })
+                }
               >
                 <MenuItem value="popular">Most Popular</MenuItem>
                 <MenuItem value="recent">Most Recent</MenuItem>
