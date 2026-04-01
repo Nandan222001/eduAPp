@@ -44,7 +44,7 @@ import {
   EmojiEvents as BenefitsIcon,
   Phone as PhoneIcon,
   Email as EmailIcon,
-  RemoteWork as RemoteIcon,
+  WorkOutline as WorkOutlineIcon,
 } from '@mui/icons-material';
 import communityServiceApi from '@/api/communityService';
 import { ServiceOpportunity, ServiceCategory } from '@/types/communityService';
@@ -340,7 +340,7 @@ export default function ServiceOpportunities() {
                         color="primary"
                       />
                       {opportunity.remote_option && (
-                        <Chip size="small" label="Remote Option" icon={<RemoteIcon />} />
+                        <Chip size="small" label="Remote Option" icon={<WorkOutlineIcon />} />
                       )}
                       {isFull && <Chip size="small" label="Full" color="error" />}
                     </Stack>

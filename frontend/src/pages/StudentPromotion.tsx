@@ -40,7 +40,7 @@ import {
   Switch,
 } from '@mui/material';
 import {
-  Promote as PromoteIcon,
+  TrendingUp as TrendingUpIcon,
   Cancel as CancelIcon,
   ExpandMore as ExpandMoreIcon,
   CheckCircle as CheckCircleIcon,
@@ -664,7 +664,7 @@ export default function StudentPromotion() {
         </Button>
         <Button
           variant="contained"
-          startIcon={loading ? <CircularProgress size={20} /> : <PromoteIcon />}
+          startIcon={loading ? <CircularProgress size={20} /> : <TrendingUpIcon />}
           onClick={handlePromote}
           disabled={loading || selectedStudents.size === 0 || !targetGradeId}
         >
