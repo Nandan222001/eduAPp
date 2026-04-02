@@ -44,8 +44,8 @@ class LocalStorageMock {
 }
 
 // Setup localStorage mock
-if (!global.localStorage) {
-  global.localStorage = new LocalStorageMock() as Storage;
+if (!globalThis.localStorage) {
+  globalThis.localStorage = new LocalStorageMock() as Storage;
 }
 
 // ============================================================================
@@ -340,8 +340,8 @@ class SessionStorageMock {
 }
 
 // Setup sessionStorage mock
-if (!global.sessionStorage) {
-  global.sessionStorage = new SessionStorageMock() as Storage;
+if (!globalThis.sessionStorage) {
+  globalThis.sessionStorage = new SessionStorageMock() as Storage;
 }
 
 // ============================================================================
