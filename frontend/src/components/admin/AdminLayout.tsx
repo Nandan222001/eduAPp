@@ -54,6 +54,15 @@ export default function AdminLayout() {
         />
       </Box>
 
+      <Box sx={{ display: { xs: 'block', md: 'none' } }}>
+        <AdminSidebar
+          variant="temporary"
+          open={mobileOpen}
+          onClose={() => setMobileOpen(false)}
+          drawerWidth={DRAWER_WIDTH}
+        />
+      </Box>
+
       <Box
         component="main"
         id="main-content"
