@@ -52,6 +52,15 @@ export default function TeacherLayout() {
         />
       </Box>
 
+      <Box sx={{ display: { xs: 'block', md: 'none' } }}>
+        <TeacherSidebar
+          variant="temporary"
+          open={mobileOpen}
+          onClose={() => setMobileOpen(false)}
+          drawerWidth={DRAWER_WIDTH}
+        />
+      </Box>
+
       <Box
         component="main"
         id="main-content"
